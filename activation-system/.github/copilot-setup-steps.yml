@@ -1,0 +1,70 @@
+name: Copilot setup
+on:
+  workflow_call:
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    # Локальная Postgres БД для анализа/валидции схемы
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: activation_system
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python deps (Telegram vendor)
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyrogram tgcrypto || true  # не критично для анализа
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json', '**/package.json') }}
+
+      - name: Install Node deps
+        run: |
+          if [ -f package-lock.json ]; then npm ci; elif [ -f package.json ]; then npm i; fi
+
+      - name: Set env (DB, TZ, PORT)
+        run: |
+          echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/activation_system?schema=public" >> $GITHUB_ENV
+          echo "TZ=Asia/Tashkent" >> $GITHUB_ENV
+          echo "PORT=4000" >> $GITHUB_ENV
+
+      - name: Prisma generate/validate (и быстрая инициализация схемы)
+        run: |
+          npx prisma generate || true
+          npx prisma validate || true
+          # Без реальной миграции: поднимем схему в локальную БД раннера
+          npx prisma db push --skip-generate || true
+
+      - name: List project tree (для удобства агента)
+        run: |
+          echo "::group::project-tree"
+          command -v tree >/dev/null 2>&1 || sudo apt-get update && sudo apt-get install -y tree
+          tree -a -I '.git|node_modules|.next|dist|build' || true
+          echo "::endgroup::"
