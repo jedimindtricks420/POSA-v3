@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Добавление вендора</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <%- include('../partials/admin-navbar', { user }) %>
+  
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+    <div class="md:flex md:items-center md:justify-between mb-6">
+      <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          Добавить вендора
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Создание нового вендора в системе
+        </p>
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="rounded-md bg-red-50 p-4 mb-6">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Ошибка</h3>
+            <div class="mt-2 text-sm text-red-700">
+              <%= error %>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/admin/add-vendor" class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg p-6">
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Название вендора</label>
+          <div class="mt-1">
+            <input type="text" name="name" required
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Введите название вендора" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Категория</label>
+          <div class="mt-1">
+            <input type="text" name="category" required
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Введите категорию" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Тип товаров</label>
+          <div class="mt-1">
+            <select name="productType" required
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+              <option value="Telegram">Telegram</option>
+              <option value="API">API</option>
+              <option value="Ваучеры">Ваучеры</option>
+            </select>
+          </div>
+          <p class="mt-2 text-sm text-slate-500">
+            Выберите тип товаров, которые будет предоставлять вендор
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            Описание
+            <span class="text-sm text-slate-500">(необязательно)</span>
+          </label>
+          <div class="mt-1">
+            <textarea name="description" rows="3"
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Добавьте описание вендора"></textarea>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            Процент комиссии по умолчанию (%)
+          </label>
+          <div class="mt-1 relative rounded-md shadow-sm">
+            <input type="number" name="defaultCommissionPercent" value="80" min="0" max="100" step="1" required
+              class="block w-full rounded-md border-slate-300 pr-12 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="80" />
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+              <span class="text-slate-500 sm:text-sm">%</span>
+            </div>
+          </div>
+          <p class="mt-2 text-sm text-slate-500">
+            Укажите процент комиссии, который будет применяться к товарам вендора по умолчанию
+          </p>
+        </div>
+
+        <div class="pt-4">
+          <button type="submit"
+            class="w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Сохранить вендора
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

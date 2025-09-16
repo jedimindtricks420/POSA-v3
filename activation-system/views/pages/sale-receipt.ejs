@@ -1,0 +1,12 @@
+<h2 class="mb-4">Чек продажи</h2>
+
+<ul class="list-group mb-3">
+  <li class="list-group-item"><strong>Продавец:</strong> <%= user.username %></li>
+  <li class="list-group-item"><strong>Товар:</strong> <%= product.name %></li>
+  <li class="list-group-item"><strong>Цена:</strong> $<%= price %></li>
+  <li class="list-group-item"><strong>Ваучер:</strong> <code><%= voucher %></code></li>
+</ul>
+
+<script>
+  setTimeout(() => window.print(), 500);
+</script>

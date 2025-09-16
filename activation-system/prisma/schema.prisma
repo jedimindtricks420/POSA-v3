@@ -1,0 +1,271 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int     @id @default(autoincrement())
+  username String  @unique
+  password String
+  role     Role
+
+  vendorId   Int?
+  vendor     Vendor?  @relation(fields: [vendorId], references: [id])
+
+  note       String?
+
+  activations VoucherActivation[] @relation("UserActivations")
+}
+
+enum Role {
+  admin
+  merchant
+  vendor_user
+}
+
+model Merchant {
+  id         Int     @id @default(autoincrement())
+  username   String  @unique
+  status     MerchantStatus @default(active)
+  legalInfo  String
+  balance    Float   @default(0)
+
+  transactions VoucherTransaction[] @relation("MerchantToTransactions")
+  payments     MerchantPayment[]    @relation("MerchantToPayments")
+}
+
+
+enum MerchantStatus {
+  active
+  off
+}
+
+model Product {
+  id           Int       @id @default(autoincrement())
+  name         String
+  price        Float
+  status       String
+  vendorId     Int
+  vendor       Vendor    @relation(fields: [vendorId], references: [id])
+  vouchers     Voucher[] @relation("ProductVouchers")
+
+  merchantCommissionPercent  Float
+  vendorCommissionPercent    Float
+}
+
+enum ProductStatus {
+  on
+  off
+}
+
+model Voucher {
+  id           Int     @id @default(autoincrement())
+  value        String  @unique
+  status       VoucherStatus @default(active)
+  productId    Int
+  productName  String
+  type         VoucherType
+  product      Product  @relation("ProductVouchers", fields: [productId], references: [id])
+  voucherActivations VoucherActivation[]
+  onlineVouchers OnlineVoucher[]
+  smsLogs        VoucherSmsLog[]
+  walletLogs     VoucherWalletLog[]
+}
+
+enum VoucherStatus {
+  activated
+  sold
+  deleted
+  active
+  pending
+}
+
+enum VoucherType {
+  Telegram
+  Vendor
+}
+
+model Sale {
+  id               Int       @id @default(autoincrement())
+  voucherValue     String
+  price            Float
+  status           SaleStatus @default(COMPLETED)
+  productId        Int
+  productName      String
+  merchantUsername String
+  date             DateTime  @default(now())
+  receiptPath      String?   // Путь к PDF-файлу на сервере (например: receipts/sale-123.pdf)
+  saleType         SaleType  @default(OFFLINE)
+  customerPhone    String?   // Номер телефона клиента для онлайн продаж
+}
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+  PENDING
+}
+
+enum SaleType {
+  ONLINE
+  OFFLINE
+}
+
+
+model Vendor {
+  id           Int      @id @default(autoincrement())
+  name         String
+  category     String
+  productType  String
+  description  String?
+  receiptTemplate String?
+  balance                  Float             @default(0)
+  products     Product[]
+  defaultCommissionPercent Float @default(80)
+
+  transactions VoucherTransaction[] @relation("VendorToTransactions")
+  users               User[]
+  voucherActivations  VoucherActivation[]
+
+  payments VendorPayment[] @relation("VendorToPayments")
+}
+
+model VoucherTransaction {
+  id               Int       @id @default(autoincrement())
+  voucherValue     String
+  merchantId       Int
+  merchant         Merchant  @relation("MerchantToTransactions", fields: [merchantId], references: [id])
+  vendorId         Int
+  vendor           Vendor    @relation("VendorToTransactions", fields: [vendorId], references: [id])
+  productId        Int
+  productName      String
+  price            Float
+  merchantDebt     Float   
+  adminDebt        Float   
+  vendorDebt       Float   
+  status           TransactionStatus @default(PENDING)
+  createdAt        DateTime  @default(now())
+}
+
+
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model MerchantPayment {
+  id            Int      @id @default(autoincrement())
+  merchantId    Int
+  merchant      Merchant @relation("MerchantToPayments", fields: [merchantId], references: [id])
+  amount        Float
+  comment       String?
+  createdAt     DateTime @default(now())
+
+  balanceBefore Float
+  balanceAfter  Float
+}
+
+model VoucherActivation {
+  id           Int      @id @default(autoincrement())
+  voucherId    Int
+  voucher      Voucher  @relation(fields: [voucherId], references: [id])
+
+  activatedBy  Int?
+  user         User?    @relation("UserActivations", fields: [activatedBy], references: [id])
+
+  vendorId     Int
+  vendor       Vendor   @relation(fields: [vendorId], references: [id])
+
+  activatedAt  DateTime @default(now())
+
+  clientId     Int?
+  client       Client?  @relation("ClientActivations", fields: [clientId], references: [id])
+}
+
+model VendorPayment {
+  id            Int      @id @default(autoincrement())
+  vendorId      Int
+  vendor        Vendor   @relation("VendorToPayments", fields: [vendorId], references: [id])
+  amount        Float
+  comment       String?
+  createdAt     DateTime @default(now())
+
+  balanceBefore Float
+  balanceAfter  Float
+}
+
+model Client {
+  id          Int      @id @default(autoincrement())
+  phoneNumber String   @unique
+  name        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Добавляем обратные связи
+  activations VoucherActivation[] @relation("ClientActivations")
+  onlineVouchers OnlineVoucher[]
+  walletLogs     VoucherWalletLog[]
+}
+
+
+model OnlineVoucher {
+  id         Int      @id @default(autoincrement())
+  clientId   Int
+  voucherId  Int      @unique
+  assignedAt DateTime @default(now())
+
+  client    Client    @relation(fields: [clientId], references: [id])
+  voucher   Voucher   @relation(fields: [voucherId], references: [id])
+}
+
+model VoucherWalletLog {
+  id               Int      @id @default(autoincrement())
+  voucherId        Int
+  clientId         Int
+  isAddedToWallet  Boolean  @default(false)
+  addedAt          DateTime @default(now())
+  pkpassId         String?
+  deviceInfo       DeviceType?
+
+  voucher          Voucher  @relation(fields: [voucherId], references: [id])
+  client           Client   @relation(fields: [clientId], references: [id])
+}
+
+
+model VoucherSmsLog {
+  id          Int      @id @default(autoincrement())
+  voucherId   Int
+  phoneNumber String
+  message     String
+  requestId   String
+  status      String   // waiting, delivered, rejected
+  statusDate  DateTime?
+  createdAt   DateTime @default(now())
+  response    Json?
+
+  voucher     Voucher  @relation(fields: [voucherId], references: [id])
+}
+
+
+model AuthSmsLog {
+  id          Int      @id @default(autoincrement())
+  phoneNumber String   // Номер телефона клиента
+  code        String   // OTP-код, отправленный клиенту
+  requestId   String   // ID запроса Eskiz (из ответа API)
+  status      String   // waiting, delivered, rejected
+  statusDate  DateTime?
+  createdAt   DateTime @default(now())
+  response    Json?    // Полный JSON-ответ от Eskiz
+  verified    Boolean  @default(false)  // Статус подтверждения (ввел ли клиент этот код)
+  verifiedAt  DateTime?
+}
+
+enum DeviceType {
+  ios
+  android
+}

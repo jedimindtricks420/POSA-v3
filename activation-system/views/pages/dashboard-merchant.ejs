@@ -1,0 +1,27 @@
+<% if (user && user.role === 'merchant') { %>
+  <%- include('../partials/merchant-navbar') %>
+<% } %>
+
+<h2 class="mb-4">Добро пожаловать, <%= user.username %>!</h2>
+
+<h5>Ваши продажи:</h5>
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Дата</th>
+      <th>Товар</th>
+      <th>Цена</th>
+      <th>Код ваучера</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% sales.forEach(sale => { %>
+      <tr>
+        <td><%= new Date(sale.date).toLocaleString() %></td>
+        <td><%= sale.productName %></td>
+        <td>$<%= sale.price %></td>
+        <td><%= sale.voucherValue %></td>
+      </tr>
+    <% }) %>
+  </tbody>
+</table>

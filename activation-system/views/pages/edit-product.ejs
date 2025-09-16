@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Редактирование товара - <%= product.name %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <%- include('../partials/admin-navbar', { user }) %>
+  
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+    <div class="md:flex md:items-center md:justify-between mb-6">
+      <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          Редактирование товара
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          <%= product.name %>
+        </p>
+      </div>
+      <div class="mt-4 flex md:ml-4 md:mt-0">
+        <a href="/admin/products" 
+          class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-colors duration-200">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+          </svg>
+          К списку товаров
+        </a>
+      </div>
+    </div>
+
+    <form method="POST" action="/admin/edit-product/<%= product.id %>" class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg p-6">
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Название</label>
+          <div class="mt-1">
+            <input type="text" name="name" value="<%= product.name %>" required
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Введите название товара" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Цена ($)</label>
+          <div class="mt-1">
+            <input type="number" step="0.01" name="price" value="<%= product.price %>" required
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Введите цену" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Статус</label>
+          <div class="mt-1">
+            <select name="status" 
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+              <option value="on" <%= product.status === 'on' ? 'selected' : '' %>>Активен</option>
+              <option value="off" <%= product.status === 'off' ? 'selected' : '' %>>Выключен</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Комиссия мерчанту (%)</label>
+          <div class="mt-1">
+            <input type="number" step="0.01" name="merchantCommissionPercent" 
+              value="<%= product.merchantCommissionPercent || '' %>"
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Введите процент комиссии" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Комиссия вендору (%)</label>
+          <div class="mt-1">
+            <input type="number" step="0.01" name="vendorCommissionPercent" 
+              value="<%= product.vendorCommissionPercent || '' %>"
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Введите процент комиссии" />
+          </div>
+        </div>
+
+        <div class="pt-4">
+          <button type="submit"
+            class="w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Сохранить изменения
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

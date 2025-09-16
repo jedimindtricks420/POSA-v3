@@ -1,0 +1,39 @@
+<%- include('../partials/merchant-navbar', { user }) %>
+
+<div class="container py-4">
+  <h2 class="mb-4 text-success">✅ Продажа успешно завершена</h2>
+
+  <% if (items.length === 0) { %>
+    <div class="alert alert-warning">Нет проданных товаров.</div>
+  <% } else { %>
+    <table class="table table-bordered table-striped">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Название товара</th>
+          <th>Ваучер</th>
+          <th>Цена ($)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% items.forEach((item, index) => { %>
+          <tr>
+            <td><%= index + 1 %></td>
+            <td><%= item.product.name %></td>
+            <td><code><%= item.voucher %></code></td>
+            <td>$<%= item.price.toFixed(2) %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+
+    <div class="text-end mt-4">
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Распечатать чек</button>
+    </div>
+  <% } %>
+
+  <div class="mt-4">
+    <a href="/merchant/sell" class="btn btn-secondary">← Назад к товарам</a>
+    <a href="/merchant/sales" class="btn btn-outline-success ms-2">📋 История продаж</a>
+  </div>
+</div>

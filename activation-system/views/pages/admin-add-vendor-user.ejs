@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Добавление пользователя вендора</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <%- include('../partials/admin-navbar', { user }) %>
+  
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+    <div class="md:flex md:items-center md:justify-between mb-6">
+      <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          Добавить пользователя вендора
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Создание нового пользователя для выбранного вендора
+        </p>
+      </div>
+    </div>
+
+    <form method="POST" action="/admin/add-vendor-users" class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg p-6">
+      <div class="space-y-6">
+        <div>
+          <label for="vendorId" class="block text-sm font-medium text-slate-700">Выберите вендора</label>
+          <div class="mt-1">
+            <select id="vendorId" name="vendorId" required
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+              <% vendors.forEach(vendor => { %>
+                <option value="<%= vendor.id %>"><%= vendor.name %></option>
+              <% }); %>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="username" class="block text-sm font-medium text-slate-700">Логин пользователя</label>
+          <div class="mt-1">
+            <input type="text" id="username" name="username" required
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Введите логин пользователя" />
+          </div>
+        </div>
+
+        <div>
+          <label for="password" class="block text-sm font-medium text-slate-700">Пароль</label>
+          <div class="mt-1">
+            <input type="password" id="password" name="password" required
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Введите пароль" />
+          </div>
+        </div>
+
+        <div>
+          <label for="note" class="block text-sm font-medium text-slate-700">
+            Заметка
+            <span class="text-sm text-slate-500">(филиал, точка и т.д.)</span>
+          </label>
+          <div class="mt-1">
+            <textarea id="note" name="note" rows="3"
+              class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              placeholder="Укажите дополнительную информацию"></textarea>
+          </div>
+        </div>
+
+        <div class="pt-4">
+          <button type="submit"
+            class="w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+            </svg>
+            Добавить пользователя
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
