@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Клиент <%= client.phoneNumber %> - Панель управления</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+        <!-- Заголовок -->
+        <div class="md:flex md:items-center md:justify-between mb-6">
+            <div class="min-w-0 flex-1">
+                <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                    Клиент: <%= client.phoneNumber %>
+                </h2>
+                <p class="mt-1 text-sm text-slate-500">
+                    Детальная информация о клиенте
+                </p>
+            </div>
+            <div class="mt-4 flex md:ml-4 md:mt-0">
+                <a href="/admin/clients" class="inline-flex items-center rounded-md bg-slate-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-slate-500">
+                    ← Назад к клиентам
+                </a>
+            </div>
+        </div>
+
+        <!-- Информация о клиенте -->
+        <div class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg overflow-hidden mb-6">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 mb-4">
+                    Основная информация
+                </h3>
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">ID клиента</dt>
+                        <dd class="mt-1 text-sm text-slate-900"><%= client.id %></dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Номер телефона</dt>
+                        <dd class="mt-1 text-sm text-slate-900"><%= client.phoneNumber %></dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Имя</dt>
+                        <dd class="mt-1 text-sm text-slate-900"><%= client.name || 'Не указано' %></dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Дата регистрации</dt>
+                        <dd class="mt-1 text-sm text-slate-900">
+                            <%= new Date(client.createdAt).toLocaleString('ru-RU') %>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Последнее обновление</dt>
+                        <dd class="mt-1 text-sm text-slate-900">
+                            <%= new Date(client.updatedAt).toLocaleString('ru-RU') %>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Всего активаций</dt>
+                        <dd class="mt-1 text-sm text-slate-900">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                <%= client.activations.length %> активаций
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+        </div>
+
+        <!-- История активаций -->
+        <div class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg overflow-hidden mb-6">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 mb-4">
+                    История активаций ваучеров (<%= client.activations.length %>)
+                </h3>
+                <% if (client.activations.length === 0) { %>
+                <p class="text-sm text-slate-500">Активаций не найдено</p>
+                <% } else { %>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    ID активации
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    Код ваучера
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    Продукт
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    Цена
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    Дата активации
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            <% client.activations.forEach(activation => { %>
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                    <%= activation.id %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-mono">
+                                    <%= activation.voucher.value %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                    <%= activation.voucher.productName %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                    <% if (activation.voucher.product) { %>
+                                        <%= activation.voucher.product.price %> сум
+                                    <% } else { %>
+                                        -
+                                    <% } %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                    <%= new Date(activation.activatedAt).toLocaleString('ru-RU') %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Онлайн ваучеры -->
+        <% if (client.onlineVouchers.length > 0) { %>
+        <div class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg overflow-hidden">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg font-medium leading-6 text-slate-900 mb-4">
+                    Онлайн ваучеры (<%= client.onlineVouchers.length %>)
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    ID
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    Код ваучера
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    Продукт
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                    Дата создания
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200">
+                            <% client.onlineVouchers.forEach(onlineVoucher => { %>
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                    <%= onlineVoucher.id %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-mono">
+                                    <%= onlineVoucher.voucher.value %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                    <%= onlineVoucher.voucher.productName %>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                    <%= new Date(onlineVoucher.assignedAt).toLocaleString('ru-RU') %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <% } %>
+
+        <!-- Действия -->
+        <div class="mt-6 flex gap-4">
+            <form method="POST" action="/admin/clients/<%= client.id %>/delete" class="inline" onsubmit="return confirm('Вы уверены, что хотите удалить этого клиента? Это действие нельзя отменить.')">
+                <button type="submit" class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500">
+                    Удалить клиента
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

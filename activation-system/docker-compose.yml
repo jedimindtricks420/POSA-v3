@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  backend:
+    build: .
+    container_name: activation-system
+    restart: always
+    ports:
+      - "4000:4000"
+      - "5555:5555"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm start
+
+  db:
+    image: postgres:16
+    container_name: activation-db
+    restart: always
+    environment:
+      POSTGRES_USER: tguser
+      POSTGRES_PASSWORD: tgpass123
+      POSTGRES_DB: activation_system
+    ports:
+      - "7440:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

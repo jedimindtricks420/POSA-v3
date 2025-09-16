@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Список продаж</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <%- include('../partials/admin-navbar') %>
+  
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+    <div class="md:flex md:items-center md:justify-between mb-6">
+      <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          Список продаж
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          История всех продаж в системе
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-8 flow-root">
+      <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+          <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+            <table class="min-w-full divide-y divide-slate-300">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">ID</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Дата</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Продукт</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Цена</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Ваучер</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Продавец</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Статус</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Чек</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 bg-white">
+                <% sales.forEach(sale => { %>
+                  <tr class="hover:bg-slate-50">
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
+                      <%= sale.id %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                      <%= new Date(sale.date).toLocaleString() %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                      <%= sale.productName %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                      <%= sale.price.toLocaleString('ru-RU') %> сум
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm font-mono text-slate-500">
+                      <%= sale.voucherValue %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                      <%= sale.merchantUsername %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                      <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                        <%= sale.status %>
+                      </span>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                      <% if (sale.receiptPath) { %>
+                        <a href="/receipts/<%= sale.receiptPath.split('/').pop() %>" target="_blank"
+                          class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 hover:bg-blue-100">
+                          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                          </svg>
+                          Открыть
+                        </a>
+                      <% } else { %>
+                        <span class="text-slate-400 text-sm">нет</span>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

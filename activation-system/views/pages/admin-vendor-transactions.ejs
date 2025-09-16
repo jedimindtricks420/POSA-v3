@@ -1,0 +1,61 @@
+<%- include('../partials/admin-navbar', { user }) %>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <h2 class="text-2xl font-semibold text-gray-900">История транзакций</h2>
+      <p class="mt-2 text-sm text-gray-700">Вендор: <span class="font-medium"><%= vendor.name %></span></p>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+      <a href="/admin/vendors" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+        ← Назад к списку
+      </a>
+    </div>
+  </div>
+
+  <div class="mt-8 flex flex-col">
+    <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
+        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+          <table class="min-w-full divide-y divide-gray-300">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Дата</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Сумма</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Комментарий</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Баланс до</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Баланс после</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 bg-white">
+              <% transactions.forEach(tx => { %>
+                <tr>
+                  <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <%= new Date(tx.createdAt).toLocaleString() %>
+                  </td>
+                  <td class="whitespace-nowrap px-3 py-4 text-sm">
+                    <span class="font-medium <%= tx.amount >= 0 ? 'text-green-600' : 'text-red-600' %>">
+                      <%= tx.amount >= 0 ? '+' : '' %><%= tx.amount.toLocaleString('ru-RU') %>
+                    </span>
+                    <span class="text-gray-500">сум</span>
+                  </td>
+                  <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                    <%= tx.comment || '—' %>
+                  </td>
+                  <td class="whitespace-nowrap px-3 py-4 text-sm">
+                    <span class="font-medium text-gray-900"><%= tx.balanceBefore.toLocaleString('ru-RU') %></span>
+                    <span class="text-gray-500">сум</span>
+                  </td>
+                  <td class="whitespace-nowrap px-3 py-4 text-sm">
+                    <span class="font-medium text-gray-900"><%= tx.balanceAfter.toLocaleString('ru-RU') %></span>
+                    <span class="text-gray-500">сум</span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

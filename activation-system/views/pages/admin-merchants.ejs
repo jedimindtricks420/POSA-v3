@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мерчанты | Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen font-[Inter]">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+        <div class="md:flex md:items-center md:justify-between mb-6">
+            <div class="min-w-0 flex-1">
+                <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                    Мерчанты и задолженности
+                </h2>
+                <div class="mt-1 flex flex-col sm:mt-0 sm:flex-row sm:flex-wrap sm:space-x-6">
+                    <div class="mt-2 flex items-center text-sm text-slate-500">
+                        Управление платежами и история транзакций мерчантов
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <div class="overflow-x-auto sm:mx-0">
+                    <div class="inline-block min-w-full align-middle">
+                        <div class="overflow-hidden bg-white shadow-sm ring-1 ring-gray-300 sm:rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-300">
+                                <thead>
+                                    <tr class="bg-gray-50">
+                                        <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">ID</th>
+                                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Компания</th>
+                                        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Текущий долг</th>
+                                        <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                            <span class="sr-only">Действия</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 bg-white">
+                                    <% merchants.forEach(m => { %>
+                                        <tr class="hover:bg-gray-50/50 transition duration-150 ease-in-out">
+                                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6"><%= m.id %></td>
+                                            <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-slate-900"><%= m.legalInfo %></td>
+                                            <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                                <div class="flex items-center">
+                                                    <span class="font-medium text-slate-900"><%= m.actualDebt.toLocaleString('ru-RU') %></span>
+                                                    <span class="ml-1 text-slate-500">сум</span>
+                                                </div>
+                                            </td>
+                                            <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                                <div class="flex items-center justify-end gap-4">
+                                                    <a href="/admin/merchant/<%= m.id %>/pay" 
+                                                       class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-150">
+                                                        Добавить платёж
+                                                    </a>
+                                                    <a href="/admin/merchant/<%= m.id %>/transactions" 
+                                                       class="text-sm font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
+                                                        История продаж
+                                                    </a>
+                                                    <a href="/admin/merchant/<%= m.id %>/payments" 
+                                                       class="text-sm font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
+                                                        История платежей
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

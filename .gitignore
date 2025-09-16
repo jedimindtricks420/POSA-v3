@@ -1,0 +1,15 @@
+# Общие
+node_modules/
+.env
+*.log
+*.DS_Store
+*.session
+*.pdf
+__pycache__/
+
+# Внутренние папки
+activation-system/node_modules/
+activation-system/receipts/
+activation-system/.env
+telegram-key-bot/*.session
+telegram-key-bot/__pycache__/

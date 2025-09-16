@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Управление ваучерами</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <%- include('../partials/admin-navbar') %>
+  
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+    <div class="md:flex md:items-center md:justify-between mb-6">
+      <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+          Управление ваучерами
+        </h2>
+        <p class="mt-1 text-sm text-slate-500">
+          Список всех ваучеров в системе
+        </p>
+      </div>
+      <div class="mt-4 flex md:ml-4 md:mt-0 space-x-3">
+        <a href="/admin/vouchers/add" 
+          class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"/>
+          </svg>
+          Массовое добавление
+        </a>
+        <a href="/admin/add-voucher" 
+          class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          Добавить ваучер
+        </a>
+      </div>
+    </div>
+
+    <div class="mt-8 flow-root">
+      <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+          <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+            <table class="min-w-full divide-y divide-slate-300">
+              <thead class="bg-slate-50">
+                <tr>
+                  <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">ID</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Код</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Товар</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Тип</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Статус</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 bg-white">
+                <% if (vouchers.length === 0) { %>
+                  <tr>
+                    <td colspan="5" class="px-6 py-8 text-center">
+                      <div class="text-sm text-slate-500">Нет ваучеров</div>
+                      <div class="mt-2">
+                        <a href="/admin/vouchers/add" class="text-sm font-medium text-indigo-600 hover:text-indigo-500">
+                          Добавить первый ваучер
+                          <span aria-hidden="true"> &rarr;</span>
+                        </a>
+                      </div>
+                    </td>
+                  </tr>
+                <% } else { %>
+                  <% vouchers.forEach(voucher => { %>
+                    <tr class="hover:bg-slate-50">
+                      <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
+                        <%= voucher.id %>
+                      </td>
+                      <td class="whitespace-nowrap px-3 py-4 text-sm font-medium">
+                        <code class="px-2 py-1 bg-slate-100 rounded-md font-mono text-slate-900">
+                          <%= voucher.value %>
+                        </code>
+                      </td>
+                      <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                        <%= voucher.productName %>
+                      </td>
+                      <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                        <%= voucher.type %>
+                      </td>
+                      <td class="whitespace-nowrap px-3 py-4 text-sm">
+                        <% if (voucher.status === 'active') { %>
+                          <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                            <%= voucher.status %>
+                          </span>
+                        <% } else if (voucher.status === 'used') { %>
+                          <span class="inline-flex items-center rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/20">
+                            <%= voucher.status %>
+                          </span>
+                        <% } else { %>
+                          <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+                            <%= voucher.status %>
+                          </span>
+                        <% } %>
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+
