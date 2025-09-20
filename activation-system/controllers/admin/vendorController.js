@@ -1,6 +1,12 @@
 import prisma from '../../prisma/client.js';
 import bcrypt from 'bcrypt';
 import { Role } from '@prisma/client';
+import {
+  buildDefaultReceiptSchema,
+  parseReceiptSchema,
+  renderReceiptPreview,
+  buildSampleReceiptData,
+} from '../../utils/receiptRenderer.js';
 
 
 // Показать список вендоров
@@ -30,6 +36,7 @@ export const showVendors = async (req, res) => {
   export const handleAddVendor = async (req, res) => {
     const { name, category, productType, description, defaultCommissionPercent } = req.body;
     try {
+      const schema = buildDefaultReceiptSchema(name);
       await prisma.vendor.create({
         data: {
           name,
@@ -37,7 +44,7 @@ export const showVendors = async (req, res) => {
           productType,
           description,
           defaultCommissionPercent: Number(defaultCommissionPercent),
-          receiptTemplate: '{{product}} — {{voucher}} — {{price}} сум\nДата: {{date}}'
+          receiptTemplate: JSON.stringify(schema)
         },
       });
       res.redirect('/admin/vendors');
@@ -50,29 +57,65 @@ export const showVendors = async (req, res) => {
   };
   
   // Показать форму редактирования
-  export const showEditVendorForm = async (req, res) => {
-    const vendor = await prisma.vendor.findUnique({ where: { id: Number(req.params.id) } });
-    res.render('pages/admin-edit-vendor', { vendor, user: req.session.user });
-  };
+export const showEditVendorForm = async (req, res) => {
+  const vendor = await prisma.vendor.findUnique({
+    where: { id: Number(req.params.id) },
+    include: {
+      products: {
+        orderBy: { id: 'asc' },
+        take: 1,
+      },
+    },
+  });
+
+  if (!vendor) {
+    return res.status(404).send('Вендор не найден');
+  }
+
+  const schema = parseReceiptSchema(vendor.receiptTemplate, vendor.name);
+
+  res.render('pages/admin-edit-vendor', {
+    vendor,
+    user: req.session.user,
+    templateSchema: JSON.stringify(schema),
+    sampleProduct: vendor.products?.[0] || null,
+  });
+};
   
   // Обработка редактирования
-  export const handleEditVendor = async (req, res) => {
-    const { name, category, productType, description, receiptTemplate, defaultCommissionPercent } = req.body;
-  
-    await prisma.vendor.update({
-      where: { id: Number(req.params.id) },
-      data: {
-        name,
-        category,
-        productType,
-        description,
-        receiptTemplate,
-        defaultCommissionPercent: Number(defaultCommissionPercent)
-      }
-    });
-  
-    res.redirect('/admin/vendors');
-  };
+export const handleEditVendor = async (req, res) => {
+  const {
+    name,
+    category,
+    productType,
+    description,
+    templateSchema,
+    defaultCommissionPercent,
+  } = req.body;
+
+  const vendorId = Number(req.params.id);
+
+  let schemaToSave;
+  try {
+    schemaToSave = parseReceiptSchema(templateSchema, name);
+  } catch (error) {
+    schemaToSave = buildDefaultReceiptSchema(name);
+  }
+
+  await prisma.vendor.update({
+    where: { id: vendorId },
+    data: {
+      name,
+      category,
+      productType,
+      description,
+      receiptTemplate: JSON.stringify(schemaToSave),
+      defaultCommissionPercent: Number(defaultCommissionPercent),
+    },
+  });
+
+  res.redirect('/admin/vendors');
+};
   
 
   // GET: страница с формой
@@ -169,3 +212,40 @@ export const showVendorTransactions = async (req, res) => {
   });
 };
 
+export const previewReceiptTemplate = async (req, res) => {
+  const vendorId = Number(req.params.id);
+  const vendor = await prisma.vendor.findUnique({
+    where: { id: vendorId },
+    include: {
+      products: {
+        orderBy: { id: 'asc' },
+        take: 1,
+      },
+    },
+  });
+
+  if (!vendor) {
+    return res.status(404).send('Вендор не найден');
+  }
+
+  const incomingSchema = req.body?.schema;
+  const schema = parseReceiptSchema(incomingSchema || vendor.receiptTemplate, vendor.name);
+
+  const sampleProduct = vendor.products?.[0] || {
+    name: 'Цифровой продукт',
+    price: 100000,
+  };
+
+  const samplePayload = buildSampleReceiptData({
+    vendorName: vendor.name,
+    product: sampleProduct,
+  });
+
+  try {
+    const html = await renderReceiptPreview(schema, samplePayload);
+    res.send(html);
+  } catch (error) {
+    console.error('Receipt preview error:', error);
+    res.status(500).send('<h1>Ошибка рендера чека</h1><p>Проверьте структуру шаблона.</p>');
+  }
+};
