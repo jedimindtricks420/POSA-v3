@@ -59,6 +59,7 @@ router.get('/add-vendor', ensureAdmin, vendorController.showAddVendorForm);
 router.post('/add-vendor', ensureAdmin, vendorController.handleAddVendor);
 router.get('/vendors/edit/:id', ensureAdmin, vendorController.showEditVendorForm);
 router.post('/vendors/edit/:id', ensureAdmin, vendorController.handleEditVendor);
+router.post('/vendors/:id/receipt/preview', ensureAdmin, vendorController.previewReceiptTemplate);
 
 // Оплаты и страница погашения долга
 router.get('/merchants', ensureAdmin, merchantController.showMerchantsWithDebt);
