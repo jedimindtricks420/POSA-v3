@@ -8,10 +8,14 @@
 - Live preview on `/admin/vendors/edit/:id`
 - QR content spec (JWT claims: voucherId, vendorId, scope, exp)
 
-## Milestone 2 — Vendor portal (1–2 days)
-- Vendor theme + navbar
-- Pages: Dashboard, Activate, Vouchers, Transactions, Settings
-- Activation QR entry and ACL checks
+## Milestone 2 — Vendor portal (1–2 days) ✅ выполнено (2025-08-15)
+- Tailwind-тема, общий navbar и мобильное меню
+- Реализованы страницы: Dashboard, Activate, Vouchers, Transactions, Settings
+- Активация ваучеров (код/Telegram), ACL `vendor_user`, аналитика и очереди
+
+## Milestone 2.1 — Merchant UI refresh (done)
+- Унифицированный Tailwind-UI для `/merchant/dashboard`, `/merchant/sell`, `/merchant/checkout`, `/merchant/sales`
+- Фиксированный navbar, адаптивные таблицы, пустые состояния
 
 ## Milestone 3 — Client QR & Wallet (2–3 days)
 - Web QR scanner (zxing/jsQR in a dedicated page)
