@@ -18,3 +18,14 @@ export function ensureMerchant(req, res, next) {
   }
   return res.status(403).send('Доступ запрещён: только для продавцов');
 }
+
+export function ensureVendor(req, res, next) {
+  const user = req.session?.user;
+  if (!user) {
+    return res.redirect('/auth/login');
+  }
+  if (user.role === 'vendor_user' && user.vendorId) {
+    return next();
+  }
+  return res.status(403).send('Доступ запрещён: только для вендоров');
+}
