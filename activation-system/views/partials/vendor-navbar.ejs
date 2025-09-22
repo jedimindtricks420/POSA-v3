@@ -1,12 +1,85 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="/vendor/dashboard">Vendor Panel</a>
-    <div class="collapse navbar-collapse">
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="/auth/logout">Выход</a>
-        </li>
-      </ul>
+<nav class="bg-white w-full fixed top-0 left-0 right-0 z-50 border-b border-slate-200 shadow-sm">
+  <div class="w-full px-4">
+    <div class="flex items-center justify-between h-16">
+      <a href="/vendor/dashboard" class="flex items-center gap-3 text-slate-800 text-xl font-semibold tracking-tight hover:text-indigo-600 transition-colors duration-200">
+        <svg class="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 7l9-4 9 4-9 4-9-4z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 10l-9 4-9-4" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 13l-9 4-9-4" />
+        </svg>
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Vendor Panel</span>
+      </a>
+
+      <% const current = typeof active !== 'undefined' ? active : ''; %>
+      <div class="hidden md:flex items-center space-x-1">
+        <a href="/vendor/dashboard" class="inline-flex items-center px-4 py-2 text-sm font-medium <%= current === 'dashboard' ? 'text-indigo-600 bg-slate-100' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50' %> rounded-md transition-colors duration-200">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          </svg>
+          Дашборд
+        </a>
+        <a href="/vendor/activate" class="inline-flex items-center px-4 py-2 text-sm font-medium <%= current === 'activate' ? 'text-indigo-600 bg-slate-100' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50' %> rounded-md transition-colors duration-200">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11V3m0 0L8 7m4-4l4 4M4 15l2 6h12l2-6M5 15h14" />
+          </svg>
+          Активация
+        </a>
+        <a href="/vendor/vouchers" class="inline-flex items-center px-4 py-2 text-sm font-medium <%= current === 'vouchers' ? 'text-indigo-600 bg-slate-100' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50' %> rounded-md transition-colors duration-200">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18" />
+          </svg>
+          Ваучеры
+        </a>
+        <a href="/vendor/transactions" class="inline-flex items-center px-4 py-2 text-sm font-medium <%= current === 'transactions' ? 'text-indigo-600 bg-slate-100' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50' %> rounded-md transition-colors duration-200">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm6 0v-6a2 2 0 00-2-2h-2a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm6 0v-6a2 2 0 00-2-2h-2a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2z" />
+          </svg>
+          Транзакции
+        </a>
+        <a href="/vendor/settings" class="inline-flex items-center px-4 py-2 text-sm font-medium <%= current === 'settings' ? 'text-indigo-600 bg-slate-100' : 'text-slate-600 hover:text-indigo-600 hover:bg-slate-50' %> rounded-md transition-colors duration-200">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16h6" />
+          </svg>
+          Настройки
+        </a>
+      </div>
+
+      <div class="hidden md:flex items-center gap-4">
+        <% if (user) { %>
+          <div class="flex items-center gap-2 text-sm text-slate-600">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 font-semibold">
+              <%= user.username.substring(0, 2).toUpperCase() %>
+            </div>
+            <div class="text-left">
+              <p class="text-sm font-semibold text-slate-700"><%= user.username %></p>
+              <p class="text-xs text-slate-400 uppercase tracking-wide">Vendor</p>
+            </div>
+          </div>
+        <% } %>
+        <a href="/auth/logout" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-md shadow-sm transition-colors duration-200">
+          <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Выйти
+        </a>
+      </div>
+
+      <button type="button" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:text-indigo-600 hover:bg-slate-100 transition" aria-label="Toggle menu" onclick="document.getElementById('vendor-mobile-nav').classList.toggle('hidden');">
+        <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div id="vendor-mobile-nav" class="md:hidden hidden">
+    <div class="px-4 pb-4 space-y-1">
+      <a href="/vendor/dashboard" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-indigo-600 hover:bg-slate-50">Дашборд</a>
+      <a href="/vendor/activate" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-indigo-600 hover:bg-slate-50">Активация</a>
+      <a href="/vendor/vouchers" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-indigo-600 hover:bg-slate-50">Ваучеры</a>
+      <a href="/vendor/transactions" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-indigo-600 hover:bg-slate-50">Транзакции</a>
+      <a href="/vendor/settings" class="block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:text-indigo-600 hover:bg-slate-50">Настройки</a>
+      <a href="/auth/logout" class="block px-3 py-2 rounded-md text-base font-medium text-white bg-red-500 hover:bg-red-600 transition">Выйти</a>
     </div>
   </div>
 </nav>

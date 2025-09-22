@@ -1,113 +1,161 @@
 import prisma from '../../prisma/client.js';
 
-export const showVendorDashboard = (req, res) => {
-  res.render('pages/dashboard-vendor', { user: req.session.user, error: null, success: null });
-};
+const TREND_DAYS = 7;
 
-export const activateVoucher = async (req, res) => {
-  const { code } = req.body;
+function startOfDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function formatChartLabel(date) {
+  return date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
+}
+
+export const showDashboard = async (req, res) => {
+  const user = req.session.user;
+  const vendorId = user?.vendorId;
+
+  if (!vendorId) {
+    return res.status(403).send('Не удалось определить вендора для сессии');
+  }
+
+  const fromDate = startOfDay(new Date(Date.now() - (TREND_DAYS - 1) * 24 * 60 * 60 * 1000));
 
   try {
-    // Ищем ваучер по его значению (коду)
-    const voucher = await prisma.voucher.findUnique({ 
-      where: { value: code }, 
-      include: { product: true } 
-    });
+    const [vendorRaw, activationsRaw, pendingCount, soldCount, recentActivations, pendingQueue] = await Promise.all([
+      prisma.vendor.findUnique({
+        where: { id: vendorId },
+        select: {
+          id: true,
+          name: true,
+          balance: true,
+          defaultCommissionPercent: true,
+        },
+      }),
+      prisma.voucherActivation.findMany({
+        where: {
+          vendorId,
+          activatedAt: {
+            gte: fromDate,
+          },
+        },
+        include: {
+          voucher: {
+            select: {
+              value: true,
+              productName: true,
+              status: true,
+            },
+          },
+        },
+      }),
+      prisma.voucher.count({
+        where: {
+          status: 'pending',
+          product: {
+            vendorId,
+          },
+        },
+      }),
+      prisma.voucher.count({
+        where: {
+          status: 'sold',
+          product: {
+            vendorId,
+          },
+        },
+      }),
+      prisma.voucherActivation.findMany({
+        where: { vendorId },
+        include: {
+          voucher: {
+            select: {
+              value: true,
+              productName: true,
+            },
+          },
+        },
+        orderBy: { activatedAt: 'desc' },
+        take: 8,
+      }),
+      prisma.voucher.findMany({
+        where: {
+          status: {
+            in: ['sold', 'pending'],
+          },
+          product: {
+            vendorId,
+          },
+        },
+        include: {
+          product: {
+            select: {
+              name: true,
+            },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 8,
+      }),
+    ]);
 
-    if (!voucher || voucher.status !== 'sold') {
-      return res.render('pages/dashboard-vendor', { 
-        error: 'Неверный или неактивный ваучер', 
-        success: null, 
-        user: req.session.user 
-      });
+    const vendor = vendorRaw || {
+      id: vendorId,
+      name: '—',
+      balance: 0,
+      defaultCommissionPercent: 0,
+    };
+
+    const trendMap = new Map();
+    for (let i = 0; i < TREND_DAYS; i += 1) {
+      const date = new Date(fromDate);
+      date.setDate(fromDate.getDate() + i);
+      trendMap.set(date.toISOString().slice(0, 10), 0);
     }
 
-    // Ищем последнюю продажу этого ваучера, чтобы получить merchantUsername
-    const sale = await prisma.sale.findFirst({
-      where: { voucherValue: voucher.value },
-      orderBy: { date: 'desc' }
-    });
-
-    if (!sale) {
-      return res.render('pages/dashboard-vendor', {
-        error: 'Продажа для этого ваучера не найдена',
-        success: null,
-        user: req.session.user
-      });
-    }
-
-    // Находим мерчанта по merchantUsername
-    const merchant = await prisma.merchant.findUnique({
-      where: { username: sale.merchantUsername }
-    });
-
-    if (!merchant) {
-      return res.render('pages/dashboard-vendor', {
-        error: 'Мерчант не найден',
-        success: null,
-        user: req.session.user
-      });
-    }
-
-    // Активируем ваучер
-    await prisma.voucher.update({
-      where: { id: voucher.id },
-      data: { status: 'activated' }
-    });
-
-    // Рассчитываем adminDebt
-    const adminDebt = voucher.product.price * (voucher.product.vendorCommissionPercent / 100);
-
-    // Создаём транзакцию с корректным merchantId
-    await prisma.voucherTransaction.create
-    ({
-      data: {
-        voucherValue: voucher.value,
-        productId: voucher.productId,
-        productName: voucher.productName,
-        price: voucher.product.price,
-        adminDebt,
-        merchantDebt: 0,
-        vendorId: voucher.product.vendorId,
-        merchantId: merchant.id, // 👈 Теперь корректно!
-        status: 'COMPLETED',
+    activationsRaw.forEach((record) => {
+      const key = startOfDay(record.activatedAt).toISOString().slice(0, 10);
+      if (trendMap.has(key)) {
+        trendMap.set(key, trendMap.get(key) + 1);
       }
     });
-    
-    const vendorId = req.session.user.vendorId;
-    const userId = req.session.user.id;
 
-    if (!vendorId) {
-      return res.render('pages/dashboard-vendor', {
-        error: 'Ошибка: не удалось определить вендора пользователя',
-        success: null,
-        user: req.session.user
-      });
-    }
+    const activationTrend = Array.from(trendMap.entries()).map(([key, value]) => ({
+      date: formatChartLabel(new Date(key)),
+      count: value,
+    }));
 
-    await prisma.voucherActivation.create({
-    data: {
-      voucherId: voucher.id,
-      activatedBy: req.session.user.id,
-      vendorId: req.session.user.vendorId,
-    }
+    const metrics = {
+      balance: Number(vendor?.balance ?? 0),
+      pendingCount,
+      soldCount,
+      activationsLast7Days: activationsRaw.length,
+    };
+
+    res.render('pages/vendor/dashboard', {
+      user,
+      vendor,
+      metrics,
+      activationTrend,
+      recentActivations,
+      pendingQueue,
     });
-
-
-    res.render('pages/dashboard-vendor', { 
-      success: 'Ваучер успешно активирован', 
-      error: null, 
-      user: req.session.user 
-    });
-
   } catch (error) {
-    console.error(error);
-    res.render('pages/dashboard-vendor', { 
-      error: 'Ошибка при активации', 
-      success: null, 
-      user: req.session.user 
+    console.error('Vendor dashboard error:', error);
+    res.render('pages/vendor/dashboard', {
+      user,
+      vendor: null,
+      metrics: {
+        balance: 0,
+        pendingCount: 0,
+        soldCount: 0,
+        activationsLast7Days: 0,
+      },
+      activationTrend: [],
+      recentActivations: [],
+      pendingQueue: [],
+      error: 'Не удалось загрузить данные дашборда',
     });
   }
 };
-
-

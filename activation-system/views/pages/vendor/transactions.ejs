@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Транзакции и выплаты</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+  <%- include('../../partials/vendor-navbar', { user, active: 'transactions' }) %>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-8">
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 shadow-sm">
+        <div class="flex items-start gap-2">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+          <span><%= error %></span>
+        </div>
+      </div>
+    <% } %>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 sm:p-8">
+      <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Финансовые показатели</h1>
+          <p class="text-sm text-slate-500">Здесь собраны все движения: начисления по продажам и выплаты платформы.</p>
+        </div>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Ожидает выплаты</p>
+            <p class="mt-1 text-xl font-semibold text-slate-900"><%= summary.pendingAmount.toLocaleString('ru-RU') %> сум</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Начислено всего</p>
+            <p class="mt-1 text-xl font-semibold text-slate-900"><%= summary.totalAmount.toLocaleString('ru-RU') %> сум</p>
+          </div>
+          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Последняя выплата</p>
+            <p class="mt-1 text-sm font-medium text-slate-900"><%= summary.lastPayment ? summary.lastPayment.toLocaleString('ru-RU') : '—' %></p>
+          </div>
+        </div>
+      </header>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">Начисления по продажам</h2>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">Всего: <%= transactions.length %></span>
+      </div>
+      <% if (!transactions.length) { %>
+        <p class="px-6 py-8 text-sm text-slate-500">Начисления ещё не проводились.</p>
+      <% } else { %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-left uppercase tracking-wide text-xs text-slate-400">
+              <tr>
+                <th class="px-6 py-3">Дата</th>
+                <th class="px-6 py-3">Ваучер</th>
+                <th class="px-6 py-3">Мерчант</th>
+                <th class="px-6 py-3 text-right">Admin debt</th>
+                <th class="px-6 py-3">Статус</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <% transactions.forEach((row) => { %>
+                <tr class="hover:bg-slate-50">
+                  <td class="px-6 py-3 text-slate-600"><%= new Date(row.createdAt).toLocaleString('ru-RU') %></td>
+                  <td class="px-6 py-3">
+                    <p class="font-medium text-slate-900"><%= row.productName %></p>
+                    <code class="mt-1 inline-block rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= row.voucherValue %></code>
+                  </td>
+                  <td class="px-6 py-3 text-slate-600"><%= row.merchant?.legalInfo || row.merchant?.username || '—' %></td>
+                  <td class="px-6 py-3 text-right font-semibold text-slate-900"><%= row.adminDebt.toLocaleString('ru-RU') %> сум</td>
+                  <td class="px-6 py-3">
+                    <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium <%= row.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : row.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600' %>">
+                      <span class="h-1.5 w-1.5 rounded-full <%= row.status === 'COMPLETED' ? 'bg-green-500' : row.status === 'PENDING' ? 'bg-amber-500' : 'bg-slate-400' %>"></span>
+                      <%= row.status %>
+                    </span>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+        <h2 class="text-lg font-semibold text-slate-900">Выплаты платформы</h2>
+        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">Всего: <%= payments.length %></span>
+      </div>
+      <% if (!payments.length) { %>
+        <p class="px-6 py-8 text-sm text-slate-500">Платформа ещё не производила выплат.</p>
+      <% } else { %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-left uppercase tracking-wide text-xs text-slate-400">
+              <tr>
+                <th class="px-6 py-3">Дата</th>
+                <th class="px-6 py-3 text-right">Сумма</th>
+                <th class="px-6 py-3">Комментарий</th>
+                <th class="px-6 py-3 text-right">Баланс до</th>
+                <th class="px-6 py-3 text-right">Баланс после</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <% payments.forEach((payment) => { %>
+                <tr class="hover:bg-slate-50">
+                  <td class="px-6 py-3 text-slate-600"><%= new Date(payment.createdAt).toLocaleString('ru-RU') %></td>
+                  <td class="px-6 py-3 text-right font-semibold text-slate-900"><%= payment.amount.toLocaleString('ru-RU') %> сум</td>
+                  <td class="px-6 py-3 text-slate-600"><%= payment.comment || '—' %></td>
+                  <td class="px-6 py-3 text-right text-slate-500"><%= payment.balanceBefore.toLocaleString('ru-RU') %> сум</td>
+                  <td class="px-6 py-3 text-right text-slate-500"><%= payment.balanceAfter.toLocaleString('ru-RU') %> сум</td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </main>
+</body>
+</html>

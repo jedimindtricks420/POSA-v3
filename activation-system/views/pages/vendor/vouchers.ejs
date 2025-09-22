@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ваучеры вендора</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+  <%- include('../../partials/vendor-navbar', { user, active: 'vouchers' }) %>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-8">
+    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 sm:p-8 space-y-6">
+      <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">Список ваучеров</h1>
+          <p class="text-sm text-slate-500">Отслеживайте состояние ваучеров и ищите их по статусу, продукту или значению.</p>
+        </div>
+        <form method="GET" action="/vendor/vouchers" class="grid grid-cols-1 gap-3 sm:grid-cols-4">
+          <input type="text" name="search" value="<%= filters.search || '' %>" placeholder="Поиск по коду"
+                 class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+          <select name="status" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+            <option value="">Все статусы</option>
+            <% statusOptions.forEach((option) => { %>
+              <option value="<%= option %>" <%= filters.status === option ? 'selected' : '' %>><%= option %></option>
+            <% }) %>
+          </select>
+          <select name="productId" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
+            <option value="">Все продукты</option>
+            <% products.forEach((product) => { %>
+              <option value="<%= product.id %>" <%= Number(filters.productId) === product.id ? 'selected' : '' %>><%= product.name %></option>
+            <% }) %>
+          </select>
+          <div class="flex gap-2">
+            <button type="submit" class="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 21a1 1 0 01-1-1v-1H5a2 2 0 01-2-2V7a2 2 0 012-2h4V4a1 1 0 012 0v1h4V4a1 1 0 012 0v1h4a2 2 0 012 2v10a2 2 0 01-2 2h-4v1a1 1 0 01-2 0v-1h-4v1a1 1 0 01-1 1z" />
+              </svg>
+              Фильтровать
+            </button>
+            <a href="/vendor/vouchers" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">Сброс</a>
+          </div>
+        </form>
+      </header>
+
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 shadow-sm">
+          <div class="flex items-start gap-2">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span><%= error %></span>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (!vouchers || vouchers.length === 0) { %>
+        <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center text-sm text-slate-500">
+          Ваучеры не найдены. Попробуйте изменить фильтры или дождитесь новых продаж.
+        </div>
+      <% } else { %>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-sm">
+            <thead class="bg-slate-50 text-left uppercase tracking-wide text-xs text-slate-400">
+              <tr>
+                <th class="px-6 py-3">Код</th>
+                <th class="px-6 py-3">Товар</th>
+                <th class="px-6 py-3">Статус</th>
+                <th class="px-6 py-3">Последняя активация</th>
+                <th class="px-6 py-3">Клиент</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              <% vouchers.forEach((voucher) => { %>
+                <% const lastActivation = voucher.voucherActivations?.[0]; %>
+                <tr class="hover:bg-slate-50">
+                  <td class="px-6 py-4">
+                    <code class="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= voucher.value %></code>
+                  </td>
+                  <td class="px-6 py-4">
+                    <p class="font-medium text-slate-900"><%= voucher.product?.name || voucher.productName %></p>
+                    <p class="text-xs text-slate-400 mt-1">ID: <span class="font-mono">#<%= voucher.productId %></span></p>
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium <%= voucher.status === 'activated' ? 'bg-green-100 text-green-700' : voucher.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600' %>">
+                      <span class="h-1.5 w-1.5 rounded-full <%= voucher.status === 'activated' ? 'bg-green-500' : voucher.status === 'pending' ? 'bg-amber-500' : 'bg-slate-400' %>"></span>
+                      <%= voucher.status %>
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 text-slate-600">
+                    <% if (lastActivation) { %>
+                      <div>
+                        <p><%= new Date(lastActivation.activatedAt).toLocaleString('ru-RU') %></p>
+                        <p class="text-xs text-slate-400 mt-1">Оператор: <%= lastActivation.user?.username || '—' %></p>
+                      </div>
+                    <% } else { %>
+                      <span class="text-xs text-slate-400">Ещё не активирован</span>
+                    <% } %>
+                  </td>
+                  <td class="px-6 py-4 text-slate-600">
+                    <% const client = voucher.onlineVouchers?.[0]?.client; %>
+                    <% if (client) { %>
+                      <p><%= client.phoneNumber %></p>
+                      <% if (client.name) { %>
+                        <p class="text-xs text-slate-400"><%= client.name %></p>
+                      <% } %>
+                    <% } else { %>
+                      <span class="text-xs text-slate-400">—</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex items-center justify-between border-t border-slate-200 pt-4 text-sm text-slate-500">
+          <p>Всего найдено: <%= pagination.total %></p>
+          <div class="flex gap-2">
+            <% if (pagination.hasPrev) { %>
+              <a href="<%= pagination.prevUrl %>" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-600">Назад</a>
+            <% } else { %>
+              <span class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-400 cursor-not-allowed">Назад</span>
+            <% } %>
+            <% if (pagination.hasNext) { %>
+              <a href="<%= pagination.nextUrl %>" class="inline-flex items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-600 hover:border-indigo-300 hover:text-indigo-600">Вперёд</a>
+            <% } else { %>
+              <span class="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm text-slate-400 cursor-not-allowed">Вперёд</span>
+            <% } %>
+          </div>
+        </div>
+      <% } %>
+    </section>
+  </main>
+</body>
+</html>
