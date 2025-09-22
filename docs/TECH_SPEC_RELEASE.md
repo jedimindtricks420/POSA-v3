@@ -76,25 +76,36 @@ Preview renders using the same renderer as prod (server endpoint), with sample d
 ## 2. Vendor portal
 ### 2.1. Styling
 
-Reuse Admin layout (EJS partials, Bootstrap variables)
+Статус: **выполнено (2025-08)**
 
-Shared navbar: Dashboard | Activate | Vouchers | Transactions | Settings
+- Используется общий Tailwind-макет (navbar, карточки, таблицы) как на админских/merchant страницах.
+- Shared navbar: Dashboard | Activate | Vouchers | Transactions | Settings (desktop + mobile меню).
 
 ### 2.2. Pages & endpoints
 
-GET /vendor → Dashboard (stats: activations last 7d, pending, etc.)
+GET /vendor → redirect на `/vendor/dashboard`
 
-GET /vendor/activate → form + QR input; POST /vendor/activate (body: code or token)
+GET /vendor/dashboard → карточки `Vendor.balance`, pending/sold, активизации за 7 дней, таблицы «Последние активации» и «Очередь».
 
-GET /vendor/vouchers?status=... → list filters
+GET /vendor/activate → форма + ссылка на QR-сканер; POST `/vendor/activate` (код или токен), ACL, поддержка Telegram-продуктов.
 
-GET /vendor/transactions → derived from VoucherTransaction
+GET /vendor/vouchers?status=... → таблица с фильтрами по статусу/продукту/поиску, пагинацией.
 
-GET /vendor/settings → vendor users listing + receipt defaults (read-only if managed by Admin)
+GET /vendor/transactions → свод начислений (`VoucherTransaction`) и выплат (`VendorPayment`), агрегированные суммы.
+
+GET /vendor/settings → профиль вендора, список пользователей, read-only предпросмотр чекового шаблона.
+
+Все маршруты работают под `ensureVendor` (role=vendor_user, сопоставление `vendorId`).
 
 ### 2.3. ACL
 
 All vendor routes require user.role=vendor_user or vendor admin; enforce user.vendorId === voucher.vendorId on mutations
+
+### 2.4. Merchant UI refresh (done)
+
+- Страницы `/merchant/dashboard`, `/merchant/sell`, `/merchant/checkout`, `/merchant/checkout/confirm`, `/merchant/sales` перешли на общий Tailwind-макет с navbar, карточками и пустыми состояниями.
+- Навигация и responsive-поведение совпадают с админскими/вендорскими страницами.
+- Маскировка кодов и бизнес-логика продаж сохранены без изменений.
 
 ## 3. Client QR & PWA
 ### 3.1. QR scanning
