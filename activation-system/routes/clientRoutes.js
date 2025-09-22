@@ -52,7 +52,6 @@ router.get('/client/dashboard', isClientAuthenticated, async (req, res) => {
       client = await prisma.client.create({
         data: {
           phoneNumber: req.session.client.phone,
-          registrationDate: new Date()
         },
         include: { 
           onlineVouchers: { 

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { phoneForSms } from './phone.js';
 
 // Данные авторизации Eskiz
 const ESKIZ_EMAIL = 'sales@keyspro.uz'; // твой email
@@ -81,7 +82,7 @@ export async function sendSms(phone, message) {
     const authToken = await getEskizToken();
 
     const formData = new URLSearchParams();
-    formData.append('mobile_phone', phone);
+    formData.append('mobile_phone', phoneForSms(phone));
     formData.append('message', message);
     formData.append('from', SENDER_NAME);
 
