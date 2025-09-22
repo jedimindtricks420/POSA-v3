@@ -1,5 +1,6 @@
 import prisma from '../../prisma/client.js';
 import { sendOtpSms } from '../../utils/smsService.js';
+import { normalizePhone } from '../../utils/phone.js';
 
 // Генерация случайного 6-значного OTP
 function generateOtp() {
@@ -42,19 +43,33 @@ export const handleLogin = async (req, res) => {
   console.log('Request body:', req.body);
   
   const { phoneNumber, phone } = req.body;
-  const clientPhone = phoneNumber || phone; // поддержка обоих вариантов
+  const clientPhoneInput = phoneNumber || phone;
+  const normalizedPhone = normalizePhone(clientPhoneInput);
 
-  if (!clientPhone || clientPhone.trim() === '') {
+  if (!normalizedPhone || normalizedPhone.trim() === '+') {
     return res.render('pages/client-login', { error: 'Введите номер телефона' });
   }
 
   try {
-    const client = await prisma.client.findUnique({ where: { phoneNumber: clientPhone } });
+    let client = await prisma.client.findUnique({ where: { phoneNumber: normalizedPhone } });
+
+    if (!client) {
+      const fallback = normalizedPhone.replace(/^\+/, '');
+      if (fallback) {
+        client = await prisma.client.findUnique({ where: { phoneNumber: fallback } });
+        if (client) {
+          await prisma.client.update({
+            where: { id: client.id },
+            data: { phoneNumber: normalizedPhone },
+          });
+        }
+      }
+    }
     if (!client) {
       return res.render('pages/client-login', { error: 'Пользователь не найден. Пройдите регистрацию.' });
     }
 
-    await setOtpSessionAndSend(req, clientPhone);
+    await setOtpSessionAndSend(req, normalizedPhone);
     res.redirect('/client-verify');
   } catch (error) {
     console.error('Ошибка при логине клиента:', error);
@@ -98,20 +113,27 @@ export const handleRegister = async (req, res) => {
   console.log('Request body:', req.body);
   
   const { phoneNumber, phone, name } = req.body;
-  const clientPhone = phoneNumber || phone; // поддержка обоих вариантов
+  const clientPhoneInput = phoneNumber || phone;
+  const normalizedPhone = normalizePhone(clientPhoneInput);
 
-  if (!clientPhone || !name || clientPhone.trim() === '' || name.trim() === '') {
+  if (!normalizedPhone || !name || normalizedPhone.trim() === '+' || name.trim() === '') {
     return res.render('pages/client-register', { error: 'Заполните все поля' });
   }
 
   try {
-    const existing = await prisma.client.findUnique({ where: { phoneNumber: clientPhone } });
+    let existing = await prisma.client.findUnique({ where: { phoneNumber: normalizedPhone } });
+    if (!existing) {
+      const fallback = normalizedPhone.replace(/^\+/, '');
+      if (fallback) {
+        existing = await prisma.client.findUnique({ where: { phoneNumber: fallback } });
+      }
+    }
     if (existing) {
       return res.render('pages/client-register', { error: 'Пользователь уже существует' });
     }
 
-    await prisma.client.create({ data: { phoneNumber: clientPhone, name } });
-    await setOtpSessionAndSend(req, clientPhone);
+    await prisma.client.create({ data: { phoneNumber: normalizedPhone, name } });
+    await setOtpSessionAndSend(req, normalizedPhone);
 
     res.redirect('/client-verify');
   } catch (error) {

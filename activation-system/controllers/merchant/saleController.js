@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import prisma from '../../prisma/client.js';
 import { sendSMS } from '../../utils/smsService.js';
+import { normalizePhone } from '../../utils/phone.js';
 
 // Подтвердить покупку
 export const confirmCheckout = async (req, res) => {
@@ -19,7 +20,8 @@ export const confirmCheckout = async (req, res) => {
 
   const updatedQuantities = req.body.quantities || {};
   const saleType = req.body.saleType || 'OFFLINE';
-  const customerPhone = req.body.customerPhone || null;
+  const rawCustomerPhone = req.body.customerPhone || null;
+  const normalizedPhone = rawCustomerPhone ? normalizePhone(rawCustomerPhone) : null;
   const cart = req.session.cart || [];
 
   if (cart.length === 0) {
@@ -28,7 +30,7 @@ export const confirmCheckout = async (req, res) => {
 
   // Валидация для онлайн продаж
   if (saleType === 'ONLINE') {
-    if (!customerPhone || !customerPhone.match(/^\+998[0-9]{9}$/)) {
+    if (!normalizedPhone || !normalizedPhone.match(/^\+998[0-9]{9}$/)) {
       return res.status(400).send('Для онлайн продажи требуется корректный номер телефона в формате +998XXXXXXXXX');
     }
   }
@@ -55,15 +57,28 @@ export const confirmCheckout = async (req, res) => {
   let client = null;
   if (saleType === 'ONLINE') {
     client = await prisma.client.findFirst({
-      where: { phoneNumber: customerPhone }
+      where: { phoneNumber: normalizedPhone }
     });
 
     if (!client) {
-      client = await prisma.client.create({
-        data: {
-          phoneNumber: customerPhone
+      const fallback = normalizedPhone.replace(/^\+/, '');
+      if (fallback) {
+        client = await prisma.client.findFirst({ where: { phoneNumber: fallback } });
+        if (client) {
+          await prisma.client.update({
+            where: { id: client.id },
+            data: { phoneNumber: normalizedPhone },
+          });
         }
-      });
+      }
+
+      if (!client) {
+        client = await prisma.client.create({
+          data: {
+            phoneNumber: normalizedPhone
+          }
+        });
+      }
     }
   }
 
@@ -113,7 +128,7 @@ export const confirmCheckout = async (req, res) => {
           merchantUsername: user.username,
           receiptPath,
           saleType: saleType,
-          customerPhone: customerPhone
+          customerPhone: normalizedPhone
         };
 
         const sale = await prisma.sale.create({ data: saleData });
