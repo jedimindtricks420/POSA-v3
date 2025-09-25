@@ -1,6 +1,7 @@
 async function fetchJson(url, options = {}) {
   const response = await fetch(url, {
     credentials: 'same-origin',
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
       ...(options.headers || {}),

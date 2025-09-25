@@ -1,24 +1,28 @@
 import { registerServiceWorker } from './register-sw.js';
 
-function formatPhone(value) {
-  const digits = value.replace(/\D/g, '');
-  if (!digits) return '';
-  let formatted = '+';
-  for (let i = 0; i < digits.length; i += 1) {
-    formatted += digits[i];
-    if (i === 2 || i === 4 || i === 6 || i === 8) {
-      formatted += ' ';
-    }
+function sanitizePhone(value) {
+  if (!value) return '';
+  let cleaned = value.replace(/[^\d+]/g, '');
+  if (cleaned.startsWith('+')) {
+    const rest = cleaned.slice(1).replace(/\+/g, '');
+    return `+${rest}`;
   }
-  return formatted.trim();
+  return cleaned.replace(/\+/g, '');
 }
 
 function initPhoneInputs() {
   document.querySelectorAll('input[name="phoneNumber"]').forEach((input) => {
-    input.addEventListener('input', () => {
-      const caret = input.selectionStart;
-      input.value = formatPhone(input.value);
-      input.setSelectionRange(caret, caret);
+    input.addEventListener('input', (event) => {
+      const target = event.target;
+      const previous = target.value;
+      const caret = target.selectionStart || 0;
+      const sanitized = sanitizePhone(previous);
+      if (sanitized !== previous) {
+        const diff = previous.length - sanitized.length;
+        target.value = sanitized;
+        const nextPos = Math.max(caret - diff, 0);
+        target.setSelectionRange(nextPos, nextPos);
+      }
     });
   });
 }

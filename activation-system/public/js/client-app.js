@@ -9,8 +9,6 @@ const state = {
 
 const selectors = {
   skeleton: document.getElementById('walletSkeleton'),
-  carousel: document.getElementById('walletCarousel'),
-  carouselTrack: document.getElementById('walletCarouselTrack'),
   list: document.getElementById('walletList'),
   empty: document.getElementById('walletEmpty'),
   refreshBtn: document.getElementById('walletRefresh'),
@@ -22,6 +20,7 @@ const selectors = {
   themeToggleMoon: document.getElementById('walletThemeToggleMoon'),
   modal: document.getElementById('voucherModal'),
   modalClose: document.getElementById('voucherModalClose'),
+  modalCloseBottom: document.getElementById('voucherModalCloseBottom'),
   modalProduct: document.getElementById('voucherModalProduct'),
   modalValue: document.getElementById('voucherModalValue'),
   modalStatus: document.getElementById('voucherModalStatus'),
@@ -39,8 +38,12 @@ function setTheme(mode) {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const effective = mode || (prefersDark ? 'dark' : 'light');
   document.body.classList.toggle('dark-mode', effective === 'dark');
-  selectors.themeToggleSun.classList.toggle('hidden', effective === 'dark');
-  selectors.themeToggleMoon.classList.toggle('hidden', effective !== 'dark');
+  if (selectors.themeToggleSun) {
+    selectors.themeToggleSun.classList.toggle('hidden', effective === 'dark');
+  }
+  if (selectors.themeToggleMoon) {
+    selectors.themeToggleMoon.classList.toggle('hidden', effective !== 'dark');
+  }
   localStorage.setItem('wallet-theme', effective);
 }
 
@@ -68,7 +71,7 @@ function renderMetrics(vouchers) {
 function createCard(voucher) {
   const template = document.createElement('template');
   template.innerHTML = `
-    <article class="wallet-card snap-center min-w-[280px]" data-voucher-id="${voucher.id}">
+    <article class="wallet-card w-full" data-voucher-id="${voucher.id}">
       <div class="wallet-card__body">
         <div class="flex items-start justify-between">
           <div class="space-y-1">
@@ -99,31 +102,26 @@ function createCard(voucher) {
 }
 
 function renderVouchers(vouchers) {
-  selectors.skeleton.classList.add('hidden');
+  if (selectors.skeleton) {
+    selectors.skeleton.classList.add('hidden');
+  }
   state.vouchers = vouchers;
 
   if (!vouchers.length) {
-    selectors.empty.classList.remove('hidden');
-    selectors.carousel.classList.add('hidden');
-    selectors.list.classList.add('hidden');
+    if (selectors.empty) selectors.empty.classList.remove('hidden');
+    if (selectors.list) selectors.list.classList.add('hidden');
     return;
   }
 
-  selectors.empty.classList.add('hidden');
+  if (selectors.empty) selectors.empty.classList.add('hidden');
 
-  selectors.carouselTrack.innerHTML = '';
-  vouchers.forEach((voucher) => {
-    selectors.carouselTrack.append(createCard(voucher));
-  });
-  selectors.carousel.classList.remove('hidden');
-
-  selectors.list.innerHTML = '';
-  vouchers.forEach((voucher) => {
-    const card = createCard(voucher);
-    card.classList.remove('snap-center');
-    selectors.list.append(card);
-  });
-  selectors.list.classList.remove('hidden');
+  if (selectors.list) {
+    selectors.list.innerHTML = '';
+    vouchers.forEach((voucher) => {
+      selectors.list.append(createCard(voucher));
+    });
+    selectors.list.classList.remove('hidden');
+  }
 
   renderMetrics(vouchers);
 }
@@ -137,7 +135,9 @@ async function loadFromCache() {
 }
 
 async function fetchAndRender() {
-  selectors.skeleton.classList.remove('hidden');
+  if (selectors.skeleton) {
+    selectors.skeleton.classList.remove('hidden');
+  }
   try {
     const data = await getVouchers();
     renderVouchers(data.vouchers);
@@ -150,11 +150,11 @@ async function fetchAndRender() {
       if (cached?.vouchers) {
         renderVouchers(cached.vouchers);
       } else {
-        selectors.empty.classList.remove('hidden');
+        if (selectors.empty) selectors.empty.classList.remove('hidden');
       }
     }
   } finally {
-    selectors.skeleton.classList.add('hidden');
+    if (selectors.skeleton) selectors.skeleton.classList.add('hidden');
   }
 }
 
@@ -171,12 +171,18 @@ function closeModal() {
 }
 
 function bindModalControls() {
+  if (!selectors.modal || !selectors.modalClose) {
+    return;
+  }
   selectors.modal.addEventListener('click', (event) => {
     if (event.target === selectors.modal) {
       closeModal();
     }
   });
   selectors.modalClose.addEventListener('click', closeModal);
+  if (selectors.modalCloseBottom) {
+    selectors.modalCloseBottom.addEventListener('click', closeModal);
+  }
 }
 
 function populateModal(detail) {
@@ -265,8 +271,9 @@ async function bootstrap() {
 
   fetchAndRender();
 
-  selectors.carousel.addEventListener('click', handleCardClick);
-  selectors.list.addEventListener('click', handleCardClick);
+  if (selectors.list) {
+    selectors.list.addEventListener('click', handleCardClick);
+  }
 
   if (selectors.refreshBtn) {
     selectors.refreshBtn.addEventListener('click', () => fetchAndRender());

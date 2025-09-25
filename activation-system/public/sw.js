@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'wallet-shell-v3';
-const RUNTIME_CACHE = 'wallet-runtime-v3';
+const SHELL_CACHE = 'wallet-shell-v4';
+const RUNTIME_CACHE = 'wallet-runtime-v4';
 const QUEUE_DB = 'wallet-sw';
 const QUEUE_STORE = 'pending';
 
@@ -167,7 +167,7 @@ function staleWhileRevalidate(request) {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method === 'GET' && request.url.includes('/api/client/')) {
-    event.respondWith(staleWhileRevalidate(request));
+    event.respondWith(networkFirst(request));
     return;
   }
 
