@@ -11,6 +11,7 @@ const historyList = document.getElementById('qrHistory');
 const historyClearBtn = document.getElementById('qrHistoryClear');
 const modal = document.getElementById('voucherModal');
 const modalClose = document.getElementById('voucherModalClose');
+const modalCloseBottom = document.getElementById('voucherModalCloseBottom');
 const modalProduct = document.getElementById('voucherModalProduct');
 const modalValue = document.getElementById('voucherModalValue');
 const modalStatus = document.getElementById('voucherModalStatus');
@@ -188,10 +189,17 @@ async function bootstrap() {
     });
   }
 
-  modal.addEventListener('click', (event) => {
-    if (event.target === modal) closeModal();
-  });
-  modalClose.addEventListener('click', closeModal);
+  if (modal) {
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) closeModal();
+    });
+  }
+  if (modalClose) {
+    modalClose.addEventListener('click', closeModal);
+  }
+  if (modalCloseBottom) {
+    modalCloseBottom.addEventListener('click', closeModal);
+  }
 
   await registerServiceWorker();
 }

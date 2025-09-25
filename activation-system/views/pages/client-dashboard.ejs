@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="ru" class="h-full">
 <%- include('../partials/client/head', { title: 'Мои ваучеры' }) %>
-<body class="relative min-h-full bg-wallet-bg pb-32 pt-28 text-slate-900 dark:bg-wallet-dark dark:text-slate-100">
-  <%- include('../partials/client/topbar', { phone, phoneLabel: phone }) %>
+<body class="relative min-h-full bg-wallet-bg pb-32 pt-16 text-slate-900 dark:bg-wallet-dark dark:text-slate-100">
 
   <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-16">
-    <section class="mt-24 space-y-4">
+    <section class="space-y-4">
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div class="glass-panel p-4">
           <p class="text-xs font-medium uppercase text-slate-500">Активны</p>
@@ -37,9 +36,6 @@
       </div>
       <div id="walletSkeleton" class="mt-6">
         <%- include('../partials/client/wallet-skeleton') %>
-      </div>
-      <div id="walletCarousel" class="mt-6 hidden space-y-4">
-        <div class="scrollbar-hidden flex snap-x gap-4 overflow-x-auto pb-2" id="walletCarouselTrack"></div>
       </div>
       <div id="walletList" class="mt-6 hidden space-y-4"></div>
     </section>

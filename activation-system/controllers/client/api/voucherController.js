@@ -6,7 +6,7 @@ const STATUS_META = {
   active: { label: 'Активен', color: 'bg-emerald-400' },
   activated: { label: 'Активирован', color: 'bg-emerald-500' },
   pending: { label: 'Ожидает', color: 'bg-amber-400' },
-  sold: { label: 'Продан', color: 'bg-amber-500' },
+  sold: { label: 'Ожидает активации', color: 'bg-amber-500' },
   deleted: { label: 'Недоступен', color: 'bg-rose-400' },
   used: { label: 'Использован', color: 'bg-slate-400' },
 };

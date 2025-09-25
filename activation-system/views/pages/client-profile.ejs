@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="ru" class="h-full">
 <%- include('../partials/client/head', { title: 'Профиль' }) %>
-<body class="relative min-h-full bg-wallet-bg pb-32 pt-28 text-slate-900 dark:bg-wallet-dark dark:text-slate-100">
-  <%- include('../partials/client/topbar', { phone, phoneLabel: 'Профиль' }) %>
+<body class="relative min-h-full bg-wallet-bg pb-32 pt-16 text-slate-900 dark:bg-wallet-dark dark:text-slate-100">
 
-  <main class="mx-auto mt-24 flex w-full max-w-3xl flex-col gap-8 px-4 pb-16">
+  <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-16">
     <section class="glass-panel p-6">
       <div class="flex items-center gap-4">
         <div class="h-14 w-14 rounded-full bg-apple-blue text-white flex items-center justify-center text-lg font-semibold">
@@ -59,7 +58,7 @@
       <button id="profileClearCache" class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800">
         Очистить кеш PWA
       </button>
-      <a href="/client/logout" class="w-full rounded-2xl bg-apple-blue px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-blue-600">
+      <a href="/client/logout" class="w-full rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-red-700">
         Выйти
       </a>
     </section>
