@@ -1,12 +1,12 @@
 export function isClientAuthenticated(req, res, next) {
-  console.log('=== isClientAuthenticated MIDDLEWARE ===');
-  console.log('Session:', req.session);
-  console.log('req.session?.client:', req.session?.client);
-  
-  if (req.session && req.session.client) {
-    console.log('Client authenticated, proceeding...');
+  if (req.session?.client) {
     return next();
   }
-  console.log('Client not authenticated, redirecting to /wallet');
+
+  const wantsJson = req.headers.accept?.includes('application/json') || req.originalUrl.startsWith('/api/');
+  if (wantsJson) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   return res.redirect('/wallet');
 }

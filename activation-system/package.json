@@ -6,7 +6,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "build:wallet:css": "tailwindcss -c tailwind.config.js -i resources/css/client.css -o public/css/client.css --minify",
+    "build:wallet": "npm run build:wallet:css"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +18,7 @@
     "autoprefixer": "^10.4.21",
     "axios": "^1.10.0",
     "bcrypt": "^5.1.1",
+    "bwip-js": "^4.7.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
@@ -25,10 +28,11 @@
     "joi": "^17.13.3",
     "nodemailer": "^7.0.5",
     "pdfkit": "^0.16.0",
+    "pngjs": "^7.0.0",
     "postcss": "^8.5.6",
     "prisma": "^6.5.0",
     "qrcode": "^1.5.4",
-    "tailwindcss": "^4.1.11"
+    "tailwindcss": "^3.4.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"
