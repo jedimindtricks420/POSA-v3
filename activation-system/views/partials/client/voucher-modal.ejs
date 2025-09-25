@@ -1,0 +1,42 @@
+<div id="voucherModal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-center">
+  <div class="relative w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 sm:rounded-3xl">
+    <button id="voucherModalClose" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600" aria-label="Close modal">
+      <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18 18 6m0 12L6 6" />
+      </svg>
+    </button>
+    <div class="space-y-6">
+      <div class="space-y-2 text-center">
+        <p id="voucherModalProduct" class="text-xs uppercase tracking-wider text-slate-500"></p>
+        <h2 id="voucherModalValue" class="text-2xl font-semibold text-slate-900 dark:text-slate-100"></h2>
+        <div id="voucherModalStatus" class="badge mx-auto"></div>
+      </div>
+      <div class="space-y-4">
+        <div class="rounded-3xl bg-slate-50 p-6 dark:bg-slate-800">
+          <div id="voucherModalQr" class="flex items-center justify-center"></div>
+          <p class="mt-4 text-center text-xs text-slate-500">Покажите этот QR код продавцу</p>
+        </div>
+        <div class="rounded-2xl bg-slate-100 p-4 dark:bg-slate-800">
+          <p class="text-xs text-slate-500">Штрихкод</p>
+          <div id="voucherModalBarcode" class="mt-2 flex justify-center"></div>
+        </div>
+        <div class="rounded-2xl bg-slate-100 p-4 text-sm leading-relaxed text-slate-600 dark:bg-slate-800 dark:text-slate-300" id="voucherModalTerms"></div>
+      </div>
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <button id="voucherModalAddApple" class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">
+          Добавить в Apple Wallet
+        </button>
+        <button id="voucherModalAddGoogle" class="inline-flex items-center justify-center rounded-2xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-white">
+          Добавить в Google Wallet
+        </button>
+        <button id="voucherModalCopy" class="inline-flex items-center justify-center rounded-2xl bg-apple-blue px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">
+          Скопировать код
+        </button>
+        <button id="voucherModalShare" class="inline-flex items-center justify-center rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800">
+          Поделиться
+        </button>
+      </div>
+      <p id="voucherModalSyncInfo" class="text-center text-xs text-slate-400"></p>
+    </div>
+  </div>
+</div>

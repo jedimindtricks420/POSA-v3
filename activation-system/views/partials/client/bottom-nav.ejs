@@ -1,0 +1,24 @@
+<nav class="fixed bottom-0 inset-x-0 z-40">
+  <div class="pb-6 px-6">
+    <div class="glass-panel flex items-center justify-around px-4 py-2 text-sm text-slate-500 dark:text-slate-300">
+      <a href="/client/dashboard" class="flex flex-col items-center gap-1 <%= active === 'wallet' ? 'text-apple-blue font-semibold' : '' %>">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 8.25h16.5v10.5a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5V8.25Zm0-3a1.5 1.5 0 0 1 1.5-1.5h13.5a1.5 1.5 0 0 1 1.5 1.5V8.25H3.75V5.25Z" />
+        </svg>
+        <span>Wallet</span>
+      </a>
+      <a href="/client/qr-scanner" class="flex flex-col items-center gap-1 <%= active === 'scan' ? 'text-apple-blue font-semibold' : '' %>">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7.5A1.5 1.5 0 0 1 4.5 6h3A1.5 1.5 0 0 1 9 7.5v3A1.5 1.5 0 0 1 7.5 12h-3A1.5 1.5 0 0 1 3 10.5v-3Zm12 0A1.5 1.5 0 0 1 16.5 6h3A1.5 1.5 0 0 1 21 7.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 15 10.5v-3Zm-12 9A1.5 1.5 0 0 1 4.5 15h3A1.5 1.5 0 0 1 9 16.5v3A1.5 1.5 0 0 1 7.5 21h-3A1.5 1.5 0 0 1 3 19.5v-3Zm12 0a1.5 1.5 0 0 1 1.5-1.5h3a1.5 1.5 0 0 1 1.5 1.5v3A1.5 1.5 0 0 1 19.5 21h-3A1.5 1.5 0 0 1 15 19.5v-3Z" />
+        </svg>
+        <span>Scan</span>
+      </a>
+      <a href="/client/profile" class="flex flex-col items-center gap-1 <%= active === 'profile' ? 'text-apple-blue font-semibold' : '' %>">
+        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.25 7.5a3.25 3.25 0 1 1-6.5 0 3.25 3.25 0 0 1 6.5 0ZM5.98 18.42a6.51 6.51 0 0 1 12.04 0A11.96 11.96 0 0 1 12 21a11.96 11.96 0 0 1-6.02-2.58Z" />
+        </svg>
+        <span>Profile</span>
+      </a>
+    </div>
+  </div>
+</nav>

@@ -66,7 +66,9 @@ export const handleLogin = async (req, res) => {
       }
     }
     if (!client) {
-      return res.render('pages/client-login', { error: 'Пользователь не найден. Пройдите регистрацию.' });
+      client = await prisma.client.create({
+        data: { phoneNumber: normalizedPhone },
+      });
     }
 
     await setOtpSessionAndSend(req, normalizedPhone);

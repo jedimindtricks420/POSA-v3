@@ -12,6 +12,7 @@ import merchantRoutes from './routes/merchantRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
+import clientApiRoutes from './routes/clientApiRoutes.js';
 import { checkSubdomain } from './middleware/checkSubdomain.js';
 
 dotenv.config();
@@ -50,6 +51,7 @@ app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes);
 app.use('/merchant', merchantRoutes);
 app.use('/vendor', vendorRoutes);
+app.use('/api/client', clientApiRoutes);
 app.use('/receipts', express.static(path.join(__dirname, 'receipts')));
 
 // Перенаправляем запросы в зависимости от субдомена

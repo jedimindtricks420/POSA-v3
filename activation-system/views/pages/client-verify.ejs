@@ -1,91 +1,34 @@
 <!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#007AFF">
-    <title>Подтверждение кода</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="manifest" href="/manifest.json">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'apple-blue': '#007AFF',
-                    },
-                    fontFamily: {
-                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-</head>
-<body class="bg-gray-100 min-h-screen font-sans antialiased flex items-center justify-center">
-    <div class="max-w-md w-full mx-auto px-4">
-        <!-- Logo/Icon -->
-        <div class="text-center mb-8">
-            <div class="w-20 h-20 bg-apple-blue rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <span class="text-3xl text-white">📱</span>
-            </div>
-            <h2 class="text-2xl font-semibold text-gray-900">Подтверждение</h2>
-            <p class="text-gray-600 mt-2">
-                На номер <strong class="text-gray-900"><%= phone %></strong> был отправлен код
-            </p>
-        </div>
-
-        <!-- Verify Form -->
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <% if (error) { %>
-                <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p class="text-red-600 text-sm"><%= error %></p>
-                </div>
-            <% } %>
-
-            <form method="POST" action="/client-verify" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Введите код подтверждения</label>
-                    <input type="text" 
-                           name="otp" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-apple-blue focus:border-transparent transition-colors text-center text-lg tracking-widest"
-                           placeholder="123456"
-                           maxlength="6"
-                           required>
-                </div>
-                
-                <button type="submit" 
-                        class="w-full bg-apple-blue hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg">
-                    Подтвердить
-                </button>
-            </form>
-
-            <div class="mt-6 text-center">
-                <p class="text-gray-600 text-sm">
-                    Не получили код? 
-                    <a href="/wallet" class="text-apple-blue hover:text-blue-600 font-medium">
-                        Попробовать снова
-                    </a>
-                </p>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="text-center mt-8 text-xs text-gray-500">
-            <p>wallet.namo.uz</p>
-        </div>
+<html lang="ru" class="h-full">
+<%- include('../partials/client/head', { title: 'Подтверждение кода' }) %>
+<body class="flex min-h-full items-center justify-center bg-wallet-bg px-4 py-12 text-slate-900 dark:bg-wallet-dark dark:text-slate-100">
+  <div class="w-full max-w-md space-y-8">
+    <div class="text-center space-y-3">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-apple-blue text-2xl font-semibold text-white">NW</div>
+      <h1 class="text-2xl font-semibold">Подтвердите код</h1>
+      <p class="text-sm text-slate-500">Мы отправили SMS на номер <span class="font-semibold"><%= phone %></span></p>
     </div>
-
-    <script>
-        // PWA Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => console.log('ServiceWorker registered'))
-                .catch(err => console.log('ServiceWorker registration failed: ', err));
-        }
-
-        // Auto-focus on OTP input
-        document.querySelector('input[name="otp"]').focus();
-    </script>
+    <div class="glass-panel space-y-6 p-8">
+      <% if (error) { %>
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"><%= error %></div>
+      <% } %>
+      <form method="POST" action="/client-verify" class="space-y-4" id="walletOtpForm">
+        <label class="space-y-2">
+          <span class="text-sm font-medium text-slate-600">Код из SMS</span>
+          <input type="text" name="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-lg tracking-[0.5em] outline-none transition focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 dark:border-slate-700 dark:bg-slate-900" required />
+        </label>
+        <button type="submit" class="w-full rounded-2xl bg-apple-blue px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">Подтвердить</button>
+      </form>
+      <div class="text-center text-sm text-slate-500">
+        Не пришло SMS? <button id="walletOtpResend" class="font-semibold text-apple-blue hover:text-blue-600" type="button">Отправить снова</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    window.__WALLET_VERIFY__ = {
+      phone: <%- JSON.stringify(phone || null) %>
+    };
+  </script>
+  <script type="module" src="/js/client-auth.js"></script>
 </body>
 </html>
