@@ -3,33 +3,11 @@
 <%- include('../partials/client/head', { title: 'Мои ваучеры' }) %>
 <body class="relative min-h-full bg-wallet-bg pb-32 pt-16 text-slate-900 dark:bg-wallet-dark dark:text-slate-100">
 
-  <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-16">
-    <section class="space-y-4">
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div class="glass-panel p-4">
-          <p class="text-xs font-medium uppercase text-slate-500">Активны</p>
-          <p id="walletMetricActive" class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">0</p>
-        </div>
-        <div class="glass-panel p-4">
-          <p class="text-xs font-medium uppercase text-slate-500">Ожидают</p>
-          <p id="walletMetricPending" class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">0</p>
-        </div>
-        <div class="glass-panel p-4">
-          <p class="text-xs font-medium uppercase text-slate-500">Использованы</p>
-          <p id="walletMetricUsed" class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">0</p>
-        </div>
-      </div>
-    </section>
-
+  <main class="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pb-16">
     <section>
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold">Мои ваучеры</h2>
-        <button id="walletRefresh" class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
-          <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16.023 9.348h4.992V4.356m0 0-2.177 2.178A8.25 8.25 0 1 0 12.03 20.25" />
-          </svg>
-          Обновить
-        </button>
+      <div class="flex items-center justify-between pt-2">
+        <h2 class="text-xl font-semibold">Мои ваучеры</h2>
+        <button id="walletRefresh" class="refresh-btn">Обновить</button>
       </div>
       <div id="walletEmpty" class="mt-6 hidden rounded-3xl bg-white p-10 text-center text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-300">
         Пока нет ваучеров. Когда появится новый, он отобразится здесь автоматически.
