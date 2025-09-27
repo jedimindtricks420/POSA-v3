@@ -52,6 +52,7 @@ export const confirmCheckout = async (req, res) => {
   const receiptFileName = `receipt-${user.username}-${timestamp}.pdf`;
   const receiptPath = path.join('receipts', receiptFileName);
   const absolutePath = path.join(process.cwd(), receiptPath);
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
 
   // Поиск или создание клиента для онлайн продаж
   let client = null;
@@ -214,7 +215,7 @@ export const confirmCheckout = async (req, res) => {
 
     // Генерация PDF чека для оффлайн продаж
     if (saleType === 'OFFLINE') {
-      await generatePDFReceipt(absolutePath, merchant, processedVouchers, total, formattedDate, formattedTime);
+      await generatePDFReceipt(absolutePath, merchant, processedVouchers, total, formattedDate, formattedTime, baseUrl);
     }
 
     // Отправка SMS для онлайн продаж
@@ -233,6 +234,21 @@ export const confirmCheckout = async (req, res) => {
             <title>Продажа завершена</title>
             <meta charset="UTF-8">
             <script src="https://cdn.tailwindcss.com"></script>
+            <script>
+              function printPdf(){
+                const iframe = document.createElement('iframe');
+                iframe.style.position = 'fixed';
+                iframe.style.right = '0';
+                iframe.style.bottom = '0';
+                iframe.style.width = '0';
+                iframe.style.height = '0';
+                iframe.style.border = '0';
+                iframe.src = '/${receiptPath.replace(/\\\\/g,'/')}';
+                iframe.onload = () => { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(e) {} };
+                document.body.appendChild(iframe);
+              }
+              window.addEventListener('load', () => setTimeout(printPdf, 300));
+            </script>
           </head>
           <body class="bg-slate-50 min-h-screen flex items-center justify-center">
             <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
@@ -252,9 +268,9 @@ export const confirmCheckout = async (req, res) => {
                 <a href="/merchant/sales" class="block w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
                   Перейти к продажам
                 </a>
-                <button onclick="window.print()" class="block w-full bg-slate-200 text-slate-700 py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">
+                <a href="/${receiptPath.replace(/\\\\/g,'/')}" target="_blank" class="block w-full bg-slate-200 text-slate-700 py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">
                   Печать чека
-                </button>
+                </a>
               </div>
             </div>
           </body>
@@ -303,7 +319,7 @@ export const confirmCheckout = async (req, res) => {
 };
 
 // Функция генерации PDF чека
-async function generatePDFReceipt(absolutePath, merchant, vouchers, total, formattedDate, formattedTime) {
+async function generatePDFReceipt(absolutePath, merchant, vouchers, total, formattedDate, formattedTime, baseUrl = '') {
   const doc = new PDFDocument({
     size: [226.8, 1000],
     margin: 10
@@ -328,7 +344,8 @@ async function generatePDFReceipt(absolutePath, merchant, vouchers, total, forma
     doc.fontSize(12).text(item.templateText);
     doc.moveDown(1);
 
-    const qrData = `https://yourdomain.com/activate?voucher=${item.voucher.value}`;
+    const origin = baseUrl || '';
+    const qrData = `${origin}/activate?voucher=${encodeURIComponent(item.voucher.value)}`;
     const qrImageBuffer = await QRCode.toBuffer(qrData);
     doc.image(qrImageBuffer, (doc.page.width - 100) / 2, doc.y, {
       fit: [100, 100],
