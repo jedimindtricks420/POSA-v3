@@ -1,21 +1,16 @@
-<article class="wallet-card" data-voucher-id="<%= voucher.id %>">
+<% const _themes = ['wallet-card--blue','wallet-card--pink','wallet-card--dark'];
+   const _theme = _themes[Math.abs((voucher.id||0)) % _themes.length]; %>
+<article class="wallet-card <%= _theme %>" data-voucher-id="<%= voucher.id %>">
   <div class="wallet-card__body">
-    <div class="flex items-start justify-between">
-      <div class="space-y-1">
-        <p class="text-xs uppercase tracking-widest text-white/70"><%= voucher.productName %></p>
-        <h2 class="text-2xl font-semibold text-white"><%= voucher.displayValue %></h2>
-      </div>
-      <span class="badge bg-white/20 text-white">
-        <span class="inline-flex h-2 w-2 rounded-full <%= voucher.statusColor %>"></span>
-        <%= voucher.statusLabel %>
-      </span>
+    <div class="flex items-start">
+      <h2 class="text-2xl font-semibold text-white"><%= voucher.productName %></h2>
     </div>
     <div class="mt-10 flex items-center justify-between text-sm">
       <div>
         <p class="text-white/60">Получен</p>
         <p class="font-medium"><%= voucher.assignedAt %></p>
       </div>
-      <button class="wallet-card__show inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white backdrop-blur" data-voucher-id="<%= voucher.id %>">
+      <button class="wallet-card__show inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold" data-voucher-id="<%= voucher.id %>">
         <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8.25-3c-1.5-3.5-4.75-6-8.25-6s-6.75 2.5-8.25 6c1.5 3.5 4.75 6 8.25 6s6.75-2.5 8.25-6Z" />
         </svg>

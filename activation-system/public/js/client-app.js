@@ -63,32 +63,33 @@ function renderMetrics(vouchers) {
   const pending = vouchers.filter((v) => v.status === 'pending' || v.status === 'sold').length;
   const used = vouchers.filter((v) => v.status === 'activated' || v.status === 'used' || v.status === 'deleted').length;
 
-  selectors.metricActive.textContent = active;
-  selectors.metricPending.textContent = pending;
-  selectors.metricUsed.textContent = used;
+  if (selectors.metricActive) selectors.metricActive.textContent = active;
+  if (selectors.metricPending) selectors.metricPending.textContent = pending;
+  if (selectors.metricUsed) selectors.metricUsed.textContent = used;
+}
+
+function cardThemeClass(voucher) {
+  // Simple deterministic theming based on id
+  const themes = ['wallet-card--blue', 'wallet-card--pink', 'wallet-card--dark'];
+  const idx = Math.abs(Number(voucher.id || 0)) % themes.length;
+  return themes[idx];
 }
 
 function createCard(voucher) {
   const template = document.createElement('template');
+  const theme = cardThemeClass(voucher);
   template.innerHTML = `
-    <article class="wallet-card w-full" data-voucher-id="${voucher.id}">
+    <article class="wallet-card w-full ${theme}" data-voucher-id="${voucher.id}">
       <div class="wallet-card__body">
-        <div class="flex items-start justify-between">
-          <div class="space-y-1">
-            <p class="text-xs uppercase tracking-widest text-white/70">${voucher.productName}</p>
-            <h2 class="text-2xl font-semibold text-white">${voucher.displayValue}</h2>
-          </div>
-          <span class="badge bg-white/20 text-white">
-            <span class="inline-flex h-2 w-2 rounded-full ${voucher.statusColor}"></span>
-            ${voucher.statusLabel}
-          </span>
+        <div class="flex items-start">
+          <h2 class="text-2xl font-semibold text-white">${voucher.productName}</h2>
         </div>
         <div class="mt-10 flex items-center justify-between text-sm">
           <div>
             <p class="text-white/60">Получен</p>
             <p class="font-medium">${voucher.assignedAt}</p>
           </div>
-          <button class="wallet-card__show inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-2 text-sm font-semibold text-white backdrop-blur" data-voucher-id="${voucher.id}">
+          <button class="wallet-card__show inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold" data-voucher-id="${voucher.id}">
             <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm8.25-3c-1.5-3.5-4.75-6-8.25-6s-6.75 2.5-8.25 6c1.5 3.5 4.75 6 8.25 6s6.75-2.5 8.25-6Z" />
             </svg>
@@ -187,11 +188,15 @@ function bindModalControls() {
 
 function populateModal(detail) {
   selectors.modalProduct.textContent = detail.productName;
-  selectors.modalValue.textContent = detail.displayValue;
+  // Show full voucher code (no dots)
+  selectors.modalValue.textContent = detail.value || detail.displayValue;
   selectors.modalStatus.innerHTML = `<span class="inline-flex h-2 w-2 rounded-full mr-2 ${detail.statusColor}"></span>${detail.statusLabel}`;
-  selectors.modalQr.innerHTML = `<img src="${detail.qrDataUrl}" alt="QR код" class="mx-auto h-56 w-56" />`;
+  // Force dark text for status label
+  selectors.modalStatus.classList.add('text-slate-900');
+  selectors.modalStatus.classList.add('dark:text-slate-900');
+  selectors.modalQr.innerHTML = `<img src="${detail.qrDataUrl}" alt="QR код" class="mx-auto w-full max-w-[224px] h-auto" />`;
   selectors.modalBarcode.innerHTML = detail.barcodeDataUrl
-    ? `<img src="${detail.barcodeDataUrl}" alt="Штрихкод" class="max-h-20" />`
+    ? `<img src="${detail.barcodeDataUrl}" alt="Штрихкод" class="max-h-20 w-full max-w-full object-contain" />`
     : '<p class="text-xs text-slate-400">Не удалось сформировать штрихкод</p>';
   selectors.modalTerms.textContent = detail.terms;
   selectors.modalSync.textContent = `Синхронизировано: ${new Date(detail.lastSyncAt).toLocaleString('ru-RU')}`;

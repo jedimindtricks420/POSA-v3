@@ -22,7 +22,7 @@
 
 @layer components {
   .wallet-card {
-    @apply relative overflow-hidden rounded-3xl shadow-wallet bg-gradient-to-br from-apple-blue to-indigo-600 text-white transition-transform duration-200;
+    @apply relative overflow-hidden rounded-3xl shadow-wallet text-white transition-transform duration-200;
   }
 
   .wallet-card::after {
@@ -32,6 +32,29 @@
 
   .wallet-card__body {
     @apply relative z-10 p-6 flex flex-col justify-between h-full;
+  }
+
+  /* Card themes */
+  .wallet-card--blue {
+    @apply bg-gradient-to-br from-[#0B1E51] to-[#142c7a];
+  }
+
+  .wallet-card--pink {
+    @apply bg-gradient-to-br from-[#ff4f8b] to-[#ff8a34];
+  }
+
+  .wallet-card--dark {
+    @apply bg-gradient-to-br from-slate-800 to-slate-900;
+  }
+
+  /* Show button (outline white) */
+  .wallet-card__show {
+    @apply border border-white bg-transparent text-white;
+  }
+
+  /* Refresh button styling to match spec */
+  .refresh-btn {
+    @apply inline-flex items-center justify-center rounded-full border text-sm font-semibold text-[#A7A7A7] border-[#A7A7A7] h-[29px] w-[101px];
   }
 
   .glass-panel {
