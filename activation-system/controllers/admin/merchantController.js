@@ -38,9 +38,15 @@ export const showMerchantSales = async (req, res) => {
   });
 
   // Маскируем ваучеры для мерчанта
-  const maskedSales = sales.map(sale => ({
+  const maskVoucher = (val = '') => {
+    if (typeof val !== 'string') val = String(val || '');
+    if (val.length <= 3) return val.replace(/.(?=.$)/g, '*');
+    return `${val.slice(0, 2)}*******${val.slice(-1)}`;
+  };
+
+  const maskedSales = sales.map((sale) => ({
     ...sale,
-    maskedVoucher: sale.voucherValue.slice(0, 3) + '******'
+    maskedVoucher: maskVoucher(sale.voucherValue),
   }));
 
   res.render('pages/merchant-sales', {
