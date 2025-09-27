@@ -12,10 +12,18 @@ export const showMerchantDashboard = async (req, res) => {
     where: { merchantUsername: username },
     orderBy: { date: 'desc' },
   });
+  const maskVoucher = (val = '') => {
+    if (typeof val !== 'string') val = String(val || '');
+    if (val.length <= 3) return val.replace(/.(?=.$)/g, '*');
+    return `${val.slice(0, 2)}*******${val.slice(-1)}`;
+  };
 
+  const maskedSales = sales.map((s) => ({ ...s, maskedVoucher: maskVoucher(s.voucherValue) }));
+
+  // NOTE: сохраняем текущий рендер в merchant-sales (как в проекте), но уже с маской
   res.render('pages/merchant-sales', {
-    sales,
-    user: req.session.user || null
+    sales: maskedSales,
+    user: req.session.user || null,
   });
 };
 
@@ -27,9 +35,15 @@ export const showMerchantSales = async (req, res) => {
     orderBy: { date: 'desc' },
   });
 
-  const maskedSales = sales.map(sale => ({
+  const maskVoucher = (val = '') => {
+    if (typeof val !== 'string') val = String(val || '');
+    if (val.length <= 3) return val.replace(/.(?=.$)/g, '*');
+    return `${val.slice(0, 2)}*******${val.slice(-1)}`;
+  };
+
+  const maskedSales = sales.map((sale) => ({
     ...sale,
-    maskedVoucher: sale.voucherValue.slice(0, 3) + '******'
+    maskedVoucher: maskVoucher(sale.voucherValue),
   }));
 
   res.render('pages/merchant-sales', {

@@ -376,20 +376,26 @@ async function sendVoucherSMS(client, vouchers) {
 
 
 export const showMerchantSales = async (req, res) => {
-    const user = req.session.user;
-  
-    const sales = await prisma.sale.findMany({
-      where: { merchantUsername: user.username },
-      orderBy: { date: 'desc' },
-    });
-  
-    const maskedSales = sales.map(sale => ({
-      ...sale,
-      maskedVoucher: sale.voucherValue.slice(0, 3) + '******'
-    }));
-  
-    res.render('pages/merchant-sales', {
-      sales: maskedSales,
-      user
-    });
+  const user = req.session.user;
+
+  const maskVoucher = (val = '') => {
+    if (typeof val !== 'string') val = String(val || '');
+    if (val.length <= 3) return val.replace(/.(?=.$)/g, '*');
+    return `${val.slice(0, 2)}*******${val.slice(-1)}`;
   };
+
+  const sales = await prisma.sale.findMany({
+    where: { merchantUsername: user.username },
+    orderBy: { date: 'desc' },
+  });
+
+  const maskedSales = sales.map((sale) => ({
+    ...sale,
+    maskedVoucher: maskVoucher(sale.voucherValue),
+  }));
+
+  res.render('pages/merchant-sales', {
+    sales: maskedSales,
+    user,
+  });
+};
