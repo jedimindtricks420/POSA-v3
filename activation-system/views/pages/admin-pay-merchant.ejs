@@ -1,64 +1,116 @@
-<%- include('../partials/admin-navbar', { user }) %>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Погашение долга | Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen font-[Inter]">
+  <%- include('../partials/admin-navbar', { user }) %>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <div class="md:grid md:grid-cols-3 md:gap-6">
-    <div class="md:col-span-1">
-      <div class="px-4 sm:px-0">
-        <h2 class="text-2xl font-semibold text-gray-900">Погашение долга</h2>
-        <p class="mt-2 text-sm text-gray-700">Регистрация платежа от мерчанта</p>
-        
-        <dl class="mt-6 space-y-4">
-          <div>
-            <dt class="text-sm font-medium text-gray-500">Мерчант</dt>
-            <dd class="mt-1 text-sm text-gray-900"><%= merchant.legalInfo %></dd>
-          </div>
-        </dl>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
+    <div class="md:flex md:items-center md:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Погашение долга</h1>
+        <p class="mt-1 text-sm text-slate-500">Мерчант: <%= merchant.legalInfo %></p>
+      </div>
+      <div class="mt-4 md:mt-0">
+        <a href="/admin/merchants" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          К списку мерчантов
+        </a>
       </div>
     </div>
 
-    <% if (error) { %>
-    <div class="mt-5 md:mt-0 md:col-span-2">
-      <form method="POST" action="/admin/merchant/<%= merchant.id %>/pay">
-        <div class="shadow sm:rounded-md sm:overflow-hidden">
-          <div class="px-4 py-5 bg-white space-y-6 sm:p-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">
-                Сумма платежа (сум)
-              </label>
-              <div class="mt-1">
-                <input type="number" 
-                       name="amount" 
-                       step="0.01" 
-                       required
-                       class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md" />
-              </div>
-            </div>
+    <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+    <section class="rounded-lg bg-white shadow ring-1 ring-slate-200 p-6 space-y-4">
+      <h2 class="text-lg font-semibold text-slate-900">Текущий статус</h2>
+      <dl class="space-y-4">
+        <div class="flex items-start justify-between">
+          <dt class="text-sm font-medium text-slate-500">Баланс мерчанта</dt>
+          <dd class="text-sm font-semibold text-slate-900"><%= (merchant.balance || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %> сум</dd>
+        </div>
+        <div class="flex items-start justify-between">
+          <dt class="text-sm font-medium text-slate-500">Текущий долг (PENDING)</dt>
+          <dd class="text-sm font-semibold <%= actualDebt > 0 ? 'text-red-600' : 'text-emerald-600' %>">
+            <%= actualDebt.toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %> сум
+          </dd>
+        </div>
+      </dl>
 
-            <div>
-              <label class="block text-sm font-medium text-gray-700">
-                Комментарий
-                <span class="text-gray-500 text-xs">(необязательно)</span>
-              </label>
-              <div class="mt-1">
-                <textarea name="comment" 
-                          rows="3" 
-                          class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"></textarea>
-              </div>
+      <% if (actualDebt > 0) { %>
+        <p class="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          После сохранения платежа долг уменьшится на указанную сумму.
+        </p>
+      <% } else { %>
+        <p class="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+          У мерчанта нет задолженности по незавершённым транзакциям.
+        </p>
+      <% } %>
+    </section>
+
+    <div class="md:col-span-2">
+      <% if (error) { %>
+        <div class="mb-5 rounded-md bg-red-50 p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v3.5a.75.75 0 001.5 0v-3.5zm0 6a.75.75 0 10-1.5 0 .75.75 0 001.5 0z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-sm font-medium text-red-800">Ошибка</h3>
+              <div class="mt-2 text-sm text-red-700"><p><%= error %></p></div>
             </div>
           </div>
+        </div>
+      <% } %>
 
-          <div class="px-4 py-3 bg-gray-50 text-right sm:px-6 space-x-3">
-            <a href="/admin/merchants" 
-               class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              Отмена
-            </a>
-            <button type="submit"
-                    class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              💾 Сохранить платеж
-            </button>
+      <form method="POST" action="/admin/merchant/<%= merchant.id %>/pay" class="rounded-lg bg-white shadow ring-1 ring-slate-200">
+        <div class="px-6 py-6 space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Сумма платежа (сум)</label>
+            <div class="mt-1">
+              <input 
+                type="number"
+                name="amount"
+                step="0.01"
+                min="0"
+                required
+                placeholder="0.00"
+                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+            </div>
+            <p class="mt-1 text-xs text-slate-500">Сумма уменьшит текущий долг и баланс мерчанта.</p>
           </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Комментарий <span class="text-slate-400">(необязательно)</span></label>
+            <div class="mt-1">
+              <textarea
+                name="comment"
+                rows="3"
+                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                placeholder="Например: наличный расчёт или банковский перевод"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4">
+          <a href="/admin/merchants" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            Отмена
+          </a>
+          <button type="submit" class="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+            💾 Сохранить платеж
+          </button>
         </div>
       </form>
     </div>
+    </div>
   </div>
-</div>
+</body>
+</html>
