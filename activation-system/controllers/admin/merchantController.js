@@ -316,11 +316,12 @@ export const showPaymentForm = async (req, res) => {
     _sum: { merchantDebt: true }
   });
 
-  const actualDebt = _sum.merchantDebt || 0;
+  const actualDebt = Number(_sum.merchantDebt ?? 0);
 
   res.render('pages/admin-pay-merchant', {
     merchant,
     actualDebt,
+    error: null,
     user: req.session.user
   });
 };
@@ -334,11 +335,26 @@ export const handleMerchantPayment = async (req, res) => {
   if (!merchant) return res.status(404).send('Merchant not found');
 
   const paymentAmount = parseFloat(amount);
+  const { _sum } = await prisma.voucherTransaction.aggregate({
+    where: {
+      merchantId,
+      status: 'PENDING'
+    },
+    _sum: { merchantDebt: true }
+  });
+
+  const actualDebt = Number(_sum.merchantDebt ?? 0);
+
   if (isNaN(paymentAmount) || paymentAmount <= 0) {
-    return res.status(400).send('Сумма должна быть больше нуля');
+    return res.status(400).render('pages/admin-pay-merchant', {
+      merchant,
+      actualDebt,
+      user: req.session.user,
+      error: 'Сумма платежа должна быть больше нуля'
+    });
   }
 
-  const balanceBefore = merchant.balance || 0;
+  const balanceBefore = Number(merchant.balance ?? 0);
   const balanceAfter = balanceBefore - paymentAmount;
 
   await prisma.merchantPayment.create({

@@ -155,6 +155,7 @@ export const showVendorPaymentForm = async (req, res) => {
 
   res.render('pages/admin-pay-vendor', {
     vendor,
+    error: null,
     user: req.session.user
   });
 };
@@ -170,10 +171,14 @@ export const handleVendorPayment = async (req, res) => {
 
   const paymentAmount = parseFloat(amount);
   if (isNaN(paymentAmount) || paymentAmount <= 0) {
-    return res.status(400).send('Сумма должна быть больше нуля');
+    return res.status(400).render('pages/admin-pay-vendor', {
+      vendor,
+      error: 'Сумма пополнения должна быть больше нуля',
+      user: req.session.user
+    });
   }
 
-  const balanceBefore = vendor.balance || 0;
+  const balanceBefore = Number(vendor.balance ?? 0);
   const balanceAfter = balanceBefore - paymentAmount;
 
   await prisma.vendorPayment.create({
