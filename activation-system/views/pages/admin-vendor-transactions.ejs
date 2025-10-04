@@ -1,61 +1,103 @@
-<%- include('../partials/admin-navbar', { user }) %>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>История транзакций вендора | Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen font-[Inter]">
+  <%- include('../partials/admin-navbar', { user }) %>
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-  <div class="sm:flex sm:items-center">
-    <div class="sm:flex-auto">
-      <h2 class="text-2xl font-semibold text-gray-900">История транзакций</h2>
-      <p class="mt-2 text-sm text-gray-700">Вендор: <span class="font-medium"><%= vendor.name %></span></p>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
+    <div class="md:flex md:items-center md:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">История транзакций</h1>
+        <p class="mt-1 text-sm text-slate-500">Вендор: <%= vendor.name %></p>
+      </div>
+      <div class="mt-4 md:mt-0">
+        <a href="/admin/vendors" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+          </svg>
+          К списку вендоров
+        </a>
+      </div>
     </div>
-    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-      <a href="/admin/vendors" class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-        ← Назад к списку
-      </a>
-    </div>
-  </div>
 
-  <div class="mt-8 flex flex-col">
-    <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-      <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-        <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-          <table class="min-w-full divide-y divide-gray-300">
-            <thead class="bg-gray-50">
-              <tr>
-                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Дата</th>
-                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Сумма</th>
-                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Комментарий</th>
-                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Баланс до</th>
-                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Баланс после</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-              <% transactions.forEach(tx => { %>
-                <tr>
-                  <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                    <%= new Date(tx.createdAt).toLocaleString() %>
-                  </td>
-                  <td class="whitespace-nowrap px-3 py-4 text-sm">
-                    <span class="font-medium <%= tx.amount >= 0 ? 'text-green-600' : 'text-red-600' %>">
-                      <%= tx.amount >= 0 ? '+' : '' %><%= tx.amount.toLocaleString('ru-RU') %>
-                    </span>
-                    <span class="text-gray-500">сум</span>
-                  </td>
-                  <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                    <%= tx.comment || '—' %>
-                  </td>
-                  <td class="whitespace-nowrap px-3 py-4 text-sm">
-                    <span class="font-medium text-gray-900"><%= tx.balanceBefore.toLocaleString('ru-RU') %></span>
-                    <span class="text-gray-500">сум</span>
-                  </td>
-                  <td class="whitespace-nowrap px-3 py-4 text-sm">
-                    <span class="font-medium text-gray-900"><%= tx.balanceAfter.toLocaleString('ru-RU') %></span>
-                    <span class="text-gray-500">сум</span>
-                  </td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
+    <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+      <section class="rounded-lg bg-white shadow ring-1 ring-slate-200 p-6 space-y-4">
+        <h2 class="text-lg font-semibold text-slate-900">Итоги</h2>
+        <dl class="space-y-4">
+          <div class="flex items-start justify-between">
+            <dt class="text-sm font-medium text-slate-500">Текущий баланс</dt>
+            <dd class="text-sm font-semibold text-slate-900">
+              <%= ((vendor && vendor.balance) || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %> сум
+            </dd>
+          </div>
+          <div class="flex items-start justify-between">
+            <dt class="text-sm font-medium text-slate-500">Количество платежей</dt>
+            <dd class="text-sm font-semibold text-slate-900"><%= (transactions && transactions.length) || 0 %></dd>
+          </div>
+        </dl>
+        <p class="rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+          Здесь показаны все выплаты и корректировки, зафиксированные для вендора через админ-панель.
+        </p>
+      </section>
+
+      <div class="md:col-span-2">
+        <% const txList = transactions || []; %>
+        <% if (txList.length === 0) { %>
+          <div class="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow">
+            <svg class="mx-auto h-12 w-12 text-slate-300" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-9A2.25 2.25 0 002.25 5.25v13.5A2.25 2.25 0 004.5 21h9a2.25 2.25 0 002.25-2.25V15M9 9l3 3m0 0l-3 3m3-3H21" />
+            </svg>
+            <h3 class="mt-4 text-sm font-semibold text-slate-900">Транзакций ещё нет</h3>
+            <p class="mt-2 text-sm text-slate-500">Создайте первое пополнение, чтобы увидеть его в списке.</p>
+            <div class="mt-6">
+              <a href="/admin/vendor/<%= vendor.id %>/pay" class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                Добавить платёж
+              </a>
+            </div>
+          </div>
+        <% } else { %>
+          <div class="overflow-hidden rounded-lg bg-white shadow ring-1 ring-slate-200">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
+                  <tr>
+                    <th scope="col" class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Дата</th>
+                    <th scope="col" class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Сумма</th>
+                    <th scope="col" class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Комментарий</th>
+                    <th scope="col" class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Баланс до</th>
+                    <th scope="col" class="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Баланс после</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                  <% txList.forEach(tx => { %>
+                    <tr class="hover:bg-slate-50">
+                      <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600"><%= new Date(tx.createdAt).toLocaleString() %></td>
+                      <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold <%= tx.amount >= 0 ? 'text-emerald-600' : 'text-red-600' %>">
+                        <%= tx.amount >= 0 ? '+' : '' %><%= Number(tx.amount || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %> сум
+                      </td>
+                      <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600"><%= tx.comment || '—' %></td>
+                      <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        <%= Number(tx.balanceBefore || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %> сум
+                      </td>
+                      <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">
+                        <%= Number(tx.balanceAfter || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %> сум
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        <% } %>
       </div>
     </div>
   </div>
-</div>
+</body>
+</html>
