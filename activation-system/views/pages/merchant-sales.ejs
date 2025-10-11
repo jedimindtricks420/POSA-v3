@@ -14,6 +14,7 @@
   <% const onlineSales = sales.filter(sale => sale.saleType === 'ONLINE').length; %>
   <% const offlineSales = totalSales - onlineSales; %>
   <% const totalAmount = sales.reduce((sum, sale) => sum + sale.price, 0); %>
+  <% const merchantDebtValue = Number(merchantDebt || 0); %>
 
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-8">
     <section class="bg-white shadow-sm ring-1 ring-slate-200 rounded-xl p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
@@ -43,16 +44,25 @@
         <p class="mt-2 text-2xl font-semibold text-slate-900"><%= totalSales %></p>
       </div>
       <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-xs uppercase tracking-wide text-slate-400">Онлайн продажи</p>
-        <p class="mt-2 text-2xl font-semibold text-green-600"><%= onlineSales %></p>
-      </div>
-      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p class="text-xs uppercase tracking-wide text-slate-400">Оффлайн продажи</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900"><%= offlineSales %></p>
+        <p class="text-xs uppercase tracking-wide text-slate-400">Каналы продаж</p>
+        <div class="mt-4 space-y-2 text-sm">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">Онлайн</span>
+            <span class="font-semibold text-green-600"><%= onlineSales %></span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-500">Оффлайн</span>
+            <span class="font-semibold text-slate-900"><%= offlineSales %></span>
+          </div>
+        </div>
       </div>
       <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
         <p class="text-xs uppercase tracking-wide text-slate-400">Сумма продаж</p>
         <p class="mt-2 text-2xl font-semibold text-slate-900"><%= totalAmount.toLocaleString('ru-RU') %> сум</p>
+      </div>
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-slate-400">Ваш долг</p>
+        <p class="mt-2 text-2xl font-semibold text-rose-600"><%= merchantDebtValue.toLocaleString('ru-RU') %> сум</p>
       </div>
     </section>
 

@@ -609,6 +609,11 @@ async function sendVoucherSMS(client, vouchers) {
 export const showMerchantSales = async (req, res) => {
   const user = req.session.user;
 
+  const merchant = await prisma.merchant.findUnique({
+    where: { username: user.username },
+    select: { id: true },
+  });
+
   const sales = await prisma.sale.findMany({
     where: { merchantUsername: user.username },
     orderBy: { date: 'desc' },
@@ -619,8 +624,21 @@ export const showMerchantSales = async (req, res) => {
     maskedVoucher: maskVoucherCode(sale.voucherValue),
   }));
 
+  let merchantDebt = 0;
+  if (merchant) {
+    const { _sum } = await prisma.voucherTransaction.aggregate({
+      where: {
+        merchantId: merchant.id,
+        status: 'PENDING',
+      },
+      _sum: { merchantDebt: true },
+    });
+    merchantDebt = Number(_sum.merchantDebt ?? 0);
+  }
+
   res.render('pages/merchant-sales', {
     sales: maskedSales,
     user,
+    merchantDebt,
   });
 };
