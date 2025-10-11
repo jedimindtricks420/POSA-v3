@@ -3,6 +3,16 @@ import prisma from '../../prisma/client.js';
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = ['active', 'reserved', 'sold', 'pending', 'activated', 'deleted'];
 
+function maskVoucherValue(value = '') {
+  const raw = String(value || '').trim();
+  if (raw.length <= 4) {
+    return raw.replace(/.(?=..)/g, '*');
+  }
+  const head = raw.slice(0, 2);
+  const tail = raw.slice(-2);
+  return `${head}${'*'.repeat(Math.max(0, raw.length - 4))}${tail}`;
+}
+
 function buildPagination(req, total, page) {
   const totalPages = Math.max(Math.ceil(total / PAGE_SIZE), 1);
   const params = new URLSearchParams(req.query);
@@ -102,7 +112,7 @@ export const listVouchers = async (req, res) => {
             take: 1,
           },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { id: 'desc' },
         skip,
         take: PAGE_SIZE,
       }),
@@ -110,12 +120,17 @@ export const listVouchers = async (req, res) => {
 
     const pagination = buildPagination(req, total, page);
 
+    const sanitizedVouchers = vouchers.map((voucher) => ({
+      ...voucher,
+      maskedValue: maskVoucherValue(voucher.value),
+    }));
+
     res.render('pages/vendor/vouchers', {
       user,
       filters: { status, productId, search },
       statusOptions: STATUS_OPTIONS,
       products,
-      vouchers,
+      vouchers: sanitizedVouchers,
       pagination,
     });
   } catch (error) {

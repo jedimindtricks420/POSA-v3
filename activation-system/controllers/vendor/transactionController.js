@@ -1,5 +1,15 @@
 import prisma from '../../prisma/client.js';
 
+function maskVoucherValue(value = '') {
+  const raw = String(value || '').trim();
+  if (raw.length <= 4) {
+    return raw.replace(/.(?=..)/g, '*');
+  }
+  const head = raw.slice(0, 2);
+  const tail = raw.slice(-2);
+  return `${head}${'*'.repeat(Math.max(0, raw.length - 4))}${tail}`;
+}
+
 export const showTransactions = async (req, res) => {
   const user = req.session.user;
   const vendorId = user?.vendorId;
@@ -45,6 +55,11 @@ export const showTransactions = async (req, res) => {
       }),
     ]);
 
+    const maskedTransactions = transactions.map((row) => ({
+      ...row,
+      maskedVoucherValue: maskVoucherValue(row.voucherValue),
+    }));
+
     const summary = {
       pendingAmount: Number(pendingAgg?._sum?.adminDebt ?? 0),
       totalAmount: Number(totalAgg?._sum?.adminDebt ?? 0),
@@ -53,7 +68,7 @@ export const showTransactions = async (req, res) => {
 
     res.render('pages/vendor/transactions', {
       user,
-      transactions,
+      transactions: maskedTransactions,
       payments,
       summary,
     });
