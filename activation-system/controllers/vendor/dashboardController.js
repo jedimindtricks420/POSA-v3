@@ -2,6 +2,16 @@ import prisma from '../../prisma/client.js';
 
 const TREND_DAYS = 7;
 
+function maskVoucherValue(value = '') {
+  const raw = String(value || '').trim();
+  if (raw.length <= 4) {
+    return raw.replace(/.(?=..)/g, '*');
+  }
+  const head = raw.slice(0, 2);
+  const tail = raw.slice(-2);
+  return `${head}${'*'.repeat(Math.max(0, raw.length - 4))}${tail}`;
+}
+
 function startOfDay(date) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -23,7 +33,7 @@ export const showDashboard = async (req, res) => {
   const fromDate = startOfDay(new Date(Date.now() - (TREND_DAYS - 1) * 24 * 60 * 60 * 1000));
 
   try {
-    const [vendorRaw, activationsRaw, pendingCount, soldCount, recentActivations, pendingQueue] = await Promise.all([
+    const [vendorRaw, activationsRaw, pendingCount, soldCount, totalActivatedCount, recentActivations, pendingQueue] = await Promise.all([
       prisma.vendor.findUnique({
         where: { id: vendorId },
         select: {
@@ -66,6 +76,9 @@ export const showDashboard = async (req, res) => {
           },
         },
       }),
+      prisma.voucherActivation.count({
+        where: { vendorId },
+      }),
       prisma.voucherActivation.findMany({
         where: { vendorId },
         include: {
@@ -95,7 +108,7 @@ export const showDashboard = async (req, res) => {
             },
           },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { id: 'desc' },
         take: 8,
       }),
     ]);
@@ -121,17 +134,25 @@ export const showDashboard = async (req, res) => {
       }
     });
 
-    const activationTrend = Array.from(trendMap.entries()).map(([key, value]) => ({
-      date: formatChartLabel(new Date(key)),
-      count: value,
-    }));
+    const activationTrend = Array.from(trendMap.entries())
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([key, value]) => ({
+        date: formatChartLabel(new Date(key)),
+        count: value,
+      }));
 
     const metrics = {
       balance: Number(vendor?.balance ?? 0),
       pendingCount,
       soldCount,
       activationsLast7Days: activationsRaw.length,
+      totalActivated: Number(totalActivatedCount ?? 0),
     };
+
+    const sanitizedQueue = pendingQueue.map((voucher) => ({
+      ...voucher,
+      maskedValue: maskVoucherValue(voucher.value),
+    }));
 
     res.render('pages/vendor/dashboard', {
       user,
@@ -139,7 +160,8 @@ export const showDashboard = async (req, res) => {
       metrics,
       activationTrend,
       recentActivations,
-      pendingQueue,
+      pendingQueue: sanitizedQueue,
+      trendRange: TREND_DAYS,
     });
   } catch (error) {
     console.error('Vendor dashboard error:', error);
@@ -151,10 +173,12 @@ export const showDashboard = async (req, res) => {
         pendingCount: 0,
         soldCount: 0,
         activationsLast7Days: 0,
+        totalActivated: 0,
       },
       activationTrend: [],
       recentActivations: [],
       pendingQueue: [],
+      trendRange: TREND_DAYS,
       error: 'Не удалось загрузить данные дашборда',
     });
   }

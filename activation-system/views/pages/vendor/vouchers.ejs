@@ -17,7 +17,8 @@
           <h1 class="text-2xl font-bold text-slate-900">Список ваучеров</h1>
           <p class="text-sm text-slate-500">Отслеживайте состояние ваучеров и ищите их по статусу, продукту или значению.</p>
         </div>
-        <form method="GET" action="/vendor/vouchers" class="grid grid-cols-1 gap-3 sm:grid-cols-4">
+      </header>
+      <form method="GET" action="/vendor/vouchers" class="grid grid-cols-1 gap-3 sm:grid-cols-4">
           <input type="text" name="search" value="<%= filters.search || '' %>" placeholder="Поиск по коду"
                  class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
           <select name="status" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200">
@@ -42,7 +43,6 @@
             <a href="/vendor/vouchers" class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">Сброс</a>
           </div>
         </form>
-      </header>
 
       <% if (typeof error !== 'undefined' && error) { %>
         <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 shadow-sm">
@@ -76,7 +76,7 @@
                 <% const lastActivation = voucher.voucherActivations?.[0]; %>
                 <tr class="hover:bg-slate-50">
                   <td class="px-6 py-4">
-                    <code class="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= voucher.value %></code>
+                    <code class="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= voucher.maskedValue %></code>
                   </td>
                   <td class="px-6 py-4">
                     <p class="font-medium text-slate-900"><%= voucher.product?.name || voucher.productName %></p>

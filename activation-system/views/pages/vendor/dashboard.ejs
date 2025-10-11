@@ -34,37 +34,29 @@
         <p class="mt-1 text-sm text-slate-400">Вендор: <span class="font-semibold text-slate-700"><%= vendor?.name || '—' %></span></p>
         <p class="mt-2 text-sm sm:text-base text-slate-500">Контролируйте активации и задолженность платформы перед вашим бизнесом.</p>
       </div>
-      <div class="grid grid-cols-2 gap-3">
+      <div class="grid grid-cols-1 gap-3">
         <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
           <p class="text-xs uppercase tracking-wide text-slate-400">Баланс платформы перед вами</p>
-          <p class="mt-1 text-xl font-semibold text-slate-900"><%= (metrics?.balance ?? 0).toLocaleString('ru-RU') %> сум</p>
-        </div>
-        <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
-          <p class="text-xs uppercase tracking-wide text-slate-400">Ваучеры в ожидании</p>
-          <p class="mt-1 text-xl font-semibold text-slate-900"><%= metrics?.pendingCount ?? 0 %></p>
+          <p class="mt-1 text-xl font-semibold text-slate-900"><%= Number(metrics?.balance ?? 0).toLocaleString('ru-RU') %> сум</p>
         </div>
       </div>
     </section>
 
-    <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
       <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
         <p class="text-xs uppercase tracking-wide text-slate-400">Активации за 7 дней</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900"><%= metrics?.activationsLast7Days ?? 0 %></p>
-      </div>
-      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-        <p class="text-xs uppercase tracking-wide text-slate-400">Ваучеры «Sold»</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900"><%= metrics?.soldCount ?? 0 %></p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900"><%= Number(metrics?.activationsLast7Days ?? 0).toLocaleString('ru-RU') %></p>
       </div>
       <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
         <p class="text-xs uppercase tracking-wide text-slate-400">Активировано всего</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900"><%= (activationTrend || []).reduce((acc, item) => acc + item.count, 0) %></p>
+        <p class="mt-2 text-2xl font-semibold text-slate-900"><%= Number(metrics?.totalActivated ?? 0).toLocaleString('ru-RU') %></p>
       </div>
     </section>
 
     <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-6">
       <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h2 class="text-lg font-semibold text-slate-900">Динамика активированных ваучеров</h2>
-        <p class="text-sm text-slate-500">Последние <%= activationTrend?.length || 0 %> дней</p>
+        <p class="text-sm text-slate-500">Последние <%= trendRange %> дней</p>
       </header>
       <% if (!activationTrend || activationTrend.length === 0) { %>
         <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-sm text-slate-500 text-center">
@@ -147,7 +139,7 @@
                 <% pendingQueue.forEach((item) => { %>
                   <tr>
                     <td class="px-6 py-3">
-                      <code class="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= item.value %></code>
+                      <code class="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= item.maskedValue %></code>
                     </td>
                     <td class="px-6 py-3 font-medium text-slate-900"><%= item.product?.name || item.productName %></td>
                     <td class="px-6 py-3">
