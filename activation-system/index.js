@@ -32,6 +32,35 @@ app.set('views', path.join(__dirname, 'views'));
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+const walletStaticPath = path.join(__dirname, 'public', 'wallet');
+const pwaIconsPath = path.join(__dirname, 'views', 'partials', 'client', 'pwa');
+
+app.use('/wallet', express.static(walletStaticPath, {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('sw.js') || filePath.endsWith('manifest.webmanifest')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    } else {
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    }
+  },
+}));
+
+app.get('/wallet/icons/icon-192.png', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(path.join(pwaIconsPath, '192x192.png'));
+});
+
+app.get('/wallet/icons/icon-512.png', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(path.join(pwaIconsPath, '512x512.png'));
+});
+
+app.get('/wallet/icons/icon-512-maskable.png', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(path.join(pwaIconsPath, 'maskable-icon.png'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'supersecretkey',
