@@ -19,8 +19,13 @@ export const confirmCheckout = async (req, res) => {
     }
   });
 
+  if (!merchant) {
+    return res.status(403).send('Мерчант не найден');
+  }
+
   const updatedQuantities = req.body.quantities || {};
-  const saleType = req.body.saleType || 'OFFLINE';
+  const rawSaleType = (req.body.saleType || 'OFFLINE').toString().toUpperCase();
+  const saleType = rawSaleType === 'ONLINE' ? 'ONLINE' : 'OFFLINE';
   const rawCustomerPhone = req.body.customerPhone || null;
   const normalizedPhone = rawCustomerPhone ? normalizePhone(rawCustomerPhone) : null;
   const cart = req.session.cart || [];
@@ -84,143 +89,149 @@ export const confirmCheckout = async (req, res) => {
     }
   }
 
-  let total = 0;
-  const processedVouchers = [];
+  const itemsToProcess = [];
+  for (const item of cart) {
+    const quantity = Number(updatedQuantities[item.productId]) || item.quantity;
+    if (quantity <= 0) continue;
 
-  const voucherValues = [];
-  const saleIds = [];
+    const product = await prisma.product.findUnique({
+      where: { id: item.productId },
+      include: { vendor: true },
+    });
+
+    if (!product) {
+      return res.status(400).send(`Товар с id ${item.productId} недоступен для продажи`);
+    }
+
+    const vouchers = await prisma.voucher.findMany({
+      where: { productId: product.id, status: 'active' },
+      orderBy: { id: 'asc' },
+      take: quantity,
+    });
+
+    if (vouchers.length < quantity) {
+      return res.status(409).send(`Недостаточно активных ваучеров для товара "${product.name}". Доступно ${vouchers.length}, требуется ${quantity}.`);
+    }
+
+    itemsToProcess.push({ product, vouchers, quantity });
+  }
+
+  if (!itemsToProcess.length) {
+    return res.status(400).send('Не выбраны товары для оформления продажи');
+  }
+
   const lineItemsMap = new Map();
   let primaryVendor = null;
   let primarySchema = null;
+  let total = 0;
+
+  itemsToProcess.forEach(({ product, quantity }) => {
+    if (product.vendor && !primaryVendor) {
+      primaryVendor = product.vendor;
+      primarySchema = parseReceiptSchema(product.vendor.receiptTemplate, product.vendor.name || 'Vendor');
+    }
+
+    const existing = lineItemsMap.get(product.id);
+    if (existing) {
+      existing.qty += quantity;
+    } else {
+      lineItemsMap.set(product.id, {
+        name: product.name,
+        qty: quantity,
+        price: product.price,
+      });
+    }
+
+    total += product.price * quantity;
+  });
+
+  const processedVouchers = [];
+  const voucherValues = [];
+  const saleIds = [];
 
   try {
-    // Обработка каждого товара в корзине
-    for (const item of cart) {
-      const quantity = Number(updatedQuantities[item.productId]) || item.quantity;
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-        include: { vendor: true },
-      });
+    await prisma.$transaction(async (tx) => {
+      for (const entry of itemsToProcess) {
+        const { product, vouchers } = entry;
 
-      if (!product) continue;
-
-      if (product.vendor && !primaryVendor) {
-        primaryVendor = product.vendor;
-      }
-      if (product.vendor && !primarySchema) {
-        primarySchema = parseReceiptSchema(product.vendor.receiptTemplate, product.vendor.name || 'Vendor');
-      }
-
-      const productKey = product.id;
-      const existingLine = lineItemsMap.get(productKey) || {
-        name: product.name,
-        qty: 0,
-        price: product.price,
-      };
-      existingLine.qty += quantity;
-      lineItemsMap.set(productKey, existingLine);
-
-      for (let i = 0; i < quantity; i++) {
-        const voucher = await prisma.voucher.findFirst({
-          where: { productId: product.id, status: 'active' }
-        });
-
-        if (!voucher) continue;
-
-        // Обновление статуса ваучера
-        await prisma.voucher.update({
-          where: { id: voucher.id },
-          data: { status: 'sold' }
-        });
-
-        // Создание записи о продаже
-        const saleData = {
-          voucherValue: voucher.value,
-          price: product.price,
-          productId: product.id,
-          productName: product.name,
-          merchantUsername: user.username,
-          receiptPath,
-          saleType: saleType,
-          customerPhone: normalizedPhone
-        };
-
-        const sale = await prisma.sale.create({ data: saleData });
-        saleIds.push(sale.id);
-        voucherValues.push(voucher.value);
-
-        // Для онлайн продаж создаем связь ваучера с клиентом
-        if (saleType === 'ONLINE' && client) {
-          await prisma.onlineVoucher.create({
-            data: {
-              clientId: client.id,
-              voucherId: voucher.id,
-              assignedAt: new Date()
-            }
+        for (const voucher of vouchers) {
+          const updatedVoucher = await tx.voucher.update({
+            where: { id: voucher.id },
+            data: { status: 'sold' },
+            select: { id: true, value: true },
           });
 
-          // Логирование для кошелька
-          await prisma.voucherWalletLog.create({
+          const sale = await tx.sale.create({
+            data: {
+              voucherValue: updatedVoucher.value,
+              price: product.price,
+              productId: product.id,
+              productName: product.name,
+              merchantUsername: user.username,
+              receiptPath,
+              saleType,
+              customerPhone: normalizedPhone,
+            },
+            select: { id: true },
+          });
+
+          saleIds.push(sale.id);
+          voucherValues.push(updatedVoucher.value);
+          processedVouchers.push({
+            voucher: updatedVoucher,
+            product,
+            saleId: sale.id,
+          });
+
+          if (saleType === 'ONLINE' && client) {
+          await tx.onlineVoucher.create({
             data: {
               clientId: client.id,
-              voucherId: voucher.id,
-              isAddedToWallet: true
-            }
+              voucherId: updatedVoucher.id,
+              assignedAt: new Date(),
+            },
+            });
+
+            await tx.voucherWalletLog.create({
+              data: {
+                clientId: client.id,
+                voucherId: updatedVoucher.id,
+                isAddedToWallet: true,
+              },
+            });
+          }
+
+          await tx.voucherTransaction.create({
+            data: {
+              voucherValue: updatedVoucher.value,
+              merchantId: merchant.id,
+              vendorId: product.vendorId,
+              productId: product.id,
+              productName: product.name,
+              price: product.price,
+              merchantDebt: product.price * (1 - product.merchantCommissionPercent / 100),
+              adminDebt: product.price * (product.vendorCommissionPercent / 100),
+              vendorDebt: product.price * (1 - product.vendorCommissionPercent / 100),
+            },
+          });
+
+          const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
+          await tx.vendor.update({
+            where: { id: product.vendorId },
+            data: { balance: { increment: vendorDebt } },
+          });
+
+          const merchantDebt = product.price * (1 - product.merchantCommissionPercent / 100);
+          await tx.merchant.update({
+            where: { id: merchant.id },
+            data: { balance: { increment: merchantDebt } },
           });
         }
-
-        // Создание транзакции ваучера
-        await prisma.voucherTransaction.create({
-          data: {
-            voucherValue: voucher.value,
-            merchantId: merchant.id,
-            vendorId: product.vendorId,
-            productId: product.id,
-            productName: product.name,
-            price: product.price,
-            merchantDebt: product.price * (1 - product.merchantCommissionPercent / 100),
-            adminDebt: product.price * (product.vendorCommissionPercent / 100),
-            vendorDebt: product.price * (1 - product.vendorCommissionPercent / 100)
-          }
-        });
-
-        // Обновление баланса вендора
-        const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
-        const vendor = await prisma.vendor.findUnique({
-          where: { id: product.vendorId },
-          select: { balance: true }
-        });
-
-        const vendorBalance = vendor.balance ?? 0;
-        const newVendorBalance = vendorBalance + vendorDebt;
-
-        await prisma.vendor.update({
-          where: { id: product.vendorId },
-          data: { balance: newVendorBalance }
-        });
-
-        // Обновление баланса мерчанта
-        const merchantCurrent = await prisma.merchant.findUnique({
-          where: { id: merchant.id },
-          select: { balance: true }
-        });
-
-        const currentBalance = merchantCurrent.balance ?? 0;
-        const merchantDebt = product.price * (1 - product.merchantCommissionPercent / 100);
-        const newBalance = currentBalance + merchantDebt;
-
-        await prisma.merchant.update({
-          where: { id: merchant.id },
-          data: { balance: newBalance }
-        });
-
-        total += product.price;
-        processedVouchers.push({
-          voucher: voucher,
-          product: product,
-          saleId: sale.id,
-        });
       }
+    });
+
+    if (!processedVouchers.length) {
+      return res.status(400).send('Не удалось выполнить продажу: нет доступных ваучеров');
     }
 
     // Генерация PDF чека для оффлайн продаж
@@ -266,6 +277,8 @@ export const confirmCheckout = async (req, res) => {
 
     // Очистка корзины
     req.session.cart = [];
+
+    const customerPhoneDisplay = normalizedPhone || rawCustomerPhone || '—';
 
     // Ответ в зависимости от типа продажи
     if (saleType === 'OFFLINE') {
@@ -336,8 +349,8 @@ export const confirmCheckout = async (req, res) => {
                 <h2 class="text-2xl font-bold text-slate-900 mb-2">Онлайн продажа завершена</h2>
                 <p class="text-slate-600">SMS с ваучером отправлено на номер</p>
               </div>
-              <div class="bg-slate-50 rounded-lg p-4 mb-6">
-                <code class="text-sm text-slate-700">${customerPhone}</code>
+              <div class="bg-slate-50 rounded-lg п-4 mb-6">
+                <code class="text-sm text-slate-700">${customerPhoneDisplay}</code>
               </div>
               <div class="space-y-3">
                 <a href="/merchant/sales" class="block w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
@@ -581,8 +594,8 @@ async function generatePDFReceipt({ absolutePath, merchant, schema, context }) {
 async function sendVoucherSMS(client, vouchers) {
   try {
     for (const item of vouchers) {
-      // Используем строго заданный шаблон ESKIZ
-      const message = `Dobavlen noviy vaucher | Yangi vaucher qo'shildi wallet.namo.uz`;
+      const messageLines = ["Dobavlen noviy vaucher | Yangi vaucher qo'shildi wallet.namo.uz"];
+      const message = messageLines.join('\n');
       
       const smsResult = await sendSMS(client.phoneNumber, message);
       
