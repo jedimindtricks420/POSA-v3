@@ -20,11 +20,11 @@
         <div class="grid grid-cols-2 gap-3">
           <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
             <p class="text-xs uppercase tracking-wide text-slate-400">Позиций</p>
-            <p class="text-xl font-semibold text-slate-900"><%= items.length %></p>
+            <p id="checkoutTotalQuantity" class="text-xl font-semibold text-slate-900"><%= typeof totalQuantity !== 'undefined' ? totalQuantity : items.reduce((sum, item) => sum + item.quantity, 0) %></p>
           </div>
           <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
             <p class="text-xs uppercase tracking-wide text-slate-400">Сумма</p>
-            <p class="text-xl font-semibold text-slate-900"><%= totalPrice.toLocaleString('ru-RU') %> сум</p>
+            <p id="checkoutSummaryAmount" class="text-xl font-semibold text-slate-900"><%= totalPrice.toLocaleString('ru-RU') %> сум</p>
           </div>
         </div>
       </div>
@@ -100,7 +100,6 @@
                 <tr>
                   <th class="px-6 py-3">Товар</th>
                   <th class="px-6 py-3">Цена</th>
-                  <th class="px-6 py-3">Количество</th>
                   <th class="px-6 py-3">Сумма</th>
                   <th class="px-6 py-3 text-right">Действие</th>
                 </tr>
@@ -115,12 +114,11 @@
                     <td class="px-6 py-4 text-slate-600">
                       <%= item.price.toLocaleString('ru-RU') %> сум
                     </td>
-                    <td class="px-6 py-4">
-                      <input type="number" name="quantities[<%= item.id %>]" value="<%= item.quantity %>" min="1"
-                             class="w-24 rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+                    <td class="px-6 py-4 text-slate-600">
+                      <%= item.price.toLocaleString('ru-RU') %> сум
                     </td>
                     <td class="px-6 py-4 font-semibold text-slate-900">
-                      <%= (item.price * item.quantity).toLocaleString('ru-RU') %> сум
+                      <%= item.price.toLocaleString('ru-RU') %> сум
                     </td>
                     <td class="px-6 py-4 text-right">
                       <a href="/merchant/cart/remove/<%= item.id %>" class="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-200">
@@ -140,7 +138,7 @@
         <section class="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-5">
           <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="text-lg font-semibold text-slate-900">Итого к оплате</div>
-            <div class="text-2xl font-bold text-slate-900"><%= totalPrice.toLocaleString('ru-RU') %> сум</div>
+            <div id="checkoutTotalAmount" class="text-2xl font-bold text-slate-900"><%= totalPrice.toLocaleString('ru-RU') %> сум</div>
           </div>
         </section>
 
@@ -198,6 +196,7 @@
         }
       });
     }
+
   </script>
 </body>
 </html>

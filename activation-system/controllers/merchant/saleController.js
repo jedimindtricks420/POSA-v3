@@ -23,7 +23,6 @@ export const confirmCheckout = async (req, res) => {
     return res.status(403).send('Мерчант не найден');
   }
 
-  const updatedQuantities = req.body.quantities || {};
   const rawSaleType = (req.body.saleType || 'OFFLINE').toString().toUpperCase();
   const saleType = rawSaleType === 'ONLINE' ? 'ONLINE' : 'OFFLINE';
   const rawCustomerPhone = req.body.customerPhone || null;
@@ -89,190 +88,154 @@ export const confirmCheckout = async (req, res) => {
     }
   }
 
-  const itemsToProcess = [];
-  for (const item of cart) {
-    const quantity = Number(updatedQuantities[item.productId]) || item.quantity;
-    if (quantity <= 0) continue;
-
-    const product = await prisma.product.findUnique({
-      where: { id: item.productId },
-      include: { vendor: true },
-    });
-
-    if (!product) {
-      return res.status(400).send(`Товар с id ${item.productId} недоступен для продажи`);
-    }
-
-    const vouchers = await prisma.voucher.findMany({
-      where: { productId: product.id, status: 'active' },
-      orderBy: { id: 'asc' },
-      take: quantity,
-    });
-
-    if (vouchers.length < quantity) {
-      return res.status(409).send(`Недостаточно активных ваучеров для товара "${product.name}". Доступно ${vouchers.length}, требуется ${quantity}.`);
-    }
-
-    itemsToProcess.push({ product, vouchers, quantity });
+  const cartItem = cart[0];
+  if (!cartItem) {
+    return res.status(400).send('Корзина пуста');
   }
 
-  if (!itemsToProcess.length) {
-    return res.status(400).send('Не выбраны товары для оформления продажи');
-  }
-
-  const lineItemsMap = new Map();
-  let primaryVendor = null;
-  let primarySchema = null;
-  let total = 0;
-
-  itemsToProcess.forEach(({ product, quantity }) => {
-    if (product.vendor && !primaryVendor) {
-      primaryVendor = product.vendor;
-      primarySchema = parseReceiptSchema(product.vendor.receiptTemplate, product.vendor.name || 'Vendor');
-    }
-
-    const existing = lineItemsMap.get(product.id);
-    if (existing) {
-      existing.qty += quantity;
-    } else {
-      lineItemsMap.set(product.id, {
-        name: product.name,
-        qty: quantity,
-        price: product.price,
-      });
-    }
-
-    total += product.price * quantity;
+  const product = await prisma.product.findUnique({
+    where: { id: cartItem.productId },
+    include: { vendor: true },
   });
 
-  const processedVouchers = [];
-  const voucherValues = [];
-  const saleIds = [];
+  if (!product) {
+    return res.status(400).send(`Товар с id ${cartItem.productId} недоступен для продажи`);
+  }
+
+  const activeVoucher = await prisma.voucher.findFirst({
+    where: { productId: product.id, status: 'active' },
+    orderBy: { id: 'asc' },
+  });
+
+  if (!activeVoucher) {
+    return res.status(409).send(`Недостаточно активных ваучеров для товара "${product.name}".`);
+  }
+
+  let processedVoucher = null;
+  const schemaForVendor = parseReceiptSchema(product.vendor?.receiptTemplate, product.vendor?.name || 'Вендор');
 
   try {
-    await prisma.$transaction(async (tx) => {
-      for (const entry of itemsToProcess) {
-        const { product, vouchers } = entry;
+    const { updatedVoucher, saleId } = await prisma.$transaction(async (tx) => {
+      const updated = await tx.voucher.update({
+        where: { id: activeVoucher.id },
+        data: { status: 'sold' },
+        select: { id: true, value: true },
+      });
 
-        for (const voucher of vouchers) {
-          const updatedVoucher = await tx.voucher.update({
-            where: { id: voucher.id },
-            data: { status: 'sold' },
-            select: { id: true, value: true },
-          });
+      const sale = await tx.sale.create({
+        data: {
+          voucherValue: updated.value,
+          price: product.price,
+          productId: product.id,
+          productName: product.name,
+          merchantUsername: user.username,
+          receiptPath,
+          saleType,
+          customerPhone: normalizedPhone,
+        },
+        select: { id: true },
+      });
 
-          const sale = await tx.sale.create({
-            data: {
-              voucherValue: updatedVoucher.value,
-              price: product.price,
-              productId: product.id,
-              productName: product.name,
-              merchantUsername: user.username,
-              receiptPath,
-              saleType,
-              customerPhone: normalizedPhone,
-            },
-            select: { id: true },
-          });
+      if (saleType === 'ONLINE' && client) {
+        await tx.onlineVoucher.create({
+          data: {
+            clientId: client.id,
+            voucherId: updated.id,
+            assignedAt: new Date(),
+          },
+        });
 
-          saleIds.push(sale.id);
-          voucherValues.push(updatedVoucher.value);
-          processedVouchers.push({
-            voucher: updatedVoucher,
-            product,
-            saleId: sale.id,
-          });
-
-          if (saleType === 'ONLINE' && client) {
-          await tx.onlineVoucher.create({
-            data: {
-              clientId: client.id,
-              voucherId: updatedVoucher.id,
-              assignedAt: new Date(),
-            },
-            });
-
-            await tx.voucherWalletLog.create({
-              data: {
-                clientId: client.id,
-                voucherId: updatedVoucher.id,
-                isAddedToWallet: true,
-              },
-            });
-          }
-
-          await tx.voucherTransaction.create({
-            data: {
-              voucherValue: updatedVoucher.value,
-              merchantId: merchant.id,
-              vendorId: product.vendorId,
-              productId: product.id,
-              productName: product.name,
-              price: product.price,
-              merchantDebt: product.price * (1 - product.merchantCommissionPercent / 100),
-              adminDebt: product.price * (product.vendorCommissionPercent / 100),
-              vendorDebt: product.price * (1 - product.vendorCommissionPercent / 100),
-            },
-          });
-
-          const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
-          await tx.vendor.update({
-            where: { id: product.vendorId },
-            data: { balance: { increment: vendorDebt } },
-          });
-
-          const merchantDebt = product.price * (1 - product.merchantCommissionPercent / 100);
-          await tx.merchant.update({
-            where: { id: merchant.id },
-            data: { balance: { increment: merchantDebt } },
-          });
-        }
+        await tx.voucherWalletLog.create({
+          data: {
+            clientId: client.id,
+            voucherId: updated.id,
+            isAddedToWallet: true,
+          },
+        });
       }
+
+      await tx.voucherTransaction.create({
+        data: {
+          voucherValue: updated.value,
+          merchantId: merchant.id,
+          vendorId: product.vendorId,
+          productId: product.id,
+          productName: product.name,
+          price: product.price,
+          merchantDebt: product.price * (1 - product.merchantCommissionPercent / 100),
+          adminDebt: product.price * (product.vendorCommissionPercent / 100),
+          vendorDebt: product.price * (1 - product.vendorCommissionPercent / 100),
+        },
+      });
+
+      const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
+      await tx.vendor.update({
+        where: { id: product.vendorId },
+        data: { balance: { increment: vendorDebt } },
+      });
+
+      const merchantDebt = product.price * (1 - product.merchantCommissionPercent / 100);
+      await tx.merchant.update({
+        where: { id: merchant.id },
+        data: { balance: { increment: merchantDebt } },
+      });
+
+      return { updatedVoucher: updated, saleId: sale.id };
     });
 
-    if (!processedVouchers.length) {
-      return res.status(400).send('Не удалось выполнить продажу: нет доступных ваучеров');
-    }
+    processedVoucher = {
+      voucher: updatedVoucher,
+      product,
+      saleId,
+    };
 
-    // Генерация PDF чека для оффлайн продаж
     if (saleType === 'OFFLINE') {
-      const vendorName = primaryVendor?.name || 'Вендор';
-      const schema = primarySchema || parseReceiptSchema(primaryVendor?.receiptTemplate, vendorName);
-      const lineItems = Array.from(lineItemsMap.values());
-      const voucherFull = voucherValues.join('\n');
-      const voucherMasked = voucherFull;
-      const firstVoucher = voucherValues[0] || '';
+      const vendorName = product.vendor?.name || 'Вендор';
+      const price = product.price;
+      const voucherValue = processedVoucher.voucher.value;
+      const segments = [
+        {
+          schema: schemaForVendor,
+          context: {
+            vendorName,
+            merchantName: user.username,
+            clientName: normalizedPhone || 'Оффлайн клиент',
+            clientPhone: normalizedPhone || '',
+            date: formattedDate,
+            time: formattedTime,
+            saleDate: formattedDate,
+            saleTime: formattedTime,
+            saleId: String(processedVoucher.saleId),
+            items: [
+              {
+                name: product.name,
+                qty: 1,
+                price,
+              },
+            ],
+            total: price,
+            totalFormatted: formatCurrencyUz(price),
+            voucherFull: voucherValue,
+            voucherMasked: maskVoucherCode(voucherValue),
+            qrUrl: `${baseUrl}/activate?voucher=${encodeURIComponent(voucherValue)}`,
+            variables: {
+              customerPhone: normalizedPhone || '',
+              merchantLegal: merchant?.legalInfo || '',
+            },
+          },
+        },
+      ];
+
       await generatePDFReceipt({
         absolutePath,
         merchant,
-        schema,
-        context: {
-          vendorName,
-          merchantName: user.username,
-          clientName: normalizedPhone || 'Оффлайн клиент',
-          clientPhone: normalizedPhone || '',
-          date: formattedDate,
-          time: formattedTime,
-          saleDate: formattedDate,
-          saleTime: formattedTime,
-          saleId: saleIds[0] ? String(saleIds[0]) : '',
-          items: lineItems,
-          total,
-          totalFormatted: formatCurrencyUz(total),
-          voucherFull,
-          voucherMasked,
-          qrUrl: firstVoucher ? `${baseUrl}/activate?voucher=${encodeURIComponent(firstVoucher)}` : '',
-          variables: {
-            customerPhone: normalizedPhone || '',
-            merchantLegal: merchant?.legalInfo || '',
-          },
-        },
+        segments,
+        fallbackSchema: schemaForVendor,
       });
     }
 
-    // Отправка SMS для онлайн продаж
-    if (saleType === 'ONLINE' && client && processedVouchers.length > 0) {
-      await sendVoucherSMS(client, processedVouchers);
+    if (saleType === 'ONLINE' && client) {
+      await sendVoucherSMS(client, [processedVoucher]);
     }
 
     // Очистка корзины
@@ -540,46 +503,80 @@ async function drawReceiptElement(doc, element, context, layout) {
   }
 }
 
-async function generatePDFReceipt({ absolutePath, merchant, schema, context }) {
+async function generatePDFReceipt({ absolutePath, merchant, segments = [], schema, context, fallbackSchema = null }) {
   const doc = new PDFDocument({
-    size: [226.8, 820],
+    size: [226.8, 1200],
     margin: 20,
   });
 
   const fontPath = path.join(process.cwd(), 'assets', 'fonts', 'Roboto.ttf');
-  if (fs.existsSync(fontPath)) {
-    doc.registerFont('Roboto', fontPath);
-    doc.font('Roboto');
-  }
+  const registerFont = () => {
+    if (fs.existsSync(fontPath)) {
+      doc.registerFont('Roboto', fontPath);
+      doc.font('Roboto');
+    }
+  };
+
+  registerFont();
 
   const writeStream = fs.createWriteStream(absolutePath);
   doc.pipe(writeStream);
 
-  const layout = {
-    x: doc.page.margins.left,
-    width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
-  };
+  const segmentList = segments.length ? segments : [{ schema: schema || fallbackSchema, context }];
 
-  if (merchant?.legalInfo) {
-    doc.fontSize(9).fillColor('#475569').text(merchant.legalInfo, {
-      width: layout.width,
-      align: 'left',
-    });
-    doc.moveDown(0.4);
-  }
-
-  const resolvedSchema = schema || parseReceiptSchema(null, context.vendorName || 'Receipt');
-  const preparedContext = {
-    ...context,
-    total: context.total ?? 0,
-    totalFormatted: context.totalFormatted ?? formatCurrencyUz(context.total ?? 0),
-  };
-
-  if (Array.isArray(resolvedSchema?.elements)) {
-    for (const element of resolvedSchema.elements) {
-      // eslint-disable-next-line no-await-in-loop
-      await drawReceiptElement(doc, element, preparedContext, layout);
+  const drawLegalInfo = () => {
+    if (merchant?.legalInfo) {
+      doc.fontSize(9).fillColor('#475569').text(merchant.legalInfo, {
+        width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+        align: 'left',
+      });
+      doc.moveDown(0.4);
     }
+  };
+
+  let isFirstSegment = true;
+
+  for (const segment of segmentList) {
+    if (!segment || !segment.context) continue;
+
+    if (isFirstSegment) {
+      drawLegalInfo();
+    } else {
+      const estimatedHeight = 220; // примерная высота блока с QR
+      if (doc.y + estimatedHeight > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        registerFont();
+        drawLegalInfo();
+      } else {
+        doc.moveDown(1);
+        doc.strokeColor('#e2e8f0')
+          .moveTo(doc.page.margins.left, doc.y)
+          .lineTo(doc.page.width - doc.page.margins.right, doc.y)
+          .stroke();
+        doc.moveDown(0.7);
+      }
+    }
+
+    const effectiveSchema = segment.schema || fallbackSchema || schema || parseReceiptSchema(null, segment.context.vendorName || 'Receipt');
+    const preparedContext = {
+      ...segment.context,
+      total: segment.context.total ?? 0,
+      totalFormatted: segment.context.totalFormatted ?? formatCurrencyUz(segment.context.total ?? 0),
+    };
+
+    const layout = {
+      x: doc.page.margins.left,
+      width: doc.page.width - doc.page.margins.left - doc.page.margins.right,
+    };
+
+    if (Array.isArray(effectiveSchema?.elements)) {
+      for (const element of effectiveSchema.elements) {
+        // eslint-disable-next-line no-await-in-loop
+        await drawReceiptElement(doc, element, preparedContext, layout);
+      }
+    }
+
+    isFirstSegment = false;
   }
 
   doc.end();

@@ -33,6 +33,7 @@
                   <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">ID</th>
                   <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Дата</th>
                   <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Продукт</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Тип продажи</th>
                   <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Цена</th>
                   <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Ваучер</th>
                   <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Продавец</th>
@@ -51,6 +52,19 @@
                     </td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
                       <%= sale.productName %>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                      <% if (sale.saleType === 'ONLINE') { %>
+                        <span class="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
+                          <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                          Онлайн
+                        </span>
+                      <% } else { %>
+                        <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                          <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                          Оффлайн
+                        </span>
+                      <% } %>
                     </td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
                       <%= sale.price.toLocaleString('ru-RU') %> сум
@@ -90,4 +104,3 @@
   </div>
 </body>
 </html>
-
