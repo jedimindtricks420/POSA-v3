@@ -216,7 +216,7 @@ export const confirmCheckout = async (req, res) => {
             total: price,
             totalFormatted: formatCurrencyUz(price),
             voucherFull: voucherValue,
-            voucherMasked: maskVoucherCode(voucherValue),
+            voucherMasked: voucherValue,
             qrUrl: `${baseUrl}/activate?voucher=${encodeURIComponent(voucherValue)}`,
             variables: {
               customerPhone: normalizedPhone || '',
