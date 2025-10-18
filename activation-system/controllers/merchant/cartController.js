@@ -7,7 +7,9 @@ export const showProductsForSale = async (req, res) => {
     orderBy: { id: 'asc' },
   });
 
-  if (!req.session.cart) req.session.cart = [];
+  if (!Array.isArray(req.session.cart)) {
+    req.session.cart = [];
+  }
 
   res.render('pages/merchant-sell', {
     products,
@@ -16,7 +18,7 @@ export const showProductsForSale = async (req, res) => {
   });
 };
 
-// Добавить товар в корзину
+// Добавить товар в корзину (в системе теперь может быть только один товар)
 export const addToCart = async (req, res) => {
   const productId = Number(req.body.productId);
   if (!productId) return res.redirect('/merchant/sell');
@@ -24,61 +26,45 @@ export const addToCart = async (req, res) => {
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) return res.status(404).send('Товар не найден');
 
-  if (!req.session.cart) req.session.cart = [];
-
-  const existing = req.session.cart.find(p => p.productId === productId);
-  if (existing) {
-    existing.quantity += 1;
-  } else {
-    req.session.cart.push({
-      productId,
-      name: product.name,
-      price: product.price,
-      quantity: 1
-    });
-  }
+  req.session.cart = [{
+    productId,
+    name: product.name,
+    price: product.price,
+    quantity: 1,
+  }];
 
   res.redirect('/merchant/checkout');
 };
 
 // Отображение корзины
 export const showCart = (req, res) => {
-  const cart = req.session.cart || [];
-  const enrichedCart = cart.map(item => ({
+  const cart = Array.isArray(req.session.cart) && req.session.cart.length ? [req.session.cart[0]] : [];
+  req.session.cart = cart;
+
+  const enrichedCart = cart.map((item) => ({
     ...item,
     total: item.price * item.quantity,
-    id: item.productId
+    id: item.productId,
   }));
 
   const totalPrice = enrichedCart.reduce((sum, item) => sum + item.total, 0);
+  const totalQuantity = enrichedCart.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
   res.render('pages/checkout', {
     items: enrichedCart,
     totalPrice,
-    user: req.session.user
+    totalQuantity,
+    user: req.session.user,
   });
 };
 
-// Обновить корзину
+// Обновить корзину (не используется в новой логике)
 export const updateCart = (req, res) => {
-  const updates = req.body;
-  if (!req.session.cart) req.session.cart = [];
-
-  req.session.cart = req.session.cart
-    .map(item => {
-      const newQty = parseInt(updates[item.productId]);
-      return newQty > 0 ? { ...item, quantity: newQty } : null;
-    })
-    .filter(Boolean);
-
   res.redirect('/merchant/checkout');
 };
 
 // Удалить товар из корзины
 export const removeFromCart = (req, res) => {
-  const productId = Number(req.params.id);
-  if (!req.session.cart) req.session.cart = [];
-
-  req.session.cart = req.session.cart.filter(item => item.productId !== productId);
+  req.session.cart = [];
   res.redirect('/merchant/checkout');
 };
