@@ -3,6 +3,8 @@ const RUNTIME_CACHE = 'wallet-runtime-v4';
 const QUEUE_DB = 'wallet-sw';
 const QUEUE_STORE = 'pending';
 
+const OFFLINE_URL = '/offline.html';
+
 const PRECACHE_URLS = [
   '/wallet',
   '/client-register',
@@ -16,7 +18,8 @@ const PRECACHE_URLS = [
   '/js/register-sw.js',
   '/manifest.json',
   '/images/icon-192.png',
-  '/images/icon-512.png'
+  '/images/icon-512.png',
+  OFFLINE_URL
 ];
 
 self.addEventListener('install', (event) => {
@@ -129,22 +132,54 @@ async function cacheResponse(request, response) {
   await cache.put(request, response);
 }
 
-function networkFirst(request) {
-  return fetch(request)
-    .then(async (response) => {
-      const clone = response.clone();
-      try {
-        await cacheResponse(request, clone);
-      } catch (error) {
-        console.warn('networkFirst cache error', error);
+async function networkFirst(request, fallbackUrl) {
+  try {
+    const response = await fetch(request);
+    const clone = response.clone();
+    try {
+      await cacheResponse(request, clone);
+    } catch (error) {
+      console.warn('networkFirst cache error', error);
+    }
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    if (cached) {
+      return cached;
+    }
+    if (fallbackUrl) {
+      const fallback = await caches.match(fallbackUrl);
+      if (fallback) {
+        return fallback;
       }
-      return response;
-    })
-    .catch(() => caches.match(request));
+    }
+    return new Response('Offline', {
+      status: 503,
+      statusText: 'Offline',
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  }
 }
 
 function cacheFirst(request) {
-  return caches.match(request).then((cached) => cached || fetch(request));
+  return caches.match(request).then((cached) => {
+    if (cached) {
+      return cached;
+    }
+    return fetch(request).catch(async () => {
+      if (request.destination === 'document') {
+        const fallback = await caches.match(OFFLINE_URL);
+        if (fallback) {
+          return fallback;
+        }
+      }
+      return new Response('Offline', {
+        status: 503,
+        statusText: 'Offline',
+        headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+      });
+    });
+  });
 }
 
 function staleWhileRevalidate(request) {
@@ -193,7 +228,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.destination === 'document') {
-    event.respondWith(networkFirst(request));
+    event.respondWith(networkFirst(request, OFFLINE_URL));
   }
 });
 
