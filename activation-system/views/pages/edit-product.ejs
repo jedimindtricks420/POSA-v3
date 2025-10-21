@@ -43,9 +43,9 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-700">Цена ($)</label>
+          <label class="block text-sm font-medium text-slate-700">Цена (UZS)</label>
           <div class="mt-1">
-            <input type="number" step="0.01" name="price" value="<%= product.price %>" required
+            <input type="number" step="0.01" min="0" name="price" value="<%= typeof product.price === 'number' ? product.price : 0 %>" required
               class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
               placeholder="Введите цену" />
           </div>
@@ -63,22 +63,22 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-700">Комиссия мерчанту (%)</label>
+          <label class="block text-sm font-medium text-slate-700">Комиссия мерчанта (%)</label>
           <div class="mt-1">
-            <input type="number" step="0.01" name="merchantCommissionPercent" 
-              value="<%= product.merchantCommissionPercent || '' %>"
+            <input type="number" step="0.01" min="0" max="100" name="merchantCommissionPercent" 
+              value="<%= typeof product.merchantCommissionPercent === 'number' ? product.merchantCommissionPercent : 0 %>"
               class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Введите процент комиссии" />
+              placeholder="Введите процент комиссии" required />
           </div>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-slate-700">Комиссия вендору (%)</label>
+          <label class="block text-sm font-medium text-slate-700">Выплата вендору (%)</label>
           <div class="mt-1">
-            <input type="number" step="0.01" name="vendorCommissionPercent" 
-              value="<%= product.vendorCommissionPercent || '' %>"
+            <input type="number" step="0.01" min="0" max="100" name="vendorCommissionPercent" 
+              value="<%= typeof product.vendorCommissionPercent === 'number' ? product.vendorCommissionPercent : 0 %>"
               class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Введите процент комиссии" />
+              placeholder="Введите процент комиссии" required />
           </div>
         </div>
 

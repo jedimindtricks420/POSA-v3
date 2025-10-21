@@ -77,21 +77,36 @@ export const showAllProducts = async (req, res) => {
   };
   
   // Обработать редактирование товара
-  export const handleEditProduct = async (req, res) => {
-    const id = Number(req.params.id);
-    const { name, price, status, merchantCommissionPercent, } = req.body;
+export const handleEditProduct = async (req, res) => {
+  const id = Number(req.params.id);
+  const { name, price, status, merchantCommissionPercent, vendorCommissionPercent } = req.body;
 
-await prisma.product.update({
-  where: { id },
-  data: {
-    name,
-    price: Number(price),
-    status,
-    merchantCommissionPercent: parseFloat(merchantCommissionPercent)
+  const existing = await prisma.product.findUnique({ where: { id } });
+  if (!existing) {
+    return res.redirect('/admin/products');
   }
-});
-    res.redirect('/admin/products');
-  };
+
+  const parsedPrice = price !== undefined && price !== '' ? parseFloat(price) : existing.price;
+  const parsedMerchantCommission = merchantCommissionPercent !== undefined && merchantCommissionPercent !== ''
+    ? parseFloat(merchantCommissionPercent)
+    : existing.merchantCommissionPercent;
+  const parsedVendorCommission = vendorCommissionPercent !== undefined && vendorCommissionPercent !== ''
+    ? parseFloat(vendorCommissionPercent)
+    : existing.vendorCommissionPercent;
+
+  await prisma.product.update({
+    where: { id },
+    data: {
+      name,
+      price: parsedPrice,
+      status,
+      merchantCommissionPercent: parsedMerchantCommission,
+      vendorCommissionPercent: parsedVendorCommission,
+    }
+  });
+
+  res.redirect('/admin/products');
+};
   
   // Удалить товар
   export const handleDeleteProduct = async (req, res) => {
