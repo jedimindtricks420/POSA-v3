@@ -8,7 +8,10 @@
     "start": "node index.js",
     "dev": "nodemon index.js",
     "build:wallet:css": "tailwindcss -c tailwind.config.js -i resources/css/client.css -o public/css/client.css --minify",
-    "build:wallet": "npm run build:wallet:css"
+    "build:wallet": "npm run build:wallet:css",
+    "bmad:refresh": "bmad-method install -f -i codex",
+    "bmad:list": "bmad-method list:agents",
+    "bmad:validate": "bmad-method validate"
   },
   "keywords": [],
   "author": "",
