@@ -5,6 +5,7 @@ const router = express.Router();
 
 router.get('/login', authController.showLoginForm);
 router.post('/login', authController.handleLogin);
+router.post('/refresh', authController.refreshSession);
 
 router.get('/logout', authController.logout);
 router.get('/register', authController.showRegisterForm);

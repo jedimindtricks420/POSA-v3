@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,6 +15,7 @@ import vendorRoutes from './routes/vendorRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import clientApiRoutes from './routes/clientApiRoutes.js';
 import { checkSubdomain } from './middleware/checkSubdomain.js';
+import { SESSION_MAX_AGE, REMEMBER_ME_MAX_AGE } from './utils/authTokens.js';
 
 dotenv.config();
 const app = express();
@@ -22,6 +24,8 @@ const PORT = process.env.PORT || 4000;
 // __dirname support
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+app.set('trust proxy', 1);
 
 // View engine
 app.use(expressLayouts);
@@ -32,6 +36,7 @@ app.set('views', path.join(__dirname, 'views'));
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
 
 const walletStaticPath = path.join(__dirname, 'public', 'wallet');
 const pwaIconsPath = path.join(__dirname, 'views', 'partials', 'client', 'pwa');
@@ -65,8 +70,20 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'supersecretkey',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 15 * 60 * 1000,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  },
 }));
+app.use((req, res, next) => {
+  if (req.session?.user || req.session?.client) {
+    const remember = Boolean(req.session.rememberMe);
+    req.session.cookie.maxAge = remember ? REMEMBER_ME_MAX_AGE : SESSION_MAX_AGE;
+  }
+  next();
+});
 app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();

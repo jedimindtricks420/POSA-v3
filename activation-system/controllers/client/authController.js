@@ -1,6 +1,18 @@
 import prisma from '../../prisma/client.js';
 import { sendOtpSms } from '../../utils/smsService.js';
 import { normalizePhone } from '../../utils/phone.js';
+import {
+  parseRememberMe,
+  issueRefreshToken,
+  setRememberCookies,
+  clearRememberCookies,
+  revokeRefreshTokens,
+  revokeRefreshTokenByToken,
+  findRefreshToken,
+  rotateRefreshToken,
+  SESSION_MAX_AGE,
+  REMEMBER_ME_MAX_AGE,
+} from '../../utils/authTokens.js';
 
 // Генерация случайного 6-значного OTP
 function generateOtp() {
@@ -43,6 +55,9 @@ export const handleLogin = async (req, res) => {
   console.log('Request body:', req.body);
   
   const { phoneNumber, phone } = req.body;
+  const rememberMe = req.body.rememberMe !== undefined
+    ? parseRememberMe(req.body.rememberMe)
+    : Boolean(req.session.pendingRememberMe);
   const clientPhoneInput = phoneNumber || phone;
   const normalizedPhone = normalizePhone(clientPhoneInput);
 
@@ -71,6 +86,8 @@ export const handleLogin = async (req, res) => {
       });
     }
 
+    req.session.pendingRememberMe = rememberMe;
+    req.session.pendingClientId = client.id;
     await setOtpSessionAndSend(req, normalizedPhone);
     res.redirect('/client-verify');
   } catch (error) {
@@ -82,21 +99,55 @@ export const handleLogin = async (req, res) => {
 // === Страница ввода OTP ===
 export const showOtpPage = (req, res) => {
   if (!req.session.phone) return res.redirect('/wallet');
-  res.render('pages/client-verify', { phone: req.session.phone, error: null });
+  res.render('pages/client-verify', {
+    phone: req.session.phone,
+    error: null,
+    remember: Boolean(req.session.pendingRememberMe),
+  });
 };
 
 // === Проверка OTP ===
-export const verifyOtp = (req, res) => {
+export const verifyOtp = async (req, res) => {
   const { otp } = req.body;
 
   if (!otp || otp !== req.session.otp) {
     return res.render('pages/client-verify', { phone: req.session.phone, error: 'Неверный код' });
   }
 
-  // Авторизация
-  req.session.client = { phone: req.session.phone };
+  const clientId = req.session.pendingClientId;
+  if (!clientId) {
+    return res.redirect('/wallet');
+  }
+
+  const client = await prisma.client.findUnique({ where: { id: clientId } });
+  if (!client) {
+    await revokeRefreshTokens({ subjectType: 'client', subjectId: clientId, role: 'client' }).catch(() => {});
+    clearRememberCookies(res);
+    return res.redirect('/wallet');
+  }
+
+  const rememberMe = Boolean(req.session.pendingRememberMe);
+
+  req.session.client = { id: client.id, phone: client.phoneNumber };
+  req.session.rememberMe = rememberMe;
+  req.session.cookie.maxAge = rememberMe ? REMEMBER_ME_MAX_AGE : SESSION_MAX_AGE;
+
   delete req.session.otp;
   delete req.session.phone;
+  delete req.session.pendingRememberMe;
+  delete req.session.pendingClientId;
+
+  if (rememberMe) {
+    const { token } = await issueRefreshToken({
+      subjectType: 'client',
+      subjectId: client.id,
+      role: 'client',
+    });
+    setRememberCookies(res, token);
+  } else {
+    await revokeRefreshTokens({ subjectType: 'client', subjectId: client.id, role: 'client' }).catch(() => {});
+    clearRememberCookies(res);
+  }
 
   res.redirect('/client/dashboard');
 };
@@ -134,8 +185,10 @@ export const handleRegister = async (req, res) => {
       return res.render('pages/client-register', { error: 'Пользователь уже существует' });
     }
 
-    await prisma.client.create({ data: { phoneNumber: normalizedPhone, name } });
+    const created = await prisma.client.create({ data: { phoneNumber: normalizedPhone, name } });
     await setOtpSessionAndSend(req, normalizedPhone);
+    req.session.pendingRememberMe = false;
+    req.session.pendingClientId = created.id;
 
     res.redirect('/client-verify');
   } catch (error) {
@@ -149,14 +202,65 @@ export const logout = (req, res) => {
   console.log('=== CLIENT LOGOUT CALLED ===');
   console.log('Session before logout:', req.session);
   
-  // Полностью уничтожаем сессию, как это делается в общем authController
+  const token = req.cookies?.refresh_token;
+  if (token) {
+    revokeRefreshTokenByToken(token).catch(() => {});
+  }
+  clearRememberCookies(res);
+
+  const clientId = req.session?.client?.id;
+  if (clientId) {
+    revokeRefreshTokens({ subjectType: 'client', subjectId: clientId, role: 'client' }).catch(() => {});
+  }
+
   req.session.destroy((err) => {
     if (err) {
       console.error('Ошибка при уничтожении сессии:', err);
-      // Даже при ошибке перенаправляем на страницу входа
       return res.redirect('/wallet');
     }
     console.log('Session destroyed successfully, redirecting to /wallet');
     res.redirect('/wallet');
   });
+};
+
+export const refreshSession = async (req, res) => {
+  try {
+    const token = req.cookies?.refresh_token;
+    const record = await findRefreshToken(token);
+
+    if (!record || record.expiresAt < new Date() || !record.clientId) {
+      if (record?.id) {
+        await revokeRefreshTokenByToken(token);
+      }
+      clearRememberCookies(res);
+      return res.status(401).json({ ok: false, message: 'Token expired' });
+    }
+
+    const client = await prisma.client.findUnique({ where: { id: record.clientId } });
+    if (!client) {
+      await revokeRefreshTokenByToken(token);
+      clearRememberCookies(res);
+      return res.status(401).json({ ok: false, message: 'Client not found' });
+    }
+
+    req.session.regenerate(async (err) => {
+      if (err) {
+        return res.status(500).json({ ok: false });
+      }
+
+      req.session.client = { id: client.id, phone: client.phoneNumber };
+      req.session.rememberMe = true;
+      req.session.cookie.maxAge = REMEMBER_ME_MAX_AGE;
+
+      const rotated = await rotateRefreshToken(record);
+      if (rotated) {
+        setRememberCookies(res, rotated.token);
+      }
+
+      res.json({ ok: true });
+    });
+  } catch (error) {
+    console.error('Client refresh session error:', error);
+    res.status(500).json({ ok: false });
+  }
 };

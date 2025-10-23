@@ -55,10 +55,11 @@ async function initOtp() {
     resendBtn.addEventListener('click', async () => {
       resendBtn.disabled = true;
       try {
+        const remember = window.__WALLET_VERIFY__?.remember ? '1' : '0';
         await fetch('/wallet', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ phoneNumber: phone }),
+          body: new URLSearchParams({ phoneNumber: phone, rememberMe: remember }),
         });
       } finally {
         setTimeout(() => {
