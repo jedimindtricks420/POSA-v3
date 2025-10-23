@@ -26,9 +26,11 @@
   </div>
   <script>
     window.__WALLET_VERIFY__ = {
-      phone: <%- JSON.stringify(phone || null) %>
+      phone: <%- JSON.stringify(phone || null) %>,
+      remember: <%- JSON.stringify(remember || false) %>
     };
   </script>
+  <script type="module" src="/js/client-session.js"></script>
   <script type="module" src="/js/client-auth.js"></script>
 </body>
 </html>

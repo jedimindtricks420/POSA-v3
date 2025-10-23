@@ -21,6 +21,8 @@ router.post('/client-register', authController.handleRegister);
 router.get('/client-verify', authController.showOtpPage);
 router.post('/client-verify', authController.verifyOtp);
 router.get('/client/logout', authController.logout);
+router.get('/logout', authController.logout);
+router.post('/refresh', authController.refreshSession);
 
 // Клиентские страницы
 router.get('/client/dashboard', isClientAuthenticated, showDashboard);
