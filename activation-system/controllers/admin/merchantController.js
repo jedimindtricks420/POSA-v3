@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import prisma from '../../prisma/client.js';
 import QRCode from 'qrcode';
+import { buildVoucherQrUrl } from '../../utils/qr.js';
 
 
 // showMerchantDashboard
@@ -242,7 +243,10 @@ for (const item of cart) {
       .fontSize(12)
       .text(`${product.name} — ${voucher.value} — ${product.price.toFixed(2)} сум`);
       // Генерируем QR-код
-      const qrData = `https://yourdomain.com/activate?voucher=${voucher.value}`;
+      const qrData = buildVoucherQrUrl({
+        voucherCode: voucher.value,
+        origin: `${req.protocol}://${req.get('host')}`,
+      });
       const qrImageBuffer = await QRCode.toBuffer(qrData);
 
       // Вставляем QR-код

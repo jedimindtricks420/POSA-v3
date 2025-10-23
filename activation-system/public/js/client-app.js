@@ -136,6 +136,10 @@ async function loadFromCache() {
 }
 
 async function fetchAndRender() {
+  if (fetchAndRender.pending) {
+    return;
+  }
+  fetchAndRender.pending = true;
   if (selectors.skeleton) {
     selectors.skeleton.classList.remove('hidden');
   }
@@ -156,8 +160,10 @@ async function fetchAndRender() {
     }
   } finally {
     if (selectors.skeleton) selectors.skeleton.classList.add('hidden');
+    fetchAndRender.pending = false;
   }
 }
+fetchAndRender.pending = false;
 
 function openModal() {
   selectors.modal.classList.remove('hidden');
@@ -234,6 +240,25 @@ function populateModal(detail) {
   };
 }
 
+function bindAutoRefresh() {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      fetchAndRender();
+    }
+  });
+  window.addEventListener('focus', () => fetchAndRender());
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'wallet-sync-trigger') {
+      fetchAndRender();
+    }
+  });
+  setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      fetchAndRender();
+    }
+  }, 15000);
+}
+
 async function handleCardClick(event) {
   const trigger = event.target.closest('.wallet-card__show');
   if (!trigger) return;
@@ -265,6 +290,7 @@ async function handleCardClick(event) {
 async function bootstrap() {
   hydrateTheme();
   bindModalControls();
+  bindAutoRefresh();
 
   const bootstrapData = window.__WALLET_BOOTSTRAP__ || { vouchers: [] };
   if (bootstrapData.vouchers?.length) {
