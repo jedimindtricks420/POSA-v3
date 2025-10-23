@@ -68,3 +68,10 @@ export async function registerPush(registration) {
   await subscribePush(subscription.toJSON());
   return subscription;
 }
+
+export function claimVoucher(payload) {
+  return fetchJson('/api/client/voucher/claim', {
+    method: 'POST',
+    body: JSON.stringify({ payload }),
+  });
+}

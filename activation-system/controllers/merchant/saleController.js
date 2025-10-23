@@ -6,6 +6,7 @@ import prisma from '../../prisma/client.js';
 import { sendSMS } from '../../utils/smsService.js';
 import { normalizePhone } from '../../utils/phone.js';
 import { parseReceiptSchema } from '../../utils/receiptRenderer.js';
+import { buildVoucherQrUrl } from '../../utils/qr.js';
 
 // Подтвердить покупку
 export const confirmCheckout = async (req, res) => {
@@ -217,7 +218,8 @@ export const confirmCheckout = async (req, res) => {
             totalFormatted: formatCurrencyUz(price),
             voucherFull: voucherValue,
             voucherMasked: voucherValue,
-            qrUrl: `${baseUrl}/activate?voucher=${encodeURIComponent(voucherValue)}`,
+            qrUrl: buildVoucherQrUrl({ voucherCode: voucherValue, origin: baseUrl }),
+            qrOrigin: baseUrl,
             variables: {
               customerPhone: normalizedPhone || '',
               merchantLegal: merchant?.legalInfo || '',

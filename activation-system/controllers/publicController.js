@@ -1,6 +1,7 @@
 import prisma from '../prisma/client.js';
 import { sendActivationKeyEmail } from '../utils/mailer.js';
 import { fetchActivationKeyFromTelegram } from '../utils/telegramHelper.js';
+import { activateVoucherForVendor, ActivationError } from '../services/voucherActivationService.js';
 
 // Страница: Ввод email и телефона
 export const showEmailForm = (req, res) => {
@@ -116,10 +117,51 @@ export const handleClientRegister = (req, res) => {
 // Активация ваучера
 // Страница активации ваучера (универсальная)
 export const handleVoucherActivation = async (req, res) => {
-  const code = req.query.voucher;
+  const code = (req.query.voucher || '').toString().trim();
 
   if (!code) {
     return res.send('❌ Введите код ваучера в ссылке');
+  }
+
+  const user = req.session.user;
+
+  if (user?.vendorId && (user.role === 'vendor_user' || user.role === 'vendor')) {
+    try {
+      const result = await activateVoucherForVendor({
+        voucherCode: code,
+        vendorId: user.vendorId,
+        userId: user.id,
+      });
+
+      return res.render('pages/vendor/activate-qr-result', {
+        user,
+        result: {
+          success: true,
+          code: result.voucher.value,
+          productName: result.productName,
+          activationKey: result.activationKey,
+          wasLinkedToClient: result.wasLinkedToClient,
+        },
+      });
+    } catch (error) {
+      if (error instanceof ActivationError) {
+        return res.render('pages/vendor/activate-qr-result', {
+          user,
+          result: {
+            success: false,
+            message: error.message,
+          },
+        });
+      }
+      console.error('Vendor QR activation error:', error);
+      return res.render('pages/vendor/activate-qr-result', {
+        user,
+        result: {
+          success: false,
+          message: 'Не удалось активировать ваучер. Попробуйте ещё раз.',
+        },
+      });
+    }
   }
 
   const voucher = await prisma.voucher.findUnique({
@@ -130,16 +172,6 @@ export const handleVoucherActivation = async (req, res) => {
     return res.send('❌ Ваучер не найден');
   }
 
-  if (req.session.user?.role === 'vendor') {
-    // Автоматическая активация
-    await prisma.voucher.update({
-      where: { value: code },
-      data: { status: 'activated' }
-    });
-
-    return res.send('✅ Ваучер активирован');
-  } else {
-    // Показать форму активации
-    return res.render('pages/activate-form', { voucherCode: code });
-  }
+  // Показать форму активации для публичных пользователей
+  return res.render('pages/activate-form', { voucherCode: code });
 };

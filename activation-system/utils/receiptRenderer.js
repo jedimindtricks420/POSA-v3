@@ -1,4 +1,5 @@
 import QRCode from 'qrcode';
+import { buildVoucherQrUrl } from './qr.js';
 
 const PLACEHOLDERS = {
   '{{vendorName}}': (ctx) => ctx.vendorName,
@@ -208,7 +209,8 @@ function renderLineItems(element, context) {
 
 async function renderQr(element, context) {
   try {
-    const dataUrl = await QRCode.toDataURL(context.qrUrl || 'https://wallet.namo.uz/activate/demo', {
+    const qrTarget = resolveQrTarget(context);
+    const dataUrl = await QRCode.toDataURL(qrTarget, {
       width: 164,
       margin: 0,
     });
@@ -223,6 +225,24 @@ async function renderQr(element, context) {
     return `<div class="receipt-qr" data-id="${element.id}">
       <div class="qr-fallback">QR недоступен</div>
     </div>`;
+  }
+}
+
+function resolveQrTarget(context = {}) {
+  if (context.qrUrl && typeof context.qrUrl === 'string') {
+    return context.qrUrl;
+  }
+  const voucherCode = context.voucherFull || context.voucherMasked || '';
+  if (!voucherCode) {
+    return 'https://wallet.namo.uz/activate/demo';
+  }
+  try {
+    return buildVoucherQrUrl({
+      voucherCode,
+      origin: context.qrOrigin || context.origin || null,
+    });
+  } catch (error) {
+    return `https://wallet.namo.uz/activate?voucher=${encodeURIComponent(voucherCode)}`;
   }
 }
 

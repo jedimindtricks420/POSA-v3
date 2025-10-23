@@ -1,6 +1,7 @@
 import QRCode from 'qrcode';
 import bwipjs from 'bwip-js';
 import prisma from '../../../prisma/client.js';
+import { buildVoucherQrUrl, extractVoucherCode } from '../../../utils/qr.js';
 
 const STATUS_META = {
   active: { label: 'Активен', color: 'bg-emerald-400' },
@@ -45,11 +46,14 @@ function formatSummary(raw) {
   };
 }
 
-async function buildDetail(raw) {
+async function buildDetail(raw, origin) {
   const summary = formatSummary(raw);
-  const qrPayload = raw.voucher.value;
+  const qrUrl = buildVoucherQrUrl({
+    voucherCode: raw.voucher.value,
+    origin,
+  });
 
-  const qrDataUrl = await QRCode.toDataURL(qrPayload, {
+  const qrDataUrl = await QRCode.toDataURL(qrUrl, {
     margin: 1,
     width: 320,
   });
@@ -58,7 +62,7 @@ async function buildDetail(raw) {
   try {
     const png = await bwipjs.toBuffer({
       bcid: 'code128',
-      text: qrPayload,
+      text: raw.voucher.value,
       includetext: true,
       scale: 3,
       height: 12,
@@ -71,8 +75,9 @@ async function buildDetail(raw) {
 
   return {
     ...summary,
-    qrPayload,
-    barcodePayload: qrPayload,
+    qrUrl,
+    qrPayload: qrUrl,
+    barcodePayload: raw.voucher.value,
     qrDataUrl,
     barcodeDataUrl,
     terms:
@@ -101,7 +106,9 @@ export async function list(req, res) {
       orderBy: { assignedAt: 'desc' },
     });
 
-    const vouchers = onlineVouchers.map(formatSummary);
+    const vouchers = onlineVouchers
+      .filter((item) => !['activated', 'used', 'deleted'].includes(item.voucher.status))
+      .map(formatSummary);
     res.json({ vouchers, syncedAt: new Date().toISOString() });
   } catch (error) {
     console.error('list vouchers error', error);
@@ -138,7 +145,8 @@ export async function show(req, res) {
       return res.status(404).json({ error: 'Voucher not found' });
     }
 
-    const detail = await buildDetail(onlineVoucher);
+    const origin = resolveRequestOrigin(req);
+    const detail = await buildDetail(onlineVoucher, origin);
     res.json(detail);
   } catch (error) {
     console.error('show voucher error', error);
@@ -224,4 +232,122 @@ export async function subscribePush(req, res) {
     console.error('push subscription error', error);
     res.status(500).json({ error: 'Failed to store subscription' });
   }
+}
+
+class ClaimError extends Error {
+  constructor(message, status = 400) {
+    super(message);
+    this.name = 'ClaimError';
+    this.status = status;
+  }
+}
+
+export async function claim(req, res) {
+  const phone = req.session?.client?.phone;
+  if (!phone) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const origin = resolveRequestOrigin(req);
+  const payload = req.body?.payload || '';
+  const voucherCode = extractVoucherCode(payload);
+
+  if (!voucherCode) {
+    return res.status(400).json({ error: 'Не удалось распознать QR код' });
+  }
+
+  try {
+    const client = await ensureClient(phone);
+    const voucher = await prisma.voucher.findUnique({
+      where: { value: voucherCode },
+      include: {
+        product: true,
+        onlineVouchers: {
+          include: {
+            client: true,
+          },
+        },
+      },
+    });
+
+    if (!voucher) {
+      return res.status(404).json({ error: 'Ваучер не найден' });
+    }
+
+    if (!['sold', 'pending'].includes(voucher.status)) {
+      return res.status(409).json({ error: `Ваучер находится в статусе «${voucher.status}» и не может быть добавлен` });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.onlineVoucher.findUnique({
+        where: { voucherId: voucher.id },
+      });
+
+      if (current && current.clientId !== client.id) {
+        throw new ClaimError('Ваучер уже привязан к другому клиенту', 409);
+      }
+
+      const isNewAssignment = !current;
+
+      if (current) {
+        await tx.onlineVoucher.update({
+          where: { voucherId: voucher.id },
+          data: {
+            clientId: client.id,
+            assignedAt: new Date(),
+          },
+        });
+      } else {
+        await tx.onlineVoucher.create({
+          data: {
+            voucherId: voucher.id,
+            clientId: client.id,
+            assignedAt: new Date(),
+          },
+        });
+      }
+
+      if (isNewAssignment) {
+        await tx.voucherWalletLog.create({
+          data: {
+            voucherId: voucher.id,
+            clientId: client.id,
+            isAddedToWallet: true,
+            pkpassId: 'voucher.claim_qr',
+          },
+        });
+      }
+    });
+
+    const onlineVoucher = await prisma.onlineVoucher.findFirst({
+      where: {
+        voucherId: voucher.id,
+        clientId: client.id,
+      },
+      include: {
+        voucher: {
+          include: { product: true },
+        },
+      },
+    });
+
+    if (!onlineVoucher) {
+      throw new ClaimError('Не удалось обновить ваучер', 500);
+    }
+
+    const detail = await buildDetail(onlineVoucher, origin);
+    res.json(detail);
+  } catch (error) {
+    if (error instanceof ClaimError) {
+      return res.status(error.status).json({ error: error.message });
+    }
+    console.error('claim voucher error', error);
+    res.status(500).json({ error: 'Не удалось добавить ваучер в кошелёк' });
+  }
+}
+
+function resolveRequestOrigin(req) {
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  const host = req.get('host');
+  return `${protocol}://${host}`;
 }

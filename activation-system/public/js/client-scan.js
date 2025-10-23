@@ -1,6 +1,6 @@
 import { registerServiceWorker } from './register-sw.js';
 import walletOfflineStore from './wallet-offline-store.js';
-import { getVoucher, getVouchers, logVoucherEvent } from './wallet-api.js';
+import { getVouchers, logVoucherEvent, claimVoucher } from './wallet-api.js';
 
 const video = document.getElementById('qrPreview');
 const switchCameraBtn = document.getElementById('qrSwitchCamera');
@@ -78,28 +78,42 @@ function populateModal(detail) {
   modalSync.textContent = `Синхронизировано: ${new Date(detail.lastSyncAt).toLocaleString('ru-RU')}`;
 }
 
-async function handleCode(code) {
+async function handleCode(payload) {
   if (!navigator.onLine) {
     showOfflineMessage();
     updateOfflineState();
     return;
   }
   try {
-    const trimmed = code.trim();
-    const data = await getVouchers();
-    const match = data.vouchers.find((item) => item.value === trimmed);
-    if (!match) {
-      throw new Error('Voucher not found');
-    }
-    const detail = await getVoucher(match.id);
+    const detail = await claimVoucher(payload);
     populateModal(detail);
     openModal();
-    await walletOfflineStore.appendScanHistory({ code: trimmed, scannedAt: new Date().toISOString() });
+    await walletOfflineStore.appendScanHistory({
+      code: detail.value,
+      scannedAt: new Date().toISOString(),
+    });
     updateHistoryList(await walletOfflineStore.getScanHistory());
-    logVoucherEvent(match.id, 'voucher.qr_show').catch(() => {});
+    logVoucherEvent(detail.id, 'voucher.qr_show').catch(() => {});
+    await refreshWalletCache();
+    try {
+      localStorage.setItem('wallet-sync-trigger', String(Date.now()));
+    } catch (storageError) {
+      console.warn('Failed to broadcast wallet sync', storageError);
+    }
   } catch (error) {
     console.error('Failed to resolve voucher', error);
-    alert('Не удалось найти ваучер для указанного кода.');
+    const message = error?.payload?.error || 'Не удалось обработать ваучер.';
+    alert(message);
+  }
+}
+
+async function refreshWalletCache() {
+  try {
+    const data = await getVouchers();
+    await walletOfflineStore.saveVouchers({ vouchers: data.vouchers });
+    await walletOfflineStore.saveSyncInfo({ syncedAt: data.syncedAt });
+  } catch (error) {
+    console.warn('Failed to refresh wallet cache', error);
   }
 }
 

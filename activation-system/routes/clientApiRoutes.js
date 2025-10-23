@@ -8,5 +8,6 @@ router.get('/vouchers', isClientAuthenticated, voucherApi.list);
 router.get('/voucher/:id', isClientAuthenticated, voucherApi.show);
 router.post('/voucher/:id/log', isClientAuthenticated, voucherApi.logEvent);
 router.post('/push-subscription', isClientAuthenticated, voucherApi.subscribePush);
+router.post('/voucher/claim', isClientAuthenticated, voucherApi.claim);
 
 export default router;

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Результат активации ваучера</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/admin.css" />
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+  <main class="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-4 py-16">
+    <div class="w-full rounded-3xl border border-slate-200 bg-white p-8 shadow-xl">
+      <% if (result?.success) { %>
+        <div class="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-semibold text-slate-900">Ваучер активирован</h1>
+        <p class="mt-2 text-slate-500">Ваучер успешно подтверждён и переведён в статус <code class="rounded bg-slate-100 px-1">activated</code>.</p>
+        <div class="mt-6 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-6">
+          <p class="text-sm text-slate-500">Товар</p>
+          <p class="text-lg font-semibold text-slate-900"><%= result.productName %></p>
+          <div class="pt-4">
+            <p class="text-sm text-slate-500">Код ваучера</p>
+            <code class="mt-1 inline-flex items-center rounded-lg bg-white px-3 py-2 font-mono text-sm text-slate-700 shadow-inner"><%= result.code %></code>
+          </div>
+          <div class="pt-4">
+            <p class="text-sm text-slate-500">Ключ для клиента</p>
+            <code class="mt-1 inline-flex items-center rounded-lg bg-white px-3 py-2 font-mono text-sm text-slate-700 shadow-inner"><%= result.activationKey %></code>
+          </div>
+          <% if (result.wasLinkedToClient) { %>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              Ваучер был удалён из кошелька клиента после активации.
+            </div>
+          <% } %>
+        </div>
+      <% } else { %>
+        <div class="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+          <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v4m0 4h.01M5 13a7 7 0 1114 0 7 7 0 01-14 0z" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-semibold text-slate-900">Активация не выполнена</h1>
+        <p class="mt-2 text-slate-500">Причина: <span class="font-medium text-rose-600"><%= result?.message || 'Неизвестная ошибка' %></span></p>
+        <p class="mt-4 text-sm text-slate-500">Проверьте код ваучера и повторите попытку или активируйте его вручную.</p>
+      <% } %>
+
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+        <a href="/vendor/activate" class="inline-flex flex-1 items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
+          Перейти к активации
+        </a>
+        <a href="/vendor/dashboard" class="inline-flex flex-1 items-center justify-center rounded-2xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">
+          Панель вендора
+        </a>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

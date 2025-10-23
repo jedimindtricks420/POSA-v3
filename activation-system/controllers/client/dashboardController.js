@@ -65,7 +65,9 @@ export async function showDashboard(req, res) {
       });
     }
 
-    const vouchers = (client.onlineVouchers || []).map(formatVoucher);
+    const vouchers = (client.onlineVouchers || [])
+      .filter((item) => !['activated', 'used', 'deleted'].includes(item.voucher.status))
+      .map(formatVoucher);
 
     res.render('pages/client-dashboard', {
       phone,
