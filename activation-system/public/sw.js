@@ -202,22 +202,25 @@ function staleWhileRevalidate(request) {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method === 'GET' && request.url.includes('/api/client/')) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(
+      fetch(request).catch(() =>
+        new Response(JSON.stringify({ ok: false, offline: true, message: 'Требуется подключение к интернету.' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        })
+      )
+    );
     return;
   }
 
   if (request.method === 'POST' && request.url.includes('/api/client/')) {
     event.respondWith(
-      fetch(request.clone()).catch(async () => {
-        await queueRequest(request);
-        if ('sync' in self.registration) {
-          await self.registration.sync.register('wallet-sync');
-        }
-        return new Response(JSON.stringify({ ok: false, queued: true }), {
-          status: 202,
-          headers: { 'Content-Type': 'application/json' },
-        });
-      })
+      fetch(request.clone()).catch(() =>
+        new Response(JSON.stringify({ ok: false, offline: true, message: 'Требуется подключение к интернету.' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        })
+      )
     );
     return;
   }

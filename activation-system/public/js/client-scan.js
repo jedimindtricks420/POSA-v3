@@ -19,12 +19,28 @@ const modalQr = document.getElementById('voucherModalQr');
 const modalBarcode = document.getElementById('voucherModalBarcode');
 const modalTerms = document.getElementById('voucherModalTerms');
 const modalSync = document.getElementById('voucherModalSyncInfo');
+const offlineNotice = document.getElementById('qrOfflineNotice');
 
 let currentStream = null;
 let usingFrontCamera = false;
 let torchEnabled = false;
 let detector = null;
 let scanLoopId = null;
+
+function showOfflineMessage() {
+  if (typeof alert === 'function') {
+    alert('Требуется подключение к интернету для проверки ваучера.');
+  }
+}
+
+function updateOfflineState() {
+  if (!offlineNotice) return;
+  if (navigator.onLine) {
+    offlineNotice.classList.add('hidden');
+  } else {
+    offlineNotice.classList.remove('hidden');
+  }
+}
 
 function updateHistoryList(items) {
   historyList.innerHTML = '';
@@ -63,6 +79,11 @@ function populateModal(detail) {
 }
 
 async function handleCode(code) {
+  if (!navigator.onLine) {
+    showOfflineMessage();
+    updateOfflineState();
+    return;
+  }
   try {
     const trimmed = code.trim();
     const data = await getVouchers();
@@ -85,6 +106,11 @@ async function handleCode(code) {
 async function startCamera() {
   if (!navigator.mediaDevices?.getUserMedia) {
     console.warn('Camera API unavailable');
+    return;
+  }
+
+  if (!navigator.onLine) {
+    updateOfflineState();
     return;
   }
 
@@ -141,6 +167,12 @@ async function scanLoop() {
     const barcodes = await detector.detect(bitmap);
     bitmap.close();
     if (barcodes.length) {
+      if (!navigator.onLine) {
+        showOfflineMessage();
+        updateOfflineState();
+        scanLoopId = requestAnimationFrame(scanLoop);
+        return;
+      }
       cancelAnimationFrame(scanLoopId);
       await handleCode(barcodes[0].rawValue);
       scanLoopId = requestAnimationFrame(scanLoop);
@@ -177,6 +209,11 @@ async function bootstrap() {
 
   if (manualSubmit) {
     manualSubmit.addEventListener('click', async () => {
+      if (!navigator.onLine) {
+        showOfflineMessage();
+        updateOfflineState();
+        return;
+      }
       if (!manualInput.value.trim()) return;
       await handleCode(manualInput.value.trim());
     });
@@ -200,6 +237,19 @@ async function bootstrap() {
   if (modalCloseBottom) {
     modalCloseBottom.addEventListener('click', closeModal);
   }
+
+  updateOfflineState();
+  window.addEventListener('online', () => {
+    updateOfflineState();
+    startCamera();
+  });
+  window.addEventListener('offline', () => {
+    updateOfflineState();
+    if (currentStream) {
+      currentStream.getTracks().forEach((track) => track.stop());
+      currentStream = null;
+    }
+  });
 
   await registerServiceWorker();
 }
