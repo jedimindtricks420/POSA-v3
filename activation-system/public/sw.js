@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v20250124';
+const CACHE_VERSION = 'v20250126';
 const SHELL_CACHE = `wallet-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `wallet-runtime-${CACHE_VERSION}`;
 const QUEUE_DB = 'wallet-sw';
@@ -18,7 +18,9 @@ const PRECACHE_URLS = [
   '/js/wallet-offline-store.js',
   '/js/register-sw.js',
   '/js/sw-update.js',
+  '/vendor/zxing-library/index.min.js',
   '/vendor/zxing/browser/umd/zxing-browser.min.js',
+  '/vendor/jsqr/jsQR.js',
   '/manifest.json',
   '/images/icon-192.png',
   '/images/icon-512.png',

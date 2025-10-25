@@ -51,7 +51,9 @@
     };
     window.__WALLET_PUSH_PUBLIC_KEY__ = <%- JSON.stringify(pushPublicKey || null) %>;
   </script>
-  <script src="/vendor/zxing/browser/umd/zxing-browser.min.js" data-zxing-umd="1" data-ready="1"></script>
+  <script src="/vendor/zxing-library/index.min.js" data-zxing-core="1" data-ready="1"></script>
+  <script src="/vendor/zxing/browser/umd/zxing-browser.min.js" data-zxing-browser="1" data-ready="1"></script>
+  <script src="/vendor/jsqr/jsQR.js" data-jsqr="1" data-ready="1"></script>
   <script type="module" src="/js/client-session.js"></script>
   <script type="module" src="/js/client-scan.js"></script>
 </body>
