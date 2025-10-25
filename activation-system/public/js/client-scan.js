@@ -4,6 +4,36 @@ import { getVouchers, logVoucherEvent, claimVoucher } from './wallet-api.js';
 
 let BrowserMultiFormatReader = null;
 let NotFoundException = null;
+let barcodeDetector = null;
+
+async function ensureZxingScript() {
+  if (window.ZXing?.BrowserMultiFormatReader) {
+    return true;
+  }
+  const existing = document.querySelector('script[data-zxing-umd]');
+  if (existing) {
+    if (existing.dataset.ready === '1') {
+      return Boolean(window.ZXing?.BrowserMultiFormatReader);
+    }
+    return new Promise((resolve, reject) => {
+      existing.addEventListener('load', () => resolve(Boolean(window.ZXing?.BrowserMultiFormatReader)), { once: true });
+      existing.addEventListener('error', () => reject(new Error('ZXing UMD failed to load')), { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '/vendor/zxing/browser/umd/zxing-browser.min.js';
+    script.async = true;
+    script.dataset.zxingUmd = '1';
+    script.addEventListener('load', () => {
+      script.dataset.ready = '1';
+      resolve(Boolean(window.ZXing?.BrowserMultiFormatReader));
+    });
+    script.addEventListener('error', () => reject(new Error('ZXing UMD failed to load')));
+    document.head.appendChild(script);
+  });
+}
 
 const video = document.getElementById('qrPreview');
 const switchCameraBtn = document.getElementById('qrSwitchCamera');
@@ -25,42 +55,52 @@ const modalSync = document.getElementById('voucherModalSyncInfo');
 const offlineNotice = document.getElementById('qrOfflineNotice');
 
 let codeReader = null;
-let scannerControls = null;
-let availableDevices = [];
-let currentDeviceIndex = 0;
+let readerControls = null;
 let torchEnabled = false;
+let activeStream = null;
+let usingFrontCamera = false;
 
 let isHandlingPayload = false;
 let lastHandledPayload = null;
 let lastHandledAt = 0;
 const DUPLICATE_WINDOW_MS = 2000;
-let useConstraintsFallback = false;
 
 async function ensureZxing() {
-  if (BrowserMultiFormatReader && NotFoundException) {
+  if (BrowserMultiFormatReader && NotFoundException && codeReader) {
     return true;
   }
-  if (window.ZXing?.BrowserMultiFormatReader) {
+  const hasUmd = await ensureZxingScript().catch((error) => {
+    console.warn(error);
+    return false;
+  });
+  if (hasUmd && window.ZXing?.BrowserMultiFormatReader) {
     BrowserMultiFormatReader = window.ZXing.BrowserMultiFormatReader;
     NotFoundException = window.ZXing.NotFoundException || Error;
-    if (!codeReader) {
-      codeReader = new BrowserMultiFormatReader();
+  } else {
+    try {
+      const module = await import('https://unpkg.com/@zxing/browser@0.1.5/esm/index.js');
+      BrowserMultiFormatReader = module.BrowserMultiFormatReader;
+      NotFoundException = module.NotFoundException || Error;
+    } catch (error) {
+      console.warn('ZXing load failed, will try BarcodeDetector fallback', error);
+      return false;
     }
-    return true;
   }
-  try {
-    const module = await import('https://unpkg.com/@zxing/browser@0.1.5/esm/index.js');
-    BrowserMultiFormatReader = module.BrowserMultiFormatReader;
-    NotFoundException = module.NotFoundException || Error;
-    if (!codeReader) {
-      codeReader = new BrowserMultiFormatReader();
+  codeReader = new BrowserMultiFormatReader();
+  return true;
+}
+
+async function ensureBarcodeDetector() {
+  if (barcodeDetector) return true;
+  if ('BarcodeDetector' in window) {
+    try {
+      barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
+      return true;
+    } catch (error) {
+      console.warn('BarcodeDetector unavailable', error);
     }
-    return true;
-  } catch (error) {
-    console.error('Failed to load ZXing module', error);
-    alert('Не удалось загрузить модуль сканирования. Обновите страницу или обратитесь в поддержку.');
-    return false;
   }
+  return false;
 }
 
 function showOfflineMessage() {
@@ -115,7 +155,7 @@ function populateModal(detail) {
 }
 
 function getActiveTrack() {
-  const stream = scannerControls?.stream || video?.srcObject || null;
+  const stream = activeStream;
   if (!stream) return null;
   const [track] = stream.getVideoTracks();
   return track || null;
@@ -146,111 +186,137 @@ function resetTorchState() {
   updateTorchButton();
 }
 
-async function ensureDevices() {
+async function startVideo(facing = 'environment') {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    alert('Камера недоступна в этом браузере.');
+    return null;
+  }
+  try {
+    if (activeStream) {
+      activeStream.getTracks().forEach((track) => track.stop());
+      activeStream = null;
+    }
+    const constraints = {
+      video: {
+        facingMode: facing,
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
+      },
+      audio: false,
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    activeStream = stream;
+    video.srcObject = stream;
+    video.setAttribute('playsinline', 'true');
+    await video.play();
+    return stream;
+  } catch (error) {
+    console.error('getUserMedia failed', error);
+    alert('Не удалось получить доступ к камере. Проверьте разрешения.');
+    return null;
+  }
+}
+
+async function startZxingDecoder() {
   if (!(await ensureZxing())) {
     return false;
   }
-  if (!navigator.mediaDevices?.enumerateDevices) {
-    console.warn('Camera enumeration is unavailable in this browser');
+  if (!video.srcObject) {
+    console.warn('ZXing requested without active stream');
     return false;
   }
-  if (availableDevices.length) {
-    return true;
+
+  if (readerControls) {
+    readerControls.stop();
+    readerControls = null;
   }
+
   try {
-    let devices = await BrowserMultiFormatReader.listVideoInputDevices();
-    if (!devices.length) {
-      try {
-        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        tempStream.getTracks().forEach((track) => track.stop());
-        devices = await BrowserMultiFormatReader.listVideoInputDevices();
-      } catch (permissionError) {
-        console.warn('Camera permission required for scanning', permissionError);
-      }
-    }
-    if (!devices.length) {
-      console.warn('No video input devices detected');
-      useConstraintsFallback = true;
-      return true;
-    }
-    useConstraintsFallback = false;
-    availableDevices = devices;
-    const preferredIndex = devices.findIndex((device) =>
-      /back|rear|environment/i.test(device.label || ''),
+    readerControls = await codeReader.decodeFromVideoElement(
+      video,
+      (result, error) => {
+        if (result) {
+          const text = result.getText();
+          if (text) {
+            processPayload(text);
+          }
+        } else if (error && !(error instanceof NotFoundException)) {
+          console.warn('ZXing decode error', error);
+        }
+      },
     );
-    currentDeviceIndex = preferredIndex >= 0 ? preferredIndex : 0;
     return true;
   } catch (error) {
-    console.error('Failed to enumerate video input devices', error);
+    console.error('decodeFromVideoElement failed', error);
     return false;
+  }
+}
+
+let barcodeLoopId = null;
+
+async function startBarcodeDetector() {
+  if (!(await ensureBarcodeDetector())) {
+    return false;
+  }
+  if (!video.srcObject) {
+    return false;
+  }
+
+  const detect = async () => {
+    try {
+      if (video.readyState < 2) {
+        barcodeLoopId = requestAnimationFrame(detect);
+        return;
+      }
+      const results = await barcodeDetector.detect(video);
+      if (results.length) {
+        processPayload(results[0].rawValue);
+      }
+    } catch (error) {
+      // NotFoundException ожидаема, игнорируем
+    }
+    barcodeLoopId = requestAnimationFrame(detect);
+  };
+  barcodeLoopId = requestAnimationFrame(detect);
+  return true;
+}
+
+function stopBarcodeDetector() {
+  if (barcodeLoopId) {
+    cancelAnimationFrame(barcodeLoopId);
+    barcodeLoopId = null;
   }
 }
 
 async function startScanner() {
-  if (!(await ensureZxing())) {
-    return;
-  }
   if (!navigator.onLine) {
     updateOfflineState();
     return;
   }
-  const ready = await ensureDevices();
-  if (!ready) return;
 
   stopScanner();
 
-  try {
-    const handler = (result, error) => {
-      if (result) {
-        const text = result.getText();
-        if (text) {
-          processPayload(text);
-        }
-      } else if (error && !(error instanceof NotFoundException)) {
-        console.warn('ZXing decode error', error);
-      }
-    };
+  const stream = await startVideo(usingFrontCamera ? 'user' : 'environment');
+  if (!stream) {
+    return;
+  }
 
-    if (useConstraintsFallback) {
-      const constraints = {
-        video: {
-          facingMode: usingFrontCamera ? 'user' : 'environment',
-        },
-        audio: false,
-      };
+  resetTorchState();
 
-      scannerControls = await codeReader.decodeFromConstraints(
-        constraints,
-        video,
-        handler,
-        true,
-      );
-    } else {
-      const device = availableDevices[currentDeviceIndex];
-      if (!device) {
-        console.warn('Preferred video device missing, switching to fallback mode');
-        useConstraintsFallback = true;
-        await startScanner();
-        return;
-      }
-
-      scannerControls = await codeReader.decodeFromVideoDevice(
-        device.deviceId,
-        video,
-        handler,
-      );
-    }
-    resetTorchState();
-    video?.play?.().catch(() => {});
-  } catch (error) {
-    console.error('Failed to start ZXing scanner', error);
+  const zxingReady = await startZxingDecoder();
+  if (!zxingReady) {
+    console.warn('Falling back to native BarcodeDetector');
+    await startBarcodeDetector();
+  } else {
+    stopBarcodeDetector();
   }
 }
 
 function stopScanner() {
-  if (scannerControls) {
-    scannerControls.stop();
-    scannerControls = null;
+  stopBarcodeDetector();
+  if (readerControls?.stop) {
+    readerControls.stop();
+    readerControls = null;
   }
   if (codeReader) {
     try {
@@ -259,22 +325,16 @@ function stopScanner() {
       console.warn('Failed to reset code reader', error);
     }
   }
-  const stream = video?.srcObject;
-  if (stream) {
-    stream.getTracks().forEach((track) => track.stop());
-    video.srcObject = null;
+  if (activeStream) {
+    activeStream.getTracks().forEach((track) => track.stop());
+    activeStream = null;
   }
+  video.srcObject = null;
   resetTorchState();
 }
 
 async function switchCamera() {
-  if (useConstraintsFallback) {
-    usingFrontCamera = !usingFrontCamera;
-    await startScanner();
-    return;
-  }
-  if (!availableDevices.length) return;
-  currentDeviceIndex = (currentDeviceIndex + 1) % availableDevices.length;
+  usingFrontCamera = !usingFrontCamera;
   await startScanner();
 }
 
