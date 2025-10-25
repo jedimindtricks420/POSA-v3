@@ -2,39 +2,6 @@ import { registerServiceWorker } from './register-sw.js';
 import walletOfflineStore from './wallet-offline-store.js';
 import { getVouchers, logVoucherEvent, claimVoucher } from './wallet-api.js';
 
-let BrowserMultiFormatReader = null;
-let NotFoundException = null;
-let barcodeDetector = null;
-
-async function ensureZxingScript() {
-  if (window.ZXing?.BrowserMultiFormatReader) {
-    return true;
-  }
-  const existing = document.querySelector('script[data-zxing-umd]');
-  if (existing) {
-    if (existing.dataset.ready === '1') {
-      return Boolean(window.ZXing?.BrowserMultiFormatReader);
-    }
-    return new Promise((resolve, reject) => {
-      existing.addEventListener('load', () => resolve(Boolean(window.ZXing?.BrowserMultiFormatReader)), { once: true });
-      existing.addEventListener('error', () => reject(new Error('ZXing UMD failed to load')), { once: true });
-    });
-  }
-
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = '/vendor/zxing/browser/umd/zxing-browser.min.js';
-    script.async = true;
-    script.dataset.zxingUmd = '1';
-    script.addEventListener('load', () => {
-      script.dataset.ready = '1';
-      resolve(Boolean(window.ZXing?.BrowserMultiFormatReader));
-    });
-    script.addEventListener('error', () => reject(new Error('ZXing UMD failed to load')));
-    document.head.appendChild(script);
-  });
-}
-
 const video = document.getElementById('qrPreview');
 const switchCameraBtn = document.getElementById('qrSwitchCamera');
 const toggleTorchBtn = document.getElementById('qrToggleTorch');
@@ -54,53 +21,96 @@ const modalTerms = document.getElementById('voucherModalTerms');
 const modalSync = document.getElementById('voucherModalSyncInfo');
 const offlineNotice = document.getElementById('qrOfflineNotice');
 
-let codeReader = null;
-let readerControls = null;
-let torchEnabled = false;
+const fallbackCanvas = document.createElement('canvas');
+const fallbackCtx = fallbackCanvas.getContext('2d', { willReadFrequently: true });
+
 let activeStream = null;
 let usingFrontCamera = false;
-
+let fallbackLoopId = null;
 let isHandlingPayload = false;
 let lastHandledPayload = null;
 let lastHandledAt = 0;
-const DUPLICATE_WINDOW_MS = 2000;
+let scannerStarting = false;
+let zxingReader = null;
+let zxingReady = false;
+let jsqrReady = false;
+let torchEnabled = false;
+
+const SCAN_DEBOUNCE_MS = 2000;
+const FALLBACK_WIDTH = 640;
+
+function loadScriptOnce(selector, src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(selector);
+    if (existing) {
+      const readyAttr = existing.dataset.ready || existing.getAttribute('data-ready');
+      if (readyAttr === '1') {
+        resolve(true);
+      } else {
+        existing.addEventListener('load', () => resolve(true), { once: true });
+        existing.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)), { once: true });
+      }
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.dataset.ready = '0';
+    const attrMatch = selector.match(/data-([a-z0-9-]+)/i);
+    if (attrMatch) {
+      const camel = attrMatch[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+      script.dataset[camel] = '1';
+    }
+    script.addEventListener('load', () => {
+      script.dataset.ready = '1';
+      resolve(true);
+    });
+    script.addEventListener('error', () => reject(new Error(`Failed to load ${src}`)));
+    document.head.appendChild(script);
+  });
+}
 
 async function ensureZxing() {
-  if (BrowserMultiFormatReader && NotFoundException && codeReader) {
-    return true;
-  }
-  const hasUmd = await ensureZxingScript().catch((error) => {
-    console.warn(error);
+  try {
+    await Promise.all([
+      loadScriptOnce('script[data-zxing-core]', '/vendor/zxing-library/index.min.js'),
+      loadScriptOnce('script[data-zxing-browser]', '/vendor/zxing/browser/umd/zxing-browser.min.js'),
+    ]);
+  } catch (error) {
+    console.warn('ZXing scripts unavailable', error);
+    zxingReady = false;
     return false;
-  });
-  if (hasUmd && window.ZXing?.BrowserMultiFormatReader) {
-    BrowserMultiFormatReader = window.ZXing.BrowserMultiFormatReader;
-    NotFoundException = window.ZXing.NotFoundException || Error;
-  } else {
-    try {
-      const module = await import('https://unpkg.com/@zxing/browser@0.1.5/esm/index.js');
-      BrowserMultiFormatReader = module.BrowserMultiFormatReader;
-      NotFoundException = module.NotFoundException || Error;
-    } catch (error) {
-      console.warn('ZXing load failed, will try BarcodeDetector fallback', error);
-      return false;
-    }
   }
-  codeReader = new BrowserMultiFormatReader();
+
+  const ZXing = window.ZXing;
+  const ZXingBrowser = window.ZXingBrowser;
+  if (!ZXing || !ZXingBrowser) {
+    zxingReady = false;
+    return false;
+  }
+
+  if (!zxingReader) {
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE]);
+    zxingReader = new ZXing.MultiFormatReader();
+    zxingReader.setHints(hints);
+  }
+
+  zxingReady = true;
   return true;
 }
 
-async function ensureBarcodeDetector() {
-  if (barcodeDetector) return true;
-  if ('BarcodeDetector' in window) {
-    try {
-      barcodeDetector = new BarcodeDetector({ formats: ['qr_code'] });
-      return true;
-    } catch (error) {
-      console.warn('BarcodeDetector unavailable', error);
-    }
+async function ensureJsqr() {
+  try {
+    await loadScriptOnce('script[data-jsqr]', '/vendor/jsqr/jsQR.js');
+    jsqrReady = typeof window.jsQR === 'function';
+    return jsqrReady;
+  } catch (error) {
+    console.warn('jsQR unavailable', error);
+    jsqrReady = false;
+    return false;
   }
-  return false;
 }
 
 function showOfflineMessage() {
@@ -140,6 +150,9 @@ function openModal() {
 function closeModal() {
   modal.classList.add('hidden');
   modal.classList.remove('flex');
+  if (navigator.onLine) {
+    setTimeout(() => startScanner(), 300);
+  }
 }
 
 function populateModal(detail) {
@@ -155,7 +168,7 @@ function populateModal(detail) {
 }
 
 function getActiveTrack() {
-  const stream = activeStream;
+  const stream = activeStream || video?.srcObject || null;
   if (!stream) return null;
   const [track] = stream.getVideoTracks();
   return track || null;
@@ -207,6 +220,8 @@ async function startVideo(facing = 'environment') {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     activeStream = stream;
     video.srcObject = stream;
+    video.setAttribute('autoplay', 'true');
+    video.setAttribute('muted', 'true');
     video.setAttribute('playsinline', 'true');
     await video.play();
     return stream;
@@ -217,112 +232,57 @@ async function startVideo(facing = 'environment') {
   }
 }
 
-async function startZxingDecoder() {
-  if (!(await ensureZxing())) {
-    return false;
+function decodeWithZxing() {
+  if (!zxingReady || !window.ZXing || !window.ZXingBrowser) {
+    return null;
   }
-  if (!video.srcObject) {
-    console.warn('ZXing requested without active stream');
-    return false;
-  }
-
-  if (readerControls) {
-    readerControls.stop();
-    readerControls = null;
-  }
-
+  const ZXing = window.ZXing;
+  const ZXingBrowser = window.ZXingBrowser;
   try {
-    readerControls = await codeReader.decodeFromVideoElement(
-      video,
-      (result, error) => {
-        if (result) {
-          const text = result.getText();
-          if (text) {
-            processPayload(text);
-          }
-        } else if (error && !(error instanceof NotFoundException)) {
-          console.warn('ZXing decode error', error);
-        }
-      },
-    );
-    return true;
+    const luminance = new ZXingBrowser.HTMLCanvasElementLuminanceSource(fallbackCanvas);
+    const binaryBitmap = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
+    const result = zxingReader.decode(binaryBitmap);
+    const text = result.getText();
+    zxingReader.reset();
+    return text;
   } catch (error) {
-    console.error('decodeFromVideoElement failed', error);
-    return false;
-  }
-}
-
-let barcodeLoopId = null;
-
-async function startBarcodeDetector() {
-  if (!(await ensureBarcodeDetector())) {
-    return false;
-  }
-  if (!video.srcObject) {
-    return false;
-  }
-
-  const detect = async () => {
-    try {
-      if (video.readyState < 2) {
-        barcodeLoopId = requestAnimationFrame(detect);
-        return;
-      }
-      const results = await barcodeDetector.detect(video);
-      if (results.length) {
-        processPayload(results[0].rawValue);
-      }
-    } catch (error) {
-      // NotFoundException ожидаема, игнорируем
+    if (
+      error instanceof window.ZXing.NotFoundException ||
+      error instanceof window.ZXing.ChecksumException ||
+      error instanceof window.ZXing.FormatException
+    ) {
+      return null;
     }
-    barcodeLoopId = requestAnimationFrame(detect);
-  };
-  barcodeLoopId = requestAnimationFrame(detect);
-  return true;
-}
-
-function stopBarcodeDetector() {
-  if (barcodeLoopId) {
-    cancelAnimationFrame(barcodeLoopId);
-    barcodeLoopId = null;
+    console.warn('ZXing decode error', error);
+    return null;
   }
 }
 
-async function startScanner() {
-  if (!navigator.onLine) {
-    updateOfflineState();
-    return;
+function decodeWithJsqr(width, height) {
+  if (!jsqrReady || typeof window.jsQR !== 'function') {
+    return null;
   }
+  const imageData = fallbackCtx.getImageData(0, 0, width, height);
+  const qr = window.jsQR(imageData.data, width, height, {
+    inversionAttempts: 'attemptBoth',
+  });
+  return qr?.data || null;
+}
 
-  stopScanner();
-
-  const stream = await startVideo(usingFrontCamera ? 'user' : 'environment');
-  if (!stream) {
-    return;
-  }
-
-  resetTorchState();
-
-  const zxingReady = await startZxingDecoder();
-  if (!zxingReady) {
-    console.warn('Falling back to native BarcodeDetector');
-    await startBarcodeDetector();
-  } else {
-    stopBarcodeDetector();
+function stopFrameLoop() {
+  if (fallbackLoopId) {
+    cancelAnimationFrame(fallbackLoopId);
+    fallbackLoopId = null;
   }
 }
 
 function stopScanner() {
-  stopBarcodeDetector();
-  if (readerControls?.stop) {
-    readerControls.stop();
-    readerControls = null;
-  }
-  if (codeReader) {
+  stopFrameLoop();
+  if (zxingReader) {
     try {
-      codeReader.reset();
+      zxingReader.reset();
     } catch (error) {
-      console.warn('Failed to reset code reader', error);
+      console.warn('ZXing reset error', error);
     }
   }
   if (activeStream) {
@@ -333,9 +293,89 @@ function stopScanner() {
   resetTorchState();
 }
 
-async function switchCamera() {
-  usingFrontCamera = !usingFrontCamera;
-  await startScanner();
+function startFrameLoop(useZxing, useJsqr) {
+  stopFrameLoop();
+  if (!useZxing && !useJsqr) {
+    alert('Сканер недоступен. Введите код вручную.');
+    return;
+  }
+
+  const loop = () => {
+    if (!activeStream || video.readyState < 2) {
+      fallbackLoopId = requestAnimationFrame(loop);
+      return;
+    }
+
+    const { videoWidth, videoHeight } = video;
+    if (!videoWidth || !videoHeight) {
+      fallbackLoopId = requestAnimationFrame(loop);
+      return;
+    }
+
+    const scale = Math.min(1, FALLBACK_WIDTH / videoWidth);
+    const width = Math.max(160, Math.round(videoWidth * scale));
+    const height = Math.max(160, Math.round(videoHeight * scale));
+
+    if (fallbackCanvas.width !== width || fallbackCanvas.height !== height) {
+      fallbackCanvas.width = width;
+      fallbackCanvas.height = height;
+    }
+    fallbackCtx.drawImage(video, 0, 0, width, height);
+
+    let decoded = null;
+
+    if (useZxing) {
+      decoded = decodeWithZxing();
+    }
+
+    if (!decoded && useJsqr) {
+      decoded = decodeWithJsqr(width, height);
+    }
+
+    if (decoded) {
+      processPayload(decoded);
+      return;
+    }
+
+    fallbackLoopId = requestAnimationFrame(loop);
+  };
+
+  fallbackLoopId = requestAnimationFrame(loop);
+}
+
+async function startScanner() {
+  if (scannerStarting) return;
+  scannerStarting = true;
+  try {
+    if (!navigator.onLine) {
+      updateOfflineState();
+      showOfflineMessage();
+      return;
+    }
+
+    stopScanner();
+
+    const stream = await startVideo(usingFrontCamera ? 'user' : 'environment');
+    if (!stream) {
+      return;
+    }
+
+    resetTorchState();
+
+    const [zxingAvailable, jsqrAvailable] = await Promise.all([
+      ensureZxing(),
+      ensureJsqr(),
+    ]);
+
+    startFrameLoop(zxingAvailable, jsqrAvailable);
+  } finally {
+    scannerStarting = false;
+  }
+}
+
+function stopAllAndStartAgain(facing) {
+  usingFrontCamera = facing === 'user';
+  startScanner();
 }
 
 async function toggleTorch() {
@@ -360,16 +400,6 @@ async function toggleTorch() {
   updateTorchButton();
 }
 
-async function refreshWalletCache() {
-  try {
-    const data = await getVouchers();
-    await walletOfflineStore.saveVouchers({ vouchers: data.vouchers });
-    await walletOfflineStore.saveSyncInfo({ syncedAt: data.syncedAt });
-  } catch (error) {
-    console.warn('Failed to refresh wallet cache', error);
-  }
-}
-
 async function processPayload(rawPayload) {
   const payload = (rawPayload || '').trim();
   if (!payload) {
@@ -382,10 +412,7 @@ async function processPayload(rawPayload) {
   }
 
   const now = Date.now();
-  if (
-    payload === lastHandledPayload &&
-    now - lastHandledAt < DUPLICATE_WINDOW_MS
-  ) {
+  if (payload === lastHandledPayload && now - lastHandledAt < SCAN_DEBOUNCE_MS) {
     return;
   }
 
@@ -394,6 +421,8 @@ async function processPayload(rawPayload) {
   }
 
   isHandlingPayload = true;
+  stopScanner();
+
   try {
     const detail = await claimVoucher(payload);
     populateModal(detail);
@@ -421,7 +450,20 @@ async function processPayload(rawPayload) {
   } finally {
     setTimeout(() => {
       isHandlingPayload = false;
+      if (navigator.onLine && modal.classList.contains('hidden')) {
+        startScanner();
+      }
     }, 500);
+  }
+}
+
+async function refreshWalletCache() {
+  try {
+    const data = await getVouchers();
+    await walletOfflineStore.saveVouchers({ vouchers: data.vouchers });
+    await walletOfflineStore.saveSyncInfo({ syncedAt: data.syncedAt });
+  } catch (error) {
+    console.warn('Failed to refresh wallet cache', error);
   }
 }
 
@@ -451,15 +493,13 @@ async function bootstrap() {
   bindModalInteractions();
 
   if (switchCameraBtn) {
-    switchCameraBtn.addEventListener('click', async () => {
-      await switchCamera();
+    switchCameraBtn.addEventListener('click', () => {
+      stopAllAndStartAgain(usingFrontCamera ? 'environment' : 'user');
     });
   }
 
   if (toggleTorchBtn) {
-    toggleTorchBtn.addEventListener('click', () => {
-      toggleTorch();
-    });
+    toggleTorchBtn.addEventListener('click', toggleTorch);
     updateTorchButton();
   }
 
@@ -478,9 +518,9 @@ async function bootstrap() {
     });
   }
 
-  window.addEventListener('online', async () => {
+  window.addEventListener('online', () => {
     updateOfflineState();
-    await startScanner();
+    startScanner();
   });
 
   window.addEventListener('offline', () => {
