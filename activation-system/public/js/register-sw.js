@@ -1,3 +1,7 @@
+import { monitorServiceWorkerUpdates } from './sw-update.js';
+
+monitorServiceWorkerUpdates();
+
 export async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) {
     return null;
@@ -8,8 +12,14 @@ export async function registerServiceWorker() {
     if (registration.waiting) {
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      console.info('Service worker controller changed, new version active');
+    registration.addEventListener('updatefound', () => {
+      const worker = registration.installing;
+      if (!worker) return;
+      worker.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          registration.waiting?.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
     });
     return registration;
   } catch (error) {

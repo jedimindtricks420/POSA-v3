@@ -4,6 +4,7 @@ import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import expressLayouts from 'express-ejs-layouts';
 
@@ -40,6 +41,7 @@ app.use(cookieParser());
 
 const walletStaticPath = path.join(__dirname, 'public', 'wallet');
 const pwaIconsPath = path.join(__dirname, 'views', 'partials', 'client', 'pwa');
+const zxingStaticPath = path.join(__dirname, 'node_modules', '@zxing');
 
 app.use('/wallet', express.static(walletStaticPath, {
   setHeaders(res, filePath) {
@@ -67,6 +69,9 @@ app.get('/wallet/icons/icon-512-maskable.png', (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+if (fs.existsSync(zxingStaticPath)) {
+  app.use('/vendor/zxing', express.static(zxingStaticPath));
+}
 app.use(session({
   secret: process.env.SESSION_SECRET || 'supersecretkey',
   resave: false,
