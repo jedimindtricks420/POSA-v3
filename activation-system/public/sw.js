@@ -1,5 +1,6 @@
-const SHELL_CACHE = 'wallet-shell-v4';
-const RUNTIME_CACHE = 'wallet-runtime-v4';
+const CACHE_VERSION = 'v20250123';
+const SHELL_CACHE = `wallet-shell-${CACHE_VERSION}`;
+const RUNTIME_CACHE = `wallet-runtime-${CACHE_VERSION}`;
 const QUEUE_DB = 'wallet-sw';
 const QUEUE_STORE = 'pending';
 
@@ -16,10 +17,11 @@ const PRECACHE_URLS = [
   '/js/wallet-api.js',
   '/js/wallet-offline-store.js',
   '/js/register-sw.js',
+  '/js/sw-update.js',
   '/manifest.json',
   '/images/icon-192.png',
   '/images/icon-512.png',
-  OFFLINE_URL
+  OFFLINE_URL,
 ];
 
 self.addEventListener('install', (event) => {
