@@ -1,23 +1,51 @@
+const OFFLINE_QUEUE_EVENT = 'wallet-api:offline-queued';
+
 async function fetchJson(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: 'same-origin',
-    cache: 'no-store',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
+  } catch (networkError) {
+    if (typeof window !== 'undefined' && !navigator.onLine) {
+      const offlineError = new Error('Offline');
+      offlineError.offline = true;
+      offlineError.payload = { offline: true };
+      throw offlineError;
+    }
+    throw networkError;
+  }
+
+  const payload = await response.json().catch(() => ({}));
+
+  if (response.status === 202 && payload?.offline) {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent(OFFLINE_QUEUE_EVENT, {
+          detail: {
+            url,
+            payload,
+          },
+        }),
+      );
+    }
+    return payload;
+  }
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    const error = new Error(data.error || 'Request failed');
+    const error = new Error(payload.error || 'Request failed');
     error.status = response.status;
-    error.payload = data;
+    error.payload = payload;
     throw error;
   }
 
-  return response.json();
+  return payload;
 }
 
 export function getVouchers() {
@@ -47,8 +75,8 @@ export async function registerPush(registration) {
 
   const existing = await registration.pushManager.getSubscription();
   if (existing) {
-    await subscribePush(existing.toJSON());
-    return existing;
+    const stored = await subscribePush(existing.toJSON());
+    return stored?.offline ? { subscription: existing, offline: true, message: stored.message } : existing;
   }
 
   const vapidPublicKey = window.__WALLET_PUSH_PUBLIC_KEY__ || null;
@@ -65,7 +93,10 @@ export async function registerPush(registration) {
     applicationServerKey: convertedKey,
   });
 
-  await subscribePush(subscription.toJSON());
+  const stored = await subscribePush(subscription.toJSON());
+  if (stored?.offline) {
+    return { subscription, offline: true, message: stored.message };
+  }
   return subscription;
 }
 
@@ -75,3 +106,5 @@ export function claimVoucher(payload) {
     body: JSON.stringify({ payload }),
   });
 }
+
+export { OFFLINE_QUEUE_EVENT };

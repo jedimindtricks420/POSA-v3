@@ -2,7 +2,10 @@ const CACHE_VERSION = 'v20250126';
 const SHELL_CACHE = `wallet-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `wallet-runtime-${CACHE_VERSION}`;
 const QUEUE_DB = 'wallet-sw';
+const QUEUE_DB_VERSION = 2;
 const QUEUE_STORE = 'pending';
+const MAX_QUEUE_RETRY = 5;
+const BACKOFF_BASE_MS = 30 * 1000;
 
 const OFFLINE_URL = '/offline.html';
 
@@ -53,11 +56,13 @@ self.addEventListener('message', (event) => {
 
 function openQueueDb() {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(QUEUE_DB, 1);
+    const request = indexedDB.open(QUEUE_DB, QUEUE_DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains(QUEUE_STORE)) {
         db.createObjectStore(QUEUE_STORE, { autoIncrement: true });
+      } else if (request.oldVersion < 2) {
+        // v2: ensure existing records get retry metadata on the fly
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -67,21 +72,22 @@ function openQueueDb() {
 
 async function queueRequest(request) {
   const db = await openQueueDb();
+  const body = request.method === 'GET' ? null : await request.clone().text();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(QUEUE_STORE, 'readwrite');
     const store = tx.objectStore(QUEUE_STORE);
-    request.clone().text().then((body) => {
-      const record = {
-        url: request.url,
-        method: request.method,
-        headers: Array.from(request.headers.entries()),
-        body,
-        timestamp: Date.now(),
-      };
-      store.add(record);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
+    const record = {
+      url: request.url,
+      method: request.method,
+      headers: Array.from(request.headers.entries()),
+      body,
+      timestamp: Date.now(),
+      retryCount: 0,
+      nextRetryAt: Date.now(),
+    };
+    store.add(record);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 
@@ -91,6 +97,7 @@ async function flushQueue() {
     const tx = db.transaction(QUEUE_STORE, 'readwrite');
     const store = tx.objectStore(QUEUE_STORE);
     const requests = [];
+    let hasPendingRetry = false;
     store.openCursor().onsuccess = async (event) => {
       const cursor = event.target.result;
       if (cursor) {
@@ -98,17 +105,37 @@ async function flushQueue() {
         cursor.continue();
       } else {
         for (const item of requests) {
+          const record = item.value || {};
+          const retryCount = record.retryCount || 0;
+          const nextRetryAt = record.nextRetryAt || 0;
+          if (nextRetryAt > Date.now()) {
+            hasPendingRetry = true;
+            continue;
+          }
           try {
-            await fetch(item.value.url, {
-              method: item.value.method,
-              headers: item.value.headers,
-              body: item.value.method === 'GET' ? undefined : item.value.body,
+            await fetch(record.url, {
+              method: record.method,
+              headers: record.headers,
+              body: record.method === 'GET' ? undefined : record.body,
               credentials: 'same-origin',
             });
             store.delete(item.key);
           } catch (error) {
-            console.warn('Failed to replay request', error);
+            const newRetryCount = retryCount + 1;
+            if (newRetryCount >= MAX_QUEUE_RETRY) {
+              store.delete(item.key);
+              console.warn('Dropping queued request after max retries', record.url);
+            } else {
+              const backoff = Math.pow(2, newRetryCount - 1) * BACKOFF_BASE_MS;
+              record.retryCount = newRetryCount;
+              record.nextRetryAt = Date.now() + backoff;
+              store.put(record, item.key);
+              hasPendingRetry = true;
+            }
           }
+        }
+        if (hasPendingRetry) {
+          await scheduleSync();
         }
       }
     };
@@ -206,21 +233,14 @@ function staleWhileRevalidate(request) {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method === 'GET' && request.url.includes('/api/client/')) {
-    event.respondWith(
-      fetch(request).catch(() =>
-        new Response(JSON.stringify({ ok: false, offline: true, message: 'Требуется подключение к интернету.' }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        })
-      )
-    );
+  if (request.method === 'POST' && request.url.includes('/api/client/')) {
+    event.respondWith(handleClientApiPost(request));
     return;
   }
 
-  if (request.method === 'POST' && request.url.includes('/api/client/')) {
+  if (request.method === 'GET' && request.url.includes('/api/client/')) {
     event.respondWith(
-      fetch(request.clone()).catch(() =>
+      fetch(request).catch(() =>
         new Response(JSON.stringify({ ok: false, offline: true, message: 'Требуется подключение к интернету.' }), {
           status: 503,
           headers: { 'Content-Type': 'application/json; charset=utf-8' },
@@ -243,3 +263,43 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('online', () => {
   flushQueue();
 });
+
+async function handleClientApiPost(request) {
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    await queueRequest(request);
+    await scheduleSync();
+    return offlineQueuedResponse();
+  }
+  try {
+    return await fetch(request.clone());
+  } catch (error) {
+    await queueRequest(request);
+    await scheduleSync();
+    return offlineQueuedResponse();
+  }
+}
+
+function offlineQueuedResponse() {
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      offline: true,
+      message: 'Запрос сохранён и будет выполнен при восстановлении подключения.',
+    }),
+    {
+      status: 202,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    }
+  );
+}
+
+async function scheduleSync() {
+  if (!self.registration.sync) {
+    return;
+  }
+  try {
+    await self.registration.sync.register('wallet-sync');
+  } catch (error) {
+    console.warn('Failed to register background sync', error);
+  }
+}

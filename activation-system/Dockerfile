@@ -7,6 +7,8 @@ RUN npm install
 
 COPY . .
 
+RUN npm run build:wallet
+
 EXPOSE 4000
 
 CMD ["npm", "start"]
