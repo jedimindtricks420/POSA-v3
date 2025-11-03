@@ -93,6 +93,12 @@ app.use((req, res, next) => {
   res.locals.user = req.session.user || null;
   next();
 });
+app.use((req, res, next) => {
+  if (res.locals && typeof res.locals.include !== 'undefined' && typeof res.locals.include !== 'function') {
+    delete res.locals.include;
+  }
+  next();
+});
 
 // Определяем роль по субдомену
 app.use(checkSubdomain);

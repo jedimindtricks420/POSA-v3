@@ -1,6 +1,6 @@
 import { registerServiceWorker } from './register-sw.js';
 import walletOfflineStore from './wallet-offline-store.js';
-import { getVouchers, logVoucherEvent, claimVoucher } from './wallet-api.js';
+import { getVouchers, logVoucherEvent, claimVoucher, OFFLINE_QUEUE_EVENT } from './wallet-api.js';
 
 const video = document.getElementById('qrPreview');
 const switchCameraBtn = document.getElementById('qrSwitchCamera');
@@ -38,6 +38,44 @@ let torchEnabled = false;
 
 const SCAN_DEBOUNCE_MS = 2000;
 const FALLBACK_WIDTH = 640;
+const OFFLINE_QUEUE_FALLBACK_MESSAGE = 'Действие выполнится после восстановления подключения.';
+let offlineToastTimer = null;
+
+function showOfflineQueueToast(message) {
+  if (typeof document === 'undefined') return;
+  const text = message || OFFLINE_QUEUE_FALLBACK_MESSAGE;
+  let toast = document.getElementById('walletOfflineQueueToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'walletOfflineQueueToast';
+    toast.style.position = 'fixed';
+    toast.style.left = '50%';
+    toast.style.bottom = '24px';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.maxWidth = '90%';
+    toast.style.padding = '12px 18px';
+    toast.style.borderRadius = '9999px';
+    toast.style.background = 'rgba(15, 118, 110, 0.9)';
+    toast.style.color = '#fff';
+    toast.style.fontSize = '14px';
+    toast.style.zIndex = '9999';
+    toast.style.boxShadow = '0 10px 30px rgba(15, 118, 110, 0.25)';
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.2s ease';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = text;
+  toast.style.opacity = '1';
+  clearTimeout(offlineToastTimer);
+  offlineToastTimer = setTimeout(() => {
+    toast.style.opacity = '0';
+  }, 3500);
+}
+
+window.addEventListener(OFFLINE_QUEUE_EVENT, (event) => {
+  const detailMessage = event.detail?.payload?.message;
+  showOfflineQueueToast(detailMessage);
+});
 
 function loadScriptOnce(selector, src) {
   return new Promise((resolve, reject) => {
@@ -425,14 +463,19 @@ async function processPayload(rawPayload) {
 
   try {
     const detail = await claimVoucher(payload);
+    if (detail?.offline) {
+      lastHandledPayload = payload;
+      lastHandledAt = Date.now();
+      return;
+    }
     populateModal(detail);
     openModal();
+    logVoucherEvent(detail.id, 'voucher.qr_show').catch(() => {});
     await walletOfflineStore.appendScanHistory({
       code: detail.value,
       scannedAt: new Date().toISOString(),
     });
     updateHistoryList(await walletOfflineStore.getScanHistory());
-    logVoucherEvent(detail.id, 'voucher.qr_show').catch(() => {});
     await refreshWalletCache();
     try {
       localStorage.setItem('wallet-sync-trigger', String(Date.now()));
