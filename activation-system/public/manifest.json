@@ -5,7 +5,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F5F5F7",
-  "theme_color": "#0A84FF",
+  "theme_color": "#ffffff",
   "description": "Клиентский кошелек Namo с поддержкой оффлайн, QR и push уведомлений.",
   "icons": [
     {

@@ -5,6 +5,12 @@ import { isClientAuthenticated } from '../middleware/authClient.js';
 
 const router = express.Router();
 
+router.use((req, res, next) => {
+  res.locals.appRole = 'Client';
+  res.locals.isClient = true;
+  next();
+});
+
 // Главная точка входа: обрабатываем только реальный '/'
 router.get('/', (req, res, next) => {
   if (req.baseUrl && req.baseUrl !== '') {

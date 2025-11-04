@@ -1,6 +1,7 @@
-const CACHE_VERSION = 'v20250126';
+const CACHE_VERSION = 'v20250128';
 const SHELL_CACHE = `wallet-shell-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `wallet-runtime-${CACHE_VERSION}`;
+const CURRENT_CACHES = [SHELL_CACHE, RUNTIME_CACHE];
 const QUEUE_DB = 'wallet-sw';
 const QUEUE_DB_VERSION = 2;
 const QUEUE_STORE = 'pending';
@@ -8,10 +9,9 @@ const MAX_QUEUE_RETRY = 5;
 const BACKOFF_BASE_MS = 30 * 1000;
 
 const OFFLINE_URL = '/offline.html';
+const OFFLINE_API_MESSAGE = 'Требуется подключение к интернету.';
 
 const PRECACHE_URLS = [
-  '/wallet',
-  '/client-register',
   '/css/client.css',
   '/js/client-app.js',
   '/js/client-profile.js',
@@ -31,26 +31,38 @@ const PRECACHE_URLS = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)).then(() => self.skipWaiting())
-  );
+  event.waitUntil((async () => {
+    try {
+      const cache = await caches.open(SHELL_CACHE);
+      await cache.addAll(PRECACHE_URLS);
+    } catch (error) {
+      console.warn('Precache failed', error);
+    } finally {
+      await self.skipWaiting();
+    }
+  })());
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
-        cacheNames
-          .filter((name) => name !== SHELL_CACHE && name !== RUNTIME_CACHE)
-          .map((name) => caches.delete(name))
-      )
-    ).then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter((name) => !CURRENT_CACHES.includes(name))
+        .map((name) => caches.delete(name))
+    );
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') {
+  const type = event.data?.type;
+  if (type === 'SKIP_WAITING') {
     self.skipWaiting();
+    return;
+  }
+  if (type === 'NETWORK_ONLINE' || type === 'FLUSH_QUEUE') {
+    event.waitUntil(flushQueue());
   }
 });
 
@@ -72,7 +84,23 @@ function openQueueDb() {
 
 async function queueRequest(request) {
   const db = await openQueueDb();
-  const body = request.method === 'GET' ? null : await request.clone().text();
+  let body = null;
+  let bodyType = null;
+  if (!['GET', 'HEAD'].includes(request.method)) {
+    try {
+      body = await request.clone().arrayBuffer();
+      bodyType = 'arrayBuffer';
+    } catch (error) {
+      try {
+        body = await request.clone().text();
+        bodyType = 'text';
+      } catch (fallbackError) {
+        console.warn('Failed to clone request body for queue', fallbackError);
+        body = null;
+        bodyType = null;
+      }
+    }
+  }
   return new Promise((resolve, reject) => {
     const tx = db.transaction(QUEUE_STORE, 'readwrite');
     const store = tx.objectStore(QUEUE_STORE);
@@ -81,6 +109,7 @@ async function queueRequest(request) {
       method: request.method,
       headers: Array.from(request.headers.entries()),
       body,
+      bodyType,
       timestamp: Date.now(),
       retryCount: 0,
       nextRetryAt: Date.now(),
@@ -91,57 +120,132 @@ async function queueRequest(request) {
   });
 }
 
-async function flushQueue() {
-  const db = await openQueueDb();
+let flushQueueInProgress = false;
+let syncTimeoutId = null;
+
+async function readQueuedRequests(db) {
+  const tx = db.transaction(QUEUE_STORE, 'readonly');
+  const store = tx.objectStore(QUEUE_STORE);
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(QUEUE_STORE, 'readwrite');
-    const store = tx.objectStore(QUEUE_STORE);
-    const requests = [];
-    let hasPendingRetry = false;
-    store.openCursor().onsuccess = async (event) => {
+    const entries = [];
+    const req = store.openCursor();
+    req.onsuccess = (event) => {
       const cursor = event.target.result;
-      if (cursor) {
-        requests.push({ key: cursor.key, value: cursor.value });
-        cursor.continue();
-      } else {
-        for (const item of requests) {
-          const record = item.value || {};
-          const retryCount = record.retryCount || 0;
-          const nextRetryAt = record.nextRetryAt || 0;
-          if (nextRetryAt > Date.now()) {
-            hasPendingRetry = true;
-            continue;
-          }
-          try {
-            await fetch(record.url, {
-              method: record.method,
-              headers: record.headers,
-              body: record.method === 'GET' ? undefined : record.body,
-              credentials: 'same-origin',
-            });
-            store.delete(item.key);
-          } catch (error) {
-            const newRetryCount = retryCount + 1;
-            if (newRetryCount >= MAX_QUEUE_RETRY) {
-              store.delete(item.key);
-              console.warn('Dropping queued request after max retries', record.url);
-            } else {
-              const backoff = Math.pow(2, newRetryCount - 1) * BACKOFF_BASE_MS;
-              record.retryCount = newRetryCount;
-              record.nextRetryAt = Date.now() + backoff;
-              store.put(record, item.key);
-              hasPendingRetry = true;
-            }
-          }
-        }
-        if (hasPendingRetry) {
-          await scheduleSync();
-        }
+      if (!cursor) {
+        resolve(entries);
+        return;
       }
+      entries.push({ key: cursor.primaryKey, value: cursor.value });
+      cursor.continue();
     };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function deleteQueuedRequest(db, key) {
+  const tx = db.transaction(QUEUE_STORE, 'readwrite');
+  const store = tx.objectStore(QUEUE_STORE);
+  store.delete(key);
+  return new Promise((resolve, reject) => {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
+}
+
+function updateQueuedRequest(db, key, record) {
+  const tx = db.transaction(QUEUE_STORE, 'readwrite');
+  const store = tx.objectStore(QUEUE_STORE);
+  store.put(record, key);
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function broadcastQueueEvent(payload) {
+  const clientList = await self.clients.matchAll({ includeUncontrolled: true });
+  for (const client of clientList) {
+    try {
+      client.postMessage({ type: 'WALLET_QUEUE_EVENT', payload });
+    } catch (error) {
+      console.warn('Failed to postMessage to client', error);
+    }
+  }
+}
+
+async function sendQueuedRequest(record) {
+  const headers = new Headers(record.headers || []);
+  const init = {
+    method: record.method,
+    headers,
+    credentials: 'same-origin',
+  };
+  if (!['GET', 'HEAD'].includes(record.method) && record.body) {
+    if (record.bodyType === 'text') {
+      init.body = record.body;
+    } else {
+      init.body = record.body;
+    }
+  }
+  const response = await fetch(record.url, init);
+  if (!response.ok && response.status >= 500) {
+    throw new Error(`Server responded with ${response.status}`);
+  }
+  return response;
+}
+
+async function flushQueue() {
+  if (flushQueueInProgress) {
+    return;
+  }
+  if (syncTimeoutId) {
+    clearTimeout(syncTimeoutId);
+    syncTimeoutId = null;
+  }
+  flushQueueInProgress = true;
+  try {
+    const db = await openQueueDb();
+    const entries = await readQueuedRequests(db);
+    let hasPendingRetry = false;
+
+    for (const entry of entries) {
+      const record = entry.value;
+      if (!record) {
+        continue;
+      }
+      const retryCount = record.retryCount || 0;
+      const nextRetryAt = record.nextRetryAt || 0;
+      if (nextRetryAt > Date.now()) {
+        hasPendingRetry = true;
+        continue;
+      }
+      try {
+        await sendQueuedRequest(record);
+        await deleteQueuedRequest(db, entry.key);
+        await broadcastQueueEvent({ status: 'sent', url: record.url });
+      } catch (error) {
+        const newRetryCount = retryCount + 1;
+        if (newRetryCount >= MAX_QUEUE_RETRY) {
+          await deleteQueuedRequest(db, entry.key);
+          console.warn('Dropping queued request after max retries', record.url, error);
+          await broadcastQueueEvent({ status: 'dropped', url: record.url, error: error?.message });
+        } else {
+          const backoff = Math.pow(2, newRetryCount - 1) * BACKOFF_BASE_MS;
+          record.retryCount = newRetryCount;
+          record.nextRetryAt = Date.now() + backoff;
+          await updateQueuedRequest(db, entry.key, record);
+          hasPendingRetry = true;
+        }
+      }
+    }
+    if (hasPendingRetry) {
+      await scheduleSync();
+    } else if (entries.length) {
+      await broadcastQueueEvent({ status: 'idle' });
+    }
+  } finally {
+    flushQueueInProgress = false;
+  }
 }
 
 self.addEventListener('sync', (event) => {
@@ -162,6 +266,16 @@ async function cacheResponse(request, response) {
   }
   const cache = await caches.open(RUNTIME_CACHE);
   await cache.put(request, response);
+}
+
+function offlineJsonResponse(message = OFFLINE_API_MESSAGE) {
+  return new Response(
+    JSON.stringify({ ok: false, offline: true, message }),
+    {
+      status: 503,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    }
+  );
 }
 
 async function networkFirst(request, fallbackUrl) {
@@ -190,6 +304,24 @@ async function networkFirst(request, fallbackUrl) {
       statusText: 'Offline',
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     });
+  }
+}
+
+async function networkFirstJson(request) {
+  try {
+    const response = await fetch(request);
+    try {
+      await cacheResponse(request, response.clone());
+    } catch (error) {
+      console.warn('networkFirstJson cache error', error);
+    }
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    if (cached) {
+      return cached;
+    }
+    return offlineJsonResponse();
   }
 }
 
@@ -239,14 +371,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (request.method === 'GET' && request.url.includes('/api/client/')) {
-    event.respondWith(
-      fetch(request).catch(() =>
-        new Response(JSON.stringify({ ok: false, offline: true, message: 'Требуется подключение к интернету.' }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        })
-      )
-    );
+    event.respondWith(networkFirstJson(request));
     return;
   }
 
@@ -257,11 +382,8 @@ self.addEventListener('fetch', (event) => {
 
   if (request.destination === 'document') {
     event.respondWith(networkFirst(request, OFFLINE_URL));
+    return;
   }
-});
-
-self.addEventListener('online', () => {
-  flushQueue();
 });
 
 async function handleClientApiPost(request) {
@@ -294,12 +416,20 @@ function offlineQueuedResponse() {
 }
 
 async function scheduleSync() {
-  if (!self.registration.sync) {
-    return;
+  if (self.registration.sync) {
+    try {
+      await self.registration.sync.register('wallet-sync');
+      return;
+    } catch (error) {
+      console.warn('Failed to register background sync', error);
+    }
   }
-  try {
-    await self.registration.sync.register('wallet-sync');
-  } catch (error) {
-    console.warn('Failed to register background sync', error);
+  if (!syncTimeoutId) {
+    syncTimeoutId = setTimeout(() => {
+      syncTimeoutId = null;
+      flushQueue().catch((error) => {
+        console.warn('Fallback queue flush failed', error);
+      });
+    }, BACKOFF_BASE_MS);
   }
 }

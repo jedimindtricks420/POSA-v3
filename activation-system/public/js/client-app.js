@@ -75,6 +75,19 @@ window.addEventListener(OFFLINE_QUEUE_EVENT, (event) => {
   showOfflineQueueToast(detailMessage);
 });
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    const { type, payload } = event.data || {};
+    if (type !== 'WALLET_QUEUE_EVENT') {
+      return;
+    }
+    if (payload?.status === 'dropped') {
+      showOfflineQueueToast('Не удалось отправить запрос. Проверьте подключение и повторите действие.');
+    } else if (payload?.status === 'sent') {
+      showOfflineQueueToast('Действие выполнено после восстановления подключения.');
+    }
+  });
+}
 function setTheme(mode) {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const effective = mode || (prefersDark ? 'dark' : 'light');
