@@ -2,7 +2,6 @@ import prisma from '../../prisma/client.js';
 import { sendOtpSms } from '../../utils/smsService.js';
 import { normalizePhone } from '../../utils/phone.js';
 import {
-  parseRememberMe,
   issueRefreshToken,
   setRememberCookies,
   clearRememberCookies,
@@ -55,9 +54,7 @@ export const handleLogin = async (req, res) => {
   console.log('Request body:', req.body);
   
   const { phoneNumber, phone } = req.body;
-  const rememberMe = req.body.rememberMe !== undefined
-    ? parseRememberMe(req.body.rememberMe)
-    : Boolean(req.session.pendingRememberMe);
+  const rememberMe = true;
   const clientPhoneInput = phoneNumber || phone;
   const normalizedPhone = normalizePhone(clientPhoneInput);
 
@@ -89,7 +86,14 @@ export const handleLogin = async (req, res) => {
     req.session.pendingRememberMe = rememberMe;
     req.session.pendingClientId = client.id;
     await setOtpSessionAndSend(req, normalizedPhone);
-    res.redirect('/client-verify');
+
+    return req.session.save((err) => {
+      if (err) {
+        console.error('Ошибка при сохранении сессии после логина клиента:', err);
+        return res.render('pages/client-login', { error: 'Не удалось сохранить сессию. Попробуйте позже.' });
+      }
+      res.redirect('/client-verify');
+    });
   } catch (error) {
     console.error('Ошибка при логине клиента:', error);
     res.render('pages/client-login', { error: 'Произошла ошибка. Попробуйте позже.' });
@@ -102,7 +106,6 @@ export const showOtpPage = (req, res) => {
   res.render('pages/client-verify', {
     phone: req.session.phone,
     error: null,
-    remember: Boolean(req.session.pendingRememberMe),
   });
 };
 
@@ -126,7 +129,10 @@ export const verifyOtp = async (req, res) => {
     return res.redirect('/wallet');
   }
 
-  const rememberMe = Boolean(req.session.pendingRememberMe);
+  const rememberMe = req.session.pendingRememberMe !== undefined
+    ? Boolean(req.session.pendingRememberMe)
+    : true;
+  const phoneForRender = req.session.phone;
 
   req.session.client = { id: client.id, phone: client.phoneNumber };
   req.session.rememberMe = rememberMe;
@@ -149,7 +155,16 @@ export const verifyOtp = async (req, res) => {
     clearRememberCookies(res);
   }
 
-  res.redirect('/client/dashboard');
+  return req.session.save((err) => {
+    if (err) {
+      console.error('Ошибка при сохранении клиентской сессии после OTP:', err);
+      return res.render('pages/client-verify', {
+        phone: phoneForRender,
+        error: 'Не удалось сохранить сессию. Попробуйте снова.',
+      });
+    }
+    res.redirect('/client/dashboard');
+  });
 };
 
 // === Страница регистрации ===
@@ -187,10 +202,16 @@ export const handleRegister = async (req, res) => {
 
     const created = await prisma.client.create({ data: { phoneNumber: normalizedPhone, name } });
     await setOtpSessionAndSend(req, normalizedPhone);
-    req.session.pendingRememberMe = false;
+    req.session.pendingRememberMe = true;
     req.session.pendingClientId = created.id;
 
-    res.redirect('/client-verify');
+    return req.session.save((err) => {
+      if (err) {
+        console.error('Ошибка при сохранении сессии после регистрации клиента:', err);
+        return res.render('pages/client-register', { error: 'Не удалось сохранить сессию. Попробуйте позже.' });
+      }
+      res.redirect('/client-verify');
+    });
   } catch (error) {
     console.error('Ошибка при регистрации клиента:', error);
     res.render('pages/client-register', { error: 'Не удалось зарегистрировать пользователя. Попробуйте позже.' });

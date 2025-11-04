@@ -22,7 +22,9 @@
   <div class="container py-4">
     <%- body %>
   </div>
-  <script type="module" src="/js/admin-session.js"></script>
+  <% if (!isClient) { %>
+    <script type="module" src="/js/admin-session.js"></script>
+  <% } %>
   <script type="module">
     const appRole = window.__APP_ROLE__;
     if (appRole === 'Client') {
