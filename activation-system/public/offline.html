@@ -37,8 +37,8 @@
       appearance: none;
       border: none;
       border-radius: 9999px;
-      background: #0ea5e9;
-      color: #fff;
+      background: #8bff68;
+      color: #333333;
       font-size: 1rem;
       font-weight: 600;
       padding: 0.85rem 1.75rem;
@@ -54,7 +54,12 @@
   <main>
     <h1>Нет подключения к сети</h1>
     <p>Проверьте соединение и попробуйте снова. Ранее загруженные данные остаются на устройстве.</p>
-    <button type="button" onclick="location.reload()">Повторить попытку</button>
+    <div class="flex flex-col gap-3">
+      <button type="button" onclick="location.reload()">Повторить попытку</button>
+      <br>
+      <br>
+      <button type="button" onclick="window.location.href='/wallet'">Вернуться в кошелёк</button>
+    </div>
   </main>
 </body>
 </html>

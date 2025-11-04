@@ -108,7 +108,7 @@ body {
 }
 
 .action-button:hover {
-  background-color: #0066CC;
+  background-color: #66cc00;
 }
 
 @media (min-width: 768px) {

@@ -90,10 +90,6 @@ app.use((req, res, next) => {
   next();
 });
 app.use((req, res, next) => {
-  res.locals.user = req.session.user || null;
-  next();
-});
-app.use((req, res, next) => {
   if (res.locals && typeof res.locals.include !== 'undefined' && typeof res.locals.include !== 'function') {
     delete res.locals.include;
   }
@@ -102,6 +98,32 @@ app.use((req, res, next) => {
 
 // Определяем роль по субдомену
 app.use(checkSubdomain);
+
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  let role = null;
+  if (req.session?.client) {
+    role = 'Client';
+  } else if (req.session?.user?.role === 'merchant') {
+    role = 'Merchant';
+  } else if (req.session?.user?.role === 'vendor_user') {
+    role = 'Vendor';
+  } else if (req.session?.user?.role === 'admin') {
+    role = 'Admin';
+  } else if (req.appRole) {
+    const map = {
+      client: 'Client',
+      merchant: 'Merchant',
+      vendor: 'Vendor',
+      admin: 'Admin',
+      public: 'Public',
+    };
+    role = map[req.appRole] || 'Public';
+  }
+  res.locals.appRole = role || 'Public';
+  res.locals.isClient = res.locals.appRole === 'Client';
+  next();
+});
 
 // Подключаем маршруты
 app.use('/auth', authRoutes);
