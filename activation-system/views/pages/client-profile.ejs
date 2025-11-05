@@ -1,12 +1,20 @@
 <!DOCTYPE html>
 <html lang="ru" class="h-full">
 <%- include('../partials/client/head', { title: 'Профиль' }) %>
-<body class="relative min-h-screen bg-wallet-bg text-slate-900 dark:bg-wallet-dark dark:text-slate-100 safe-area-bottom pt-[calc(env(safe-area-inset-top,0px)+4rem)]">
+<body class="relative min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors dark:bg-wallet-dark dark:text-slate-100 safe-area-bottom">
 
-  <main class="mx-auto flex w-full max-w-3xl flex-col gap-8 px-4 pb-16">
+  <main class="mx-auto flex w-full max-w-md flex-col gap-6 pb-24 pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
+    <header class="space-y-3 text-center">
+      <div class="mx-auto h-16 w-16 overflow-hidden rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100/60 dark:bg-slate-800 dark:ring-slate-700/80">
+        <img src="/wallet/icons/vec-icon.png" alt="Логотип Namo Wallet" class="h-full w-full object-contain" width="64" height="64" loading="lazy" />
+      </div>
+      <h1 class="text-2xl font-semibold">Профиль</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Управляйте параметрами кошелька и уведомлениями.</p>
+    </header>
+
     <section class="glass-panel p-6">
       <div class="flex items-center gap-4">
-        <div class="h-14 w-14 rounded-full bg-apple-blue text-white flex items-center justify-center text-lg font-semibold">
+        <div class="wallet-accent-badge flex h-14 w-14 items-center justify-center rounded-full text-lg font-semibold">
           <%= phone ? phone.slice(-4) : 'CL' %>
         </div>
         <div>
@@ -16,7 +24,7 @@
       </div>
     </section>
 
-    <section class="glass-panel p-6 space-y-4">
+    <section class="glass-panel space-y-4 p-6">
       <h2 class="text-sm font-semibold uppercase text-slate-500">Настройки</h2>
       <div class="flex items-center justify-between">
         <div>
@@ -25,7 +33,7 @@
         </div>
         <label class="relative inline-flex cursor-pointer items-center">
           <input type="checkbox" id="profilePushToggle" class="peer sr-only" />
-          <div class="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-apple-blue"></div>
+          <div class="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-wallet-green"></div>
           <span class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5"></span>
         </label>
       </div>
@@ -42,7 +50,7 @@
       </div>
     </section>
 
-    <section class="glass-panel p-6 space-y-4">
+    <section class="glass-panel space-y-4 p-6">
       <h2 class="text-sm font-semibold uppercase text-slate-500">Поддержка</h2>
       <a href="tel:+998781234567" class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
         Позвонить в поддержку
@@ -54,7 +62,7 @@
       </a>
     </section>
 
-    <section class="glass-panel p-6 space-y-4">
+    <section class="glass-panel space-y-4 p-6">
       <button id="profileClearCache" class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800">
         Очистить кеш PWA
       </button>
