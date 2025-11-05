@@ -1,6 +1,6 @@
 {
   "name": "Namo Wallet",
-  "short_name": "Wallet",
+  "short_name": "Namo Wallet",
   "start_url": "/wallet",
   "display": "standalone",
   "orientation": "portrait",
