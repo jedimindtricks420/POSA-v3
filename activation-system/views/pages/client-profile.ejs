@@ -4,11 +4,6 @@
 <body class="relative min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors dark:bg-wallet-dark dark:text-slate-100 safe-area-bottom">
 
   <main class="mx-auto flex w-full max-w-md flex-col gap-6 pb-24 pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
-    <header class="space-y-3 text-center">
-      <h1 class="text-2xl font-semibold">Профиль</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400">Управляйте параметрами кошелька и уведомлениями.</p>
-    </header>
-
     <section class="glass-panel p-6">
       <div class="flex items-center gap-4">
         <div class="wallet-accent-badge flex h-14 w-14 items-center justify-center rounded-full text-lg font-semibold">
@@ -31,17 +26,6 @@
         <label class="relative inline-flex cursor-pointer items-center">
           <input type="checkbox" id="profilePushToggle" class="peer sr-only" />
           <div class="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-wallet-green"></div>
-          <span class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5"></span>
-        </label>
-      </div>
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="font-medium">Тёмная тема</p>
-          <p class="text-sm text-slate-500">Использовать системные настройки</p>
-        </div>
-        <label class="relative inline-flex cursor-pointer items-center">
-          <input type="checkbox" id="profileThemeToggle" class="peer sr-only" />
-          <div class="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-slate-900"></div>
           <span class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5"></span>
         </label>
       </div>
