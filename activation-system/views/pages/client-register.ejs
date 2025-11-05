@@ -1,33 +1,36 @@
 <!DOCTYPE html>
 <html lang="ru" class="h-full">
 <%- include('../partials/client/head', { title: 'Регистрация' }) %>
-<body class="flex min-h-screen items-center justify-center bg-wallet-bg px-4 text-slate-900 dark:bg-wallet-dark dark:text-slate-100 safe-area-y">
-  <div class="w-full max-w-md space-y-8">
-    <div class="text-center space-y-3">
-      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-apple-blue text-2xl font-semibold text-white">NW</div>
+<body class="min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors dark:bg-wallet-dark dark:text-slate-100 safe-area-y">
+  <main class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center space-y-8">
+    <header class="space-y-3 text-center">
+      <div class="mx-auto h-16 w-16 overflow-hidden rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100/60 dark:bg-slate-800 dark:ring-slate-700/80">
+        <img src="/wallet/icons/vec-icon.png" alt="Логотип Namo Wallet" class="h-full w-full object-contain" width="64" height="64" loading="lazy" />
+      </div>
       <h1 class="text-2xl font-semibold">Регистрация</h1>
-      <p class="text-sm text-slate-500">Создайте учетную запись, чтобы хранить и просматривать ваучеры.</p>
-    </div>
-    <div class="glass-panel space-y-6 p-8">
+      <p class="text-sm text-slate-500 dark:text-slate-400">Создайте учетную запись, чтобы хранить и просматривать ваучеры.</p>
+    </header>
+    <section class="glass-panel space-y-6 p-8">
       <% if (error) { %>
         <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600"><%= error %></div>
       <% } %>
       <form method="POST" action="/client-register" class="space-y-4" id="walletRegisterForm">
-        <label class="space-y-2">
-          <span class="text-sm font-medium text-slate-600">Имя</span>
+        <label class="block space-y-2">
+          <span class="text-sm font-medium text-slate-600 dark:text-slate-300">Имя</span>
           <input type="text" name="name" autocomplete="name" placeholder="Ваше имя" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 dark:border-slate-700 dark:bg-slate-900" required />
         </label>
-        <label class="space-y-2">
-          <span class="text-sm font-medium text-slate-600">Номер телефона</span>
+        <label class="block space-y-2">
+          <span class="text-sm font-medium text-slate-600 dark:text-slate-300">Номер телефона</span>
           <input type="tel" name="phoneNumber" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 dark:border-slate-700 dark:bg-slate-900" required />
         </label>
-        <button type="submit" class="w-full rounded-2xl bg-apple-blue px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">Получить код</button>
+        <button type="submit" class="w-full rounded-2xl btn-wallet-green px-4 py-3 text-sm font-semibold transition">Получить код</button>
       </form>
-      <div class="text-center text-sm text-slate-500">
+      <p class="text-center text-sm text-slate-500">
         Уже есть аккаунт? <a href="/wallet" class="font-semibold text-apple-blue hover:text-blue-600">Войти</a>
-      </div>
-    </div>
-  </div>
+      </p>
+    </section>
+    <footer class="text-center text-xs text-slate-400">wallet.namo.uz</footer>
+  </main>
   <script type="module" src="/js/client-session.js"></script>
   <script type="module" src="/js/client-auth.js"></script>
 </body>
