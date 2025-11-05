@@ -2,13 +2,7 @@
 <html lang="ru" class="h-full">
 <%- include('../partials/client/head', { title: 'Сканировать ваучер' }) %>
 <body class="relative min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors dark:bg-wallet-dark dark:text-slate-100 safe-area-bottom">
-
   <main class="mx-auto flex w-full max-w-md flex-col gap-6 pb-24 pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
-    <header class="space-y-3 text-center">
-      <h1 class="text-2xl font-semibold">Сканер QR</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400">Сканируйте или вводите коды, чтобы добавить ваучер.</p>
-    </header>
-
     <div id="qrOfflineNotice" class="hidden rounded-2xl border border-amber-400 bg-amber-50 px-4 py-3 text-sm text-amber-700">
       Требуется подключение к интернету для проверки и добавления ваучера.
     </div>
