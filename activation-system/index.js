@@ -68,6 +68,11 @@ app.get('/wallet/icons/icon-512-maskable.png', (req, res) => {
   res.sendFile(path.join(pwaIconsPath, 'maskable-icon.png'));
 });
 
+app.get('/wallet/icons/vec-icon.png', (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  res.sendFile(path.join(pwaIconsPath, 'vec-icon.png'));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 if (fs.existsSync(zxingStaticPath)) {
   app.use('/vendor/zxing', express.static(zxingStaticPath));
