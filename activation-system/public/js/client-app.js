@@ -5,6 +5,7 @@ import { getVouchers, getVoucher, logVoucherEvent, registerPush, OFFLINE_QUEUE_E
 const state = {
   vouchers: [],
   detailsCache: new Map(),
+  hasRendered: false,
 };
 
 const selectors = {
@@ -161,6 +162,7 @@ function renderVouchers(vouchers) {
     selectors.skeleton.classList.add('hidden');
   }
   state.vouchers = vouchers;
+  state.hasRendered = true;
 
   if (!vouchers.length) {
     if (selectors.empty) selectors.empty.classList.remove('hidden');
@@ -194,7 +196,8 @@ async function fetchAndRender() {
     return;
   }
   fetchAndRender.pending = true;
-  if (selectors.skeleton) {
+  const shouldShowSkeleton = selectors.skeleton && !state.hasRendered;
+  if (shouldShowSkeleton) {
     selectors.skeleton.classList.remove('hidden');
   }
   try {
@@ -210,6 +213,7 @@ async function fetchAndRender() {
         renderVouchers(cached.vouchers);
       } else {
         if (selectors.empty) selectors.empty.classList.remove('hidden');
+        state.hasRendered = true;
       }
     }
   } finally {

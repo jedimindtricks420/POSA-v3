@@ -17,7 +17,7 @@
       <form method="POST" action="/wallet" class="space-y-4" id="walletLoginForm">
         <label class="block space-y-2">
           <span class="text-sm font-medium text-slate-600 dark:text-slate-300">Номер телефона</span>
-          <input type="tel" name="phoneNumber" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" value="+998" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 dark:border-slate-700 dark:bg-slate-900" required />
+          <input type="tel" name="phoneNumber" inputmode="tel" autocomplete="tel" placeholder="+998 90 123 45 67" value="+998" maxlength="13" pattern="\+998\d{9}" title="Введите номер в формате +998XXXXXXXXX" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-apple-blue focus:ring-2 focus:ring-apple-blue/20 dark:border-slate-700 dark:bg-slate-900" required />
         </label>
         <button type="submit" class="w-full rounded-2xl btn-wallet-green px-4 py-3 text-sm font-semibold transition">Получить код</button>
       </form>
