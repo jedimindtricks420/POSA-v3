@@ -1,21 +1,28 @@
 <!DOCTYPE html>
 <html lang="ru" class="h-full">
 <%- include('../partials/client/head', { title: 'Мои ваучеры' }) %>
-<body class="relative min-h-screen bg-wallet-bg text-slate-900 dark:bg-wallet-dark dark:text-slate-100 safe-area-bottom pt-[calc(env(safe-area-inset-top,0px)+4rem)]">
+<body class="relative min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors dark:bg-wallet-dark dark:text-slate-100 safe-area-bottom">
 
-  <main class="mx-auto flex w-full max-w-md flex-col gap-6 px-4 pb-16">
-    <section>
-      <div class="flex items-center justify-between pt-2">
-        <h2 class="text-xl font-semibold">Мои ваучеры</h2>
+  <main class="mx-auto flex w-full max-w-md flex-col gap-6 pb-24 pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
+    <header class="space-y-3 text-center">
+      <div class="mx-auto h-16 w-16 overflow-hidden rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100/60 dark:bg-slate-800 dark:ring-slate-700/80">
+        <img src="/wallet/icons/vec-icon.png" alt="Логотип Namo Wallet" class="h-full w-full object-contain" width="64" height="64" loading="lazy" />
+      </div>
+      <h1 class="text-2xl font-semibold">Мои ваучеры</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400">Просматривайте баланс ваучеров и обновляйте список.</p>
+    </header>
+    <section class="glass-panel space-y-6 p-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Ваучеры</h2>
         <button id="walletRefresh" class="refresh-btn">Обновить</button>
       </div>
-      <div id="walletEmpty" class="mt-6 hidden rounded-3xl bg-white p-10 text-center text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-300">
+      <div id="walletEmpty" class="hidden rounded-3xl bg-white p-10 text-center text-sm text-slate-500 dark:bg-slate-900 dark:text-slate-300">
         Пока нет ваучеров. Когда появится новый, он отобразится здесь автоматически.
       </div>
-      <div id="walletSkeleton" class="mt-6">
+      <div id="walletSkeleton">
         <%- include('../partials/client/wallet-skeleton') %>
       </div>
-      <div id="walletList" class="mt-6 hidden space-y-4"></div>
+      <div id="walletList" class="hidden space-y-4"></div>
     </section>
   </main>
 

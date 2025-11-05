@@ -18,18 +18,17 @@
     <section class="glass-panel space-y-6 p-6">
       <div class="space-y-2 text-center">
         <h2 class="text-lg font-semibold">Сканирование</h2>
-        <p class="text-sm text-slate-500 dark:text-сlate-400">Наведите камеру на QR код ваучера или введите код вручную.</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400">Наведите камеру на QR код ваучера или введите код вручную.</p>
       </div>
-      <div class="qr-preview-card">
-        <div class="qr-preview-camera">
-          <video id="qrPreview" autoplay playsinline muted></video>
+      <div class="relative overflow-hidden rounded-3xl bg-black">
+        <video id="qrPreview" class="h-64 w-full object-cover" autoplay playsinline muted></video>
+        <div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div class="h-40 w-40 rounded-2xl border-2 border-white/80"></div>
         </div>
-        <div class="qr-preview-frame" aria-hidden="true"></div>
-        <div class="qr-preview-controls">
-          <button id="qrSwitchCamera" class="qr-preview-button" type="button">Сменить камеру</button>
-          <button id="qrToggleTorch" class="qr-preview-button" type="button">Фонарик</button>
+        <div class="absolute left-1/2 top-1/2 flex w-full -translate-x-1/2 translate-y-[calc(80px+50px)] flex-col items-center gap-3 px-4">
+          <button id="qrSwitchCamera" class="rounded-full bg-white/80 px-4 py-2 text-sm font-medium text-slate-800 shadow-sm backdrop-blur">Сменить камеру</button>
+          <button id="qrToggleTorch" class="rounded-full bg-white/80 px-4 py-2 text-sm font-medium text-slate-800 shadow-sm backdrop-blur">Фонарик</button>
         </div>
-      </div>
       </div>
       <div class="space-y-2">
         <label for="qrManualCode" class="text-sm font-medium text-slate-600 dark:text-slate-300">Ввести код вручную</label>
