@@ -90,8 +90,7 @@ if ('serviceWorker' in navigator) {
   });
 }
 function setTheme(mode) {
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  const effective = mode || (prefersDark ? 'dark' : 'light');
+  const effective = mode === 'dark' ? 'dark' : 'light';
   document.body.classList.toggle('dark-mode', effective === 'dark');
   if (selectors.themeToggleSun) {
     selectors.themeToggleSun.classList.toggle('hidden', effective === 'dark');

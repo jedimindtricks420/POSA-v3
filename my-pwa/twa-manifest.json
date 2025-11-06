@@ -1,0 +1,52 @@
+{
+  "packageId": "uz.namo.wallet.twa",
+  "host": "wallet.namo.uz",
+  "name": "Namo Wallet",
+  "launcherName": "Namo Wallet",
+  "display": "standalone",
+  "themeColor": "#FFFFFF",
+  "themeColorDark": "#000000",
+  "navigationColor": "#000000",
+  "navigationColorDark": "#000000",
+  "navigationDividerColor": "#000000",
+  "navigationDividerColorDark": "#000000",
+  "backgroundColor": "#F5F5F7",
+  "enableNotifications": true,
+  "startUrl": "/wallet",
+  "iconUrl": "https://wallet.namo.uz/images/icon-512.png",
+  "maskableIconUrl": "https://wallet.namo.uz/images/maskable-icon.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "path": "/home/admin1/posa/my-pwa/android.keystore",
+    "alias": "posa-key"
+  },
+  "appVersionName": "1",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "generatorApp": "bubblewrap-cli",
+  "webManifestUrl": "https://wallet.namo.uz/manifest.json",
+  "fallbackType": "customtabs",
+  "features": {},
+  "alphaDependencies": {
+    "enabled": false
+  },
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://wallet.namo.uz/",
+  "minSdkVersion": 21,
+  "orientation": "portrait",
+  "fingerprints": [
+    {
+      "name": "Release",
+      "value": "68:EC:81:D3:12:4D:34:E0:FE:B1:44:6D:D3:B5:93:14:C9:6A:D2:65:CB:4F:04:65:56:EE:E9:39:F8:9A:13:78"
+    }
+  ],
+  "additionalTrustedOrigins": [],
+  "retainedBundles": [],
+  "protocolHandlers": [],
+  "fileHandlers": [],
+  "launchHandlerClientMode": "",
+  "displayOverride": [],
+  "appVersion": "1"
+}
