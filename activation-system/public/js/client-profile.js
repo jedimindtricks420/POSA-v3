@@ -66,7 +66,7 @@ function setThemeToggle(state) {
 async function initTheme() {
   if (!themeToggle && !topThemeToggle) return;
   const saved = localStorage.getItem('wallet-theme');
-  const isDark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const isDark = saved === 'dark';
   setThemeToggle(isDark);
 
   if (themeToggle) {

@@ -73,7 +73,9 @@ app.get('/wallet/icons/vec-icon.png', (req, res) => {
   res.sendFile(path.join(pwaIconsPath, 'vec-icon.png'));
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  dotfiles: 'allow',
+}));
 if (fs.existsSync(zxingStaticPath)) {
   app.use('/vendor/zxing', express.static(zxingStaticPath));
 }
