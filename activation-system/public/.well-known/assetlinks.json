@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "uz.namo.wallet.twa",
+        "sha256_cert_fingerprints": ["68:EC:81:D3:12:4D:34:E0:FE:B1:44:6D:D3:B5:93:14:C9:6A:D2:65:CB:4F:04:65:56:EE:E9:39:F8:9A:13:78"]
+      }
+    }]
