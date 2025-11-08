@@ -1,3 +1,4 @@
+import apiV1 from './routes/apiV1.js';
 import apiV1 from "./routes/apiV1.js";
 import express from 'express';
 import cors from 'cors';

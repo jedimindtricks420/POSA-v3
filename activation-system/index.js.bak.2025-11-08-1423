@@ -1,4 +1,3 @@
-import apiV1 from "./routes/apiV1.js";
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
@@ -139,7 +138,6 @@ app.use('/admin', adminRoutes);
 app.use('/merchant', merchantRoutes);
 app.use('/vendor', vendorRoutes);
 app.use('/api/client', clientApiRoutes);
-app.use('/api/v1', apiV1);
 app.use('/receipts', express.static(path.join(__dirname, 'receipts')));
 
 // Перенаправляем запросы в зависимости от субдомена
