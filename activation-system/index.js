@@ -1,6 +1,4 @@
-import apiV1 from "./routes/apiV1.js";
 import express from 'express';
-import cors from 'cors';
 import session from 'express-session';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
@@ -40,19 +38,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-const walletStaticPath = path.join(__dirname, 'public', 'wallet');
+//const walletStaticPath = path.join(__dirname, 'public', 'wallet');
 const pwaIconsPath = path.join(__dirname, 'views', 'partials', 'client', 'pwa');
 const zxingStaticPath = path.join(__dirname, 'node_modules', '@zxing');
-
-app.use('/wallet', express.static(walletStaticPath, {
-  setHeaders(res, filePath) {
-    if (filePath.endsWith('sw.js') || filePath.endsWith('manifest.webmanifest')) {
-      res.setHeader('Cache-Control', 'no-cache');
-    } else {
-      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
-    }
-  },
-}));
 
 app.get('/wallet/icons/icon-192.png', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -139,7 +127,6 @@ app.use('/admin', adminRoutes);
 app.use('/merchant', merchantRoutes);
 app.use('/vendor', vendorRoutes);
 app.use('/api/client', clientApiRoutes);
-app.use('/api/v1', apiV1);
 app.use('/receipts', express.static(path.join(__dirname, 'receipts')));
 
 // Перенаправляем запросы в зависимости от субдомена
