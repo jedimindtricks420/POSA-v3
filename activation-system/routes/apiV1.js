@@ -1,16 +1,6 @@
 import express from 'express';
 const router = express.Router();
 
-// можно оставить — дубли с Nginx не мешают
-router.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'capacitor://localhost');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
-  if (req.method === 'OPTIONS') return res.sendStatus(204);
-  next();
-});
-
 router.get('/health', (req, res) => {
   res.json({ ok: true, ts: new Date().toISOString() });
 });
