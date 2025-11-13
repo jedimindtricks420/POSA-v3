@@ -1,0 +1,22 @@
+{
+  "formatVersion": 1,
+  "passTypeIdentifier": "pass.com.gorgeouspartners.namowallet",
+  "teamIdentifier": "5UWY8WBV5Z",
+  "organizationName": "GORGEOUS PARTNERS, MCHJ",
+  "description": "Namo Voucher",
+  "serialNumber": "VCH-000001",
+  "logoText": "NAMO",
+  "barcode": {
+    "format": "PKBarcodeFormatQR",
+    "message": "VCH-000001",
+    "messageEncoding": "iso-8859-1"
+  },
+  "storeCard": {
+    "primaryFields": [
+      { "key": "balance", "label": "Баланс", "value": "100 000 сум" }
+    ],
+    "auxiliaryFields": [
+      { "key": "status", "label": "Статус", "value": "Active" }
+    ]
+  }
+}
