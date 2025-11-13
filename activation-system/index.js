@@ -146,6 +146,10 @@ app.use((req, res, next) => {
 app.use('/wallet', clientRoutes);
 app.use('/client', clientRoutes);
 
+
+import walletRoutes from './routes/wallet.js';
+app.use('/', walletRoutes);
+
 // Остальные маршруты (публичные)
 app.use('/', publicRoutes);
 
