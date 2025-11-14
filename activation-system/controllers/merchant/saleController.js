@@ -6,7 +6,24 @@ import prisma from '../../prisma/client.js';
 import { sendSMS } from '../../utils/smsService.js';
 import { normalizePhone } from '../../utils/phone.js';
 import { parseReceiptSchema } from '../../utils/receiptRenderer.js';
-import { buildVoucherQrUrl } from '../../utils/qr.js';
+import { buildVoucherTokenUrl, buildVoucherQrUrl } from '../../utils/qr.js';
+
+function buildReceiptQrUrl(serial, origin) {
+  const trimmed = typeof serial === 'string' ? serial.trim() : '';
+  if (!trimmed) {
+    return 'https://wallet.namo.uz/activate/demo';
+  }
+  const baseOrigin = origin || null;
+  try {
+    return buildVoucherTokenUrl({ serial: trimmed, origin: baseOrigin });
+  } catch (error) {
+    try {
+      return buildVoucherQrUrl({ voucherCode: trimmed, origin: baseOrigin });
+    } catch {
+      return `https://wallet.namo.uz/activate?voucher=${encodeURIComponent(trimmed)}`;
+    }
+  }
+}
 
 // Подтвердить покупку
 export const confirmCheckout = async (req, res) => {
@@ -218,7 +235,7 @@ export const confirmCheckout = async (req, res) => {
             totalFormatted: formatCurrencyUz(price),
             voucherFull: voucherValue,
             voucherMasked: voucherValue,
-            qrUrl: buildVoucherQrUrl({ voucherCode: voucherValue, origin: baseUrl }),
+            qrUrl: buildReceiptQrUrl(voucherValue, baseUrl),
             qrOrigin: baseUrl,
             variables: {
               customerPhone: normalizedPhone || '',
