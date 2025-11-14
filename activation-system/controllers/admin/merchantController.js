@@ -3,7 +3,24 @@ import fs from 'fs';
 import path from 'path';
 import prisma from '../../prisma/client.js';
 import QRCode from 'qrcode';
-import { buildVoucherQrUrl } from '../../utils/qr.js';
+import { buildVoucherTokenUrl, buildVoucherQrUrl } from '../../utils/qr.js';
+
+function buildReceiptQrUrl(serial, origin) {
+  const trimmed = typeof serial === 'string' ? serial.trim() : '';
+  if (!trimmed) {
+    return 'https://wallet.namo.uz/activate/demo';
+  }
+  const baseOrigin = origin || null;
+  try {
+    return buildVoucherTokenUrl({ serial: trimmed, origin: baseOrigin });
+  } catch (error) {
+    try {
+      return buildVoucherQrUrl({ voucherCode: trimmed, origin: baseOrigin });
+    } catch {
+      return `https://wallet.namo.uz/activate?voucher=${encodeURIComponent(trimmed)}`;
+    }
+  }
+}
 
 
 // showMerchantDashboard
@@ -243,10 +260,10 @@ for (const item of cart) {
       .fontSize(12)
       .text(`${product.name} — ${voucher.value} — ${product.price.toFixed(2)} сум`);
       // Генерируем QR-код
-      const qrData = buildVoucherQrUrl({
-        voucherCode: voucher.value,
-        origin: `${req.protocol}://${req.get('host')}`,
-      });
+      const qrData = buildReceiptQrUrl(
+        voucher.value,
+        `${req.protocol}://${req.get('host')}`,
+      );
       const qrImageBuffer = await QRCode.toBuffer(qrData);
 
       // Вставляем QR-код

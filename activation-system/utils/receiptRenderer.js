@@ -1,5 +1,5 @@
 import QRCode from 'qrcode';
-import { buildVoucherQrUrl } from './qr.js';
+import { buildVoucherTokenUrl, buildVoucherQrUrl } from './qr.js';
 
 const PLACEHOLDERS = {
   '{{vendorName}}': (ctx) => ctx.vendorName,
@@ -232,17 +232,30 @@ function resolveQrTarget(context = {}) {
   if (context.qrUrl && typeof context.qrUrl === 'string') {
     return context.qrUrl;
   }
-  const voucherCode = context.voucherFull || context.voucherMasked || '';
-  if (!voucherCode) {
+
+  const fullCode = typeof context.voucherFull === 'string' ? context.voucherFull.trim() : '';
+  const fallbackCode = fullCode || (typeof context.voucherMasked === 'string' ? context.voucherMasked.trim() : '');
+  if (!fallbackCode) {
     return 'https://wallet.namo.uz/activate/demo';
   }
+
+  const origin = context.qrOrigin || context.origin || null;
+
+  if (fullCode) {
+    try {
+      return buildVoucherTokenUrl({ serial: fullCode, origin });
+    } catch (error) {
+      // fall through to QR URL fallback
+    }
+  }
+
   try {
     return buildVoucherQrUrl({
-      voucherCode,
-      origin: context.qrOrigin || context.origin || null,
+      voucherCode: fallbackCode,
+      origin,
     });
   } catch (error) {
-    return `https://wallet.namo.uz/activate?voucher=${encodeURIComponent(voucherCode)}`;
+    return `https://wallet.namo.uz/activate?voucher=${encodeURIComponent(fallbackCode)}`;
   }
 }
 

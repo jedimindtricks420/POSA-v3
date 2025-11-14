@@ -133,7 +133,7 @@ router.get('/wallet/:serial.pkpass', async (req, res) => {
     const buf = await pass.getAsBuffer();
 
     res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
-    res.setHeader('Content-Disposition', `attachment; filename="${serial}.pkpass"`);
+    res.setHeader('Content-Disposition', `inline; filename="${serial}.pkpass"`);
     res.setHeader('Cache-Control', 'no-store');
     return res.send(buf);
   } catch (err) {
