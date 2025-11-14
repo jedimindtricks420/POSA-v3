@@ -50,20 +50,29 @@
     return /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
   }
 
-  function setSerial(value) {
+  function resolveBaseUrl() {
+    const configured = typeof window.__APP_BASE_URL__ === 'string' ? window.__APP_BASE_URL__.trim() : '';
+    const base = configured || window.location.origin;
+    return base.replace(/\/+$/, '');
+  }
+
+  function setPassMeta(meta = {}) {
     if (!modal) return;
-    modal.dataset.serial = value || '';
+    modal.dataset.serial = meta.serial || '';
+    modal.dataset.passUrl = meta.passUrl || '';
   }
 
   if (btn) {
     btn.classList.toggle('hidden', !isIOS());
     btn.addEventListener('click', () => {
+      const presetUrl = modal?.dataset?.passUrl || '';
       const serial = modal?.dataset?.serial || '';
-      if (!serial) return;
-      window.location.href = `/wallet/${encodeURIComponent(serial)}.pkpass`;
+      if (!presetUrl && !serial) return;
+      const targetUrl = presetUrl || `${resolveBaseUrl()}/wallet/${encodeURIComponent(serial)}.pkpass`;
+      window.location.href = targetUrl;
     });
   }
 
-  window.__setWalletModalSerial = setSerial;
+  window.__setWalletModalSerial = setPassMeta;
 })();
 </script>
