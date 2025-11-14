@@ -138,9 +138,15 @@ app.use('/vendor', vendorRoutes);
 app.use('/api/client', clientApiRoutes);
 app.use('/api/v1', apiV1Routes);
 app.use('/receipts', express.static(path.join(__dirname, 'receipts')));
+
+// 1) Wallet роуты — критично, чтобы pkpass отдавался до клиентских обработчиков
 app.use('/', walletRoutes);
 
-// Перенаправляем запросы в зависимости от субдомена
+// 2) Клиентские роуты (SPA)
+app.use('/wallet', clientRoutes);
+app.use('/client', clientRoutes);
+
+// Перенаправляем запросы в зависимости от субдомена (после walletRoutes, до публичных)
 app.use((req, res, next) => {
   if (req.appRole === 'client') {
     return clientRoutes(req, res, next);
@@ -153,11 +159,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Временно подключаем клиентские роуты для тестирования
-app.use('/wallet', clientRoutes);
-app.use('/client', clientRoutes);
-
-// Остальные маршруты (публичные)
+// 3) Остальные маршруты (публичные)
 app.use('/', publicRoutes);
 
 // Запуск сервера
