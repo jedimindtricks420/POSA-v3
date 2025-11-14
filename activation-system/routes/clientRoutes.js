@@ -8,6 +8,8 @@ const router = express.Router();
 router.use((req, res, next) => {
   res.locals.appRole = 'Client';
   res.locals.isClient = true;
+  const ua = req.headers['user-agent'] || '';
+  res.locals.isIPhone = /iPhone|iPod/i.test(ua);
   next();
 });
 

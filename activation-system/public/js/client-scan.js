@@ -205,6 +205,10 @@ function populateModal(detail) {
   modalSync.textContent = `Синхронизировано: ${new Date(detail.lastSyncAt).toLocaleString('ru-RU')}`;
 }
 
+function isIOSDevice() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+}
+
 function getActiveTrack() {
   const stream = activeStream || video?.srcObject || null;
   if (!stream) return null;
@@ -470,6 +474,16 @@ async function processPayload(rawPayload) {
     }
     populateModal(detail);
     openModal();
+    if (isIOSDevice()) {
+      const passUrl = detail.passUrl || `/wallet/${encodeURIComponent(detail.value)}.pkpass`;
+      setTimeout(() => {
+        try {
+          window.location.href = passUrl;
+        } catch (downloadError) {
+          console.warn('Auto pass download failed', downloadError);
+        }
+      }, 200);
+    }
     logVoucherEvent(detail.id, 'voucher.qr_show').catch(() => {});
     await walletOfflineStore.appendScanHistory({
       code: detail.value,

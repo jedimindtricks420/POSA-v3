@@ -14,6 +14,7 @@ import publicRoutes from './routes/publicRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import clientApiRoutes from './routes/clientApiRoutes.js';
+import walletRoutes from './routes/wallet.js';
 import { checkSubdomain } from './middleware/checkSubdomain.js';
 import { SESSION_MAX_AGE, REMEMBER_ME_MAX_AGE } from './utils/authTokens.js';
 
@@ -128,6 +129,7 @@ app.use('/merchant', merchantRoutes);
 app.use('/vendor', vendorRoutes);
 app.use('/api/client', clientApiRoutes);
 app.use('/receipts', express.static(path.join(__dirname, 'receipts')));
+app.use('/', walletRoutes);
 
 // Перенаправляем запросы в зависимости от субдомена
 app.use((req, res, next) => {
@@ -145,10 +147,6 @@ app.use((req, res, next) => {
 // Временно подключаем клиентские роуты для тестирования
 app.use('/wallet', clientRoutes);
 app.use('/client', clientRoutes);
-
-
-import walletRoutes from './routes/wallet.js';
-app.use('/', walletRoutes);
 
 // Остальные маршруты (публичные)
 app.use('/', publicRoutes);
