@@ -14,6 +14,7 @@ import publicRoutes from './routes/publicRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import clientApiRoutes from './routes/clientApiRoutes.js';
+import apiV1Routes from './routes/apiV1Routes.js';
 import walletRoutes from './routes/wallet.js';
 import { checkSubdomain } from './middleware/checkSubdomain.js';
 import { SESSION_MAX_AGE, REMEMBER_ME_MAX_AGE } from './utils/authTokens.js';
@@ -119,6 +120,13 @@ app.use((req, res, next) => {
   }
   res.locals.appRole = role || 'Public';
   res.locals.isClient = res.locals.appRole === 'Client';
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  const host = req.get('host');
+  const fallbackOrigin = host ? `${protocol}://${host}` : null;
+  res.locals.appBaseUrl = process.env.PUBLIC_BASE_URL
+    || process.env.APP_BASE_URL
+    || fallbackOrigin
+    || 'https://wallet.namo.uz';
   next();
 });
 
@@ -128,6 +136,7 @@ app.use('/admin', adminRoutes);
 app.use('/merchant', merchantRoutes);
 app.use('/vendor', vendorRoutes);
 app.use('/api/client', clientApiRoutes);
+app.use('/api/v1', apiV1Routes);
 app.use('/receipts', express.static(path.join(__dirname, 'receipts')));
 app.use('/', walletRoutes);
 

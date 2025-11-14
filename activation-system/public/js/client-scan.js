@@ -1,6 +1,7 @@
 import { registerServiceWorker } from './register-sw.js';
 import walletOfflineStore from './wallet-offline-store.js';
 import { getVouchers, logVoucherEvent, claimVoucher, OFFLINE_QUEUE_EVENT } from './wallet-api.js';
+import { resolvePassUrl } from './wallet-pass.js';
 
 const video = document.getElementById('qrPreview');
 const switchCameraBtn = document.getElementById('qrSwitchCamera');
@@ -19,6 +20,8 @@ const modalQr = document.getElementById('voucherModalQr');
 const modalBarcode = document.getElementById('voucherModalBarcode');
 const modalTerms = document.getElementById('voucherModalTerms');
 const modalSync = document.getElementById('voucherModalSyncInfo');
+const modalAddApple = document.getElementById('voucherModalAddApple');
+const modalAddGoogle = document.getElementById('voucherModalAddGoogle');
 const offlineNotice = document.getElementById('qrOfflineNotice');
 
 const fallbackCanvas = document.createElement('canvas');
@@ -203,6 +206,24 @@ function populateModal(detail) {
     : '<p class="text-xs text-slate-400">Не удалось сформировать штрихкод</p>';
   modalTerms.textContent = detail.terms;
   modalSync.textContent = `Синхронизировано: ${new Date(detail.lastSyncAt).toLocaleString('ru-RU')}`;
+  if (modalAddApple) {
+    modalAddApple.onclick = () => {
+      logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'ios' }, { keepalive: true }).catch(() => {});
+      const passUrl = resolvePassUrl(detail);
+      if (!passUrl) {
+        console.error('passUrl unavailable for voucher', detail.id);
+        alert('Не удалось сформировать Apple Wallet пасс. Обратитесь в поддержку.');
+        return;
+      }
+      window.location.href = passUrl;
+    };
+  }
+  if (modalAddGoogle) {
+    modalAddGoogle.onclick = () => {
+      logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'android' }, { keepalive: true }).catch(() => {});
+      window.location.href = `/wallet/google/${detail.id}`;
+    };
+  }
 }
 
 function isIOSDevice() {
@@ -475,14 +496,18 @@ async function processPayload(rawPayload) {
     populateModal(detail);
     openModal();
     if (isIOSDevice()) {
-      const passUrl = detail.passUrl || `/wallet/${encodeURIComponent(detail.value)}.pkpass`;
-      setTimeout(() => {
-        try {
-          window.location.href = passUrl;
-        } catch (downloadError) {
-          console.warn('Auto pass download failed', downloadError);
-        }
-      }, 200);
+      const passUrl = resolvePassUrl(detail);
+      if (!passUrl) {
+        console.error('passUrl unavailable for voucher', detail.id);
+      } else {
+        setTimeout(() => {
+          try {
+            window.location.href = passUrl;
+          } catch (downloadError) {
+            console.warn('Auto pass download failed', downloadError);
+          }
+        }, 200);
+      }
     }
     logVoucherEvent(detail.id, 'voucher.qr_show').catch(() => {});
     await walletOfflineStore.appendScanHistory({
