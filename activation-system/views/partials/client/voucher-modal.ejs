@@ -23,11 +23,9 @@
         <div class="rounded-2xl bg-slate-100 p-4 text-sm leading-relaxed text-slate-600 dark:bg-slate-800 dark:text-slate-300" id="voucherModalTerms"></div>
       </div>
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <button id="voucherModalAddApple" class="inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">
+        <button id="voucherModalAddApple"
+          class="hidden inline-flex items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">
           Добавить в Apple Wallet
-        </button>
-        <button id="voucherModalAddGoogle" class="inline-flex items-center justify-center rounded-2xl bg-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-white">
-          Добавить в Google Wallet
         </button>
         <button id="voucherModalCopy" class="inline-flex items-center justify-center rounded-2xl bg-apple-blue px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-600">
           Скопировать код
@@ -43,3 +41,29 @@
     </div>
   </div>
 </div>
+<script>
+(function(){
+  const modal = document.getElementById('voucherModal');
+  const btn   = document.getElementById('voucherModalAddApple');
+
+  function isIOS() {
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+  }
+
+  function setSerial(value) {
+    if (!modal) return;
+    modal.dataset.serial = value || '';
+  }
+
+  if (btn) {
+    btn.classList.toggle('hidden', !isIOS());
+    btn.addEventListener('click', () => {
+      const serial = modal?.dataset?.serial || '';
+      if (!serial) return;
+      window.location.href = `/wallet/${encodeURIComponent(serial)}.pkpass`;
+    });
+  }
+
+  window.__setWalletModalSerial = setSerial;
+})();
+</script>

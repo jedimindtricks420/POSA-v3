@@ -52,6 +52,7 @@ async function buildDetail(raw, origin) {
     voucherCode: raw.voucher.value,
     origin,
   });
+  const passUrl = new URL(`/wallet/${encodeURIComponent(raw.voucher.value)}.pkpass`, origin).toString();
 
   const qrDataUrl = await QRCode.toDataURL(qrUrl, {
     margin: 1,
@@ -85,6 +86,7 @@ async function buildDetail(raw, origin) {
       'Используйте этот ваучер согласно условиям продавца. Подробности уточняйте у поддержки.',
     brandColor: '#0A84FF',
     lastSyncAt: new Date().toISOString(),
+    passUrl,
   };
 }
 

@@ -365,6 +365,10 @@ function staleWhileRevalidate(request) {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  if (request.url.includes('/wallet/') && request.url.endsWith('.pkpass')) {
+    event.respondWith(fetch(request));
+    return;
+  }
   if (request.method === 'POST' && request.url.includes('/api/client/')) {
     event.respondWith(handleClientApiPost(request));
     return;
