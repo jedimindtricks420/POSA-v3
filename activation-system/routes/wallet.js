@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import { PKPass } from 'passkit-generator';
+import prisma from '../prisma/client.js';
+import { buildVoucherSmartUrl, extractVoucherCode, parseVoucherToken } from '../utils/qr.js';
 
 const router = express.Router();
 
@@ -24,10 +26,10 @@ const MODEL_DIR = mustFile(
   path.resolve(process.cwd(), 'passModels', 'storeCard.pass')
 );
 
-const WWDR_PATH       = mustFile(mustEnv('APPLE_WWDR_CERT_PATH'));
-const SIGNER_CERT_PATH= mustFile(mustEnv('APPLE_WALLET_SIGNER_CERT_PATH'));
-const SIGNER_KEY_PATH = mustFile(mustEnv('APPLE_WALLET_SIGNER_KEY_PATH'));
-const SIGNER_KEY_PW   = mustEnv('PASS_KEY_PASSWORD'); // v3 требует НЕпустой passphrase
+const WWDR_PATH        = mustFile(mustEnv('APPLE_WWDR_CERT_PATH'));
+const SIGNER_CERT_PATH = mustFile(mustEnv('APPLE_WALLET_SIGNER_CERT_PATH'));
+const SIGNER_KEY_PATH  = mustFile(mustEnv('APPLE_WALLET_SIGNER_KEY_PATH'));
+const SIGNER_KEY_PW    = mustEnv('PASS_KEY_PASSWORD'); // v3 требует НЕпустой passphrase
 
 const CERTS = {
   wwdr:       readPem(WWDR_PATH),
@@ -41,19 +43,40 @@ const TEAM_ID      = mustEnv('TEAM_ID');
 const ORG_NAME     = mustEnv('ORG_NAME');
 const WS_URL       = process.env.WALLET_WEB_SERVICE_URL && String(process.env.WALLET_WEB_SERVICE_URL).trim();
 
-/** ——— основной эндпоинт ——— */
+/** ——— .pkpass генератор ——— */
 router.get('/wallet/:serial.pkpass', async (req, res) => {
   try {
     const serial = req.params.serial;
 
-    // TODO: подтягивай реальные данные из БД
-    // Пример «заглушки»
+    const dbVoucher = await prisma.voucher.findFirst({
+      where: { value: serial },
+      include: { product: true },
+    });
+    if (!dbVoucher) {
+      return res.status(404).send('Voucher not found');
+    }
+    if (['deleted', 'used'].includes(dbVoucher.status)) {
+      return res.status(410).send('Voucher not available');
+    }
+
+    const onlineLink = await prisma.onlineVoucher.findFirst({
+      where: { voucherId: dbVoucher.id },
+    });
+
+    const amountNumber = Number(dbVoucher.product?.price ?? NaN);
+    const amountLabel = Number.isFinite(amountNumber) && amountNumber > 0
+      ? `${amountNumber.toLocaleString('ru-RU')} сум`
+      : dbVoucher.product?.name || dbVoucher.productName || 'Ваучер';
+
     const voucher = {
       serial,
-      amount: 100000,
-      status: 'Active',
-      authToken: 'TEMP_AUTH_TOKEN_32_CHARS'
+      amountLabel,
+      status: dbVoucher.status,
     };
+
+    // базовый origin для построения QR-ссылки внутри пасса
+    const origin = process.env.PUBLIC_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const activationUrl = buildVoucherSmartUrl({ serial: voucher.serial, origin });
 
     // overrides → попадают в конечный pass.json
     const overrides = {
@@ -63,22 +86,22 @@ router.get('/wallet/:serial.pkpass', async (req, res) => {
       serialNumber: voucher.serial,
 
       // включай, когда поднимешь Wallet Web Service + токены в БД
-      ...(WS_URL ? {
+      ...(WS_URL && dbVoucher.authToken ? {
         webServiceURL: WS_URL,
-        authenticationToken: voucher.authToken
+        authenticationToken: dbVoucher.authToken
       } : {}),
 
-      // Явный QR (вместо setBarcodes — чтобы контролировать кодировку)
+      // QR в самом .pkpass указывает на «умную» ссылку /activate?voucher=...
       barcode: {
         format: 'PKBarcodeFormatQR',
-        message: voucher.serial,
+        message: activationUrl,
         messageEncoding: 'iso-8859-1'
       },
 
-      // Динамические поля StoreCard (если в модели уже есть поля — это перезапишет значения)
+      // Динамические поля StoreCard
       storeCard: {
         primaryFields: [
-          { key: 'balance', label: 'Баланс', value: `${voucher.amount} сум` }
+          { key: 'balance', label: 'Баланс', value: voucher.amountLabel }
         ],
         auxiliaryFields: [
           { key: 'status', label: 'Статус', value: voucher.status }
@@ -91,6 +114,22 @@ router.get('/wallet/:serial.pkpass', async (req, res) => {
       overrides
     );
 
+    if (onlineLink?.clientId) {
+      try {
+        await prisma.voucherWalletLog.create({
+          data: {
+            voucherId: dbVoucher.id,
+            clientId: onlineLink.clientId,
+            isAddedToWallet: true,
+            pkpassId: 'voucher.apple_wallet',
+            deviceInfo: 'ios',
+          },
+        });
+      } catch (logError) {
+        console.warn('VoucherWalletLog insert failed', logError);
+      }
+    }
+
     const buf = await pass.getAsBuffer();
 
     res.setHeader('Content-Type', 'application/vnd.apple.pkpass');
@@ -100,6 +139,42 @@ router.get('/wallet/:serial.pkpass', async (req, res) => {
   } catch (err) {
     console.error('PKPass error:', err);
     return res.status(500).send('Pass generation error');
+  }
+});
+
+/** ——— Smart redirect: iOS → pkpass, остальные → форма ввода кода ——— */
+router.get('/activate', (req, res, next) => {
+  const raw = req.query.voucher || req.query.code || req.query.payload || '';
+  const code = extractVoucherCode(raw);
+  if (!code) return next();
+
+  const ua = req.headers['user-agent'] || '';
+  const isIPhone = /iPhone|iPod/i.test(ua); // только iPhone/iPod
+  if (isIPhone) {
+    return res.redirect(302, `/wallet/${encodeURIComponent(code)}.pkpass`);
+  }
+  const enterUrl = process.env.CLIENT_ENTER_URL || '/client/enter-voucher';
+  return res.redirect(302, `${enterUrl}?serial=${encodeURIComponent(code)}`);
+});
+
+/** ——— Smart-QR по токену (опционально; нужен parseVoucherToken в utils/qr.js) ——— */
+router.get('/qr/:token', (req, res) => {
+  try {
+    const payload = parseVoucherToken?.(req.params.token);
+    if (!payload) return res.status(400).send('Bad or expired token');
+
+    const serial = payload.s || payload.voucher || payload.code;
+    if (!serial) return res.status(400).send('Token payload has no serial');
+
+    const ua = req.headers['user-agent'] || '';
+    const isiOS = /iPhone|iPad|iPod/i.test(ua);
+    if (isiOS) {
+      return res.redirect(302, `/wallet/${encodeURIComponent(serial)}.pkpass`);
+    }
+    const clientUrl = process.env.CLIENT_ENTER_URL || '/client/enter-voucher';
+    return res.redirect(302, `${clientUrl}?serial=${encodeURIComponent(serial)}`);
+  } catch (e) {
+    return res.status(400).send('Invalid QR token');
   }
 });
 

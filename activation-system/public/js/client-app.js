@@ -29,7 +29,6 @@ const selectors = {
   modalBarcode: document.getElementById('voucherModalBarcode'),
   modalTerms: document.getElementById('voucherModalTerms'),
   modalAddApple: document.getElementById('voucherModalAddApple'),
-  modalAddGoogle: document.getElementById('voucherModalAddGoogle'),
   modalCopy: document.getElementById('voucherModalCopy'),
   modalShare: document.getElementById('voucherModalShare'),
   modalSync: document.getElementById('voucherModalSyncInfo'),
@@ -250,6 +249,9 @@ function bindModalControls() {
 }
 
 function populateModal(detail) {
+  if (typeof window !== 'undefined' && typeof window.__setWalletModalSerial === 'function') {
+    window.__setWalletModalSerial(detail.value || detail.voucherCode || '');
+  }
   selectors.modalProduct.textContent = detail.productName;
   // Show full voucher code (no dots)
   selectors.modalValue.textContent = detail.value || detail.displayValue;
@@ -265,11 +267,8 @@ function populateModal(detail) {
   selectors.modalSync.textContent = `Синхронизировано: ${new Date(detail.lastSyncAt).toLocaleString('ru-RU')}`;
   selectors.modalAddApple.onclick = () => {
     logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'ios' }).catch(() => {});
-    window.location.href = `/wallet/pass/${detail.id}`;
-  };
-  selectors.modalAddGoogle.onclick = () => {
-    logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'android' }).catch(() => {});
-    window.location.href = `/wallet/google/${detail.id}`;
+    const passUrl = detail.passUrl || `/wallet/${encodeURIComponent(detail.value)}.pkpass`;
+    window.location.href = passUrl;
   };
   selectors.modalCopy.onclick = async () => {
     try {
