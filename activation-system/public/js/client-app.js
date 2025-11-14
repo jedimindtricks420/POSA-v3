@@ -1,6 +1,7 @@
 import { registerServiceWorker } from './register-sw.js';
 import walletOfflineStore from './wallet-offline-store.js';
 import { getVouchers, getVoucher, logVoucherEvent, registerPush, OFFLINE_QUEUE_EVENT } from './wallet-api.js';
+import { resolvePassUrl } from './wallet-pass.js';
 
 const state = {
   vouchers: [],
@@ -29,6 +30,7 @@ const selectors = {
   modalBarcode: document.getElementById('voucherModalBarcode'),
   modalTerms: document.getElementById('voucherModalTerms'),
   modalAddApple: document.getElementById('voucherModalAddApple'),
+  modalAddGoogle: document.getElementById('voucherModalAddGoogle'),
   modalCopy: document.getElementById('voucherModalCopy'),
   modalShare: document.getElementById('voucherModalShare'),
   modalSync: document.getElementById('voucherModalSyncInfo'),
@@ -250,7 +252,10 @@ function bindModalControls() {
 
 function populateModal(detail) {
   if (typeof window !== 'undefined' && typeof window.__setWalletModalSerial === 'function') {
-    window.__setWalletModalSerial(detail.value || detail.voucherCode || '');
+    window.__setWalletModalSerial({
+      serial: detail.value || detail.voucherCode || '',
+      passUrl: detail.passUrl || null,
+    });
   }
   selectors.modalProduct.textContent = detail.productName;
   // Show full voucher code (no dots)
@@ -266,10 +271,21 @@ function populateModal(detail) {
   selectors.modalTerms.textContent = detail.terms;
   selectors.modalSync.textContent = `Синхронизировано: ${new Date(detail.lastSyncAt).toLocaleString('ru-RU')}`;
   selectors.modalAddApple.onclick = () => {
-    logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'ios' }).catch(() => {});
-    const passUrl = detail.passUrl || `/wallet/${encodeURIComponent(detail.value)}.pkpass`;
+    logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'ios' }, { keepalive: true }).catch(() => {});
+    const passUrl = resolvePassUrl(detail);
+    if (!passUrl) {
+      console.error('passUrl unavailable for voucher', detail.id);
+      alert('Не удалось сформировать Apple Wallet пасс. Обратитесь в поддержку.');
+      return;
+    }
     window.location.href = passUrl;
   };
+  if (selectors.modalAddGoogle) {
+    selectors.modalAddGoogle.onclick = () => {
+      logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'android' }, { keepalive: true }).catch(() => {});
+      window.location.href = `/wallet/google/${detail.id}`;
+    };
+  }
   selectors.modalCopy.onclick = async () => {
     try {
       await navigator.clipboard.writeText(detail.value);

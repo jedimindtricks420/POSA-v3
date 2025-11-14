@@ -13,6 +13,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-192.png" />
   <script>
     window.__APP_ROLE__ = 'Client';
+    window.__APP_BASE_URL__ = <%- JSON.stringify(appBaseUrl || null) %> || window.location.origin;
   </script>
   <!-- Inter font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">

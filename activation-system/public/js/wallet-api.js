@@ -56,10 +56,12 @@ export function getVoucher(id) {
   return fetchJson(`/api/client/voucher/${id}`);
 }
 
-export function logVoucherEvent(id, event, meta = {}) {
-  return fetchJson(`/api/client/voucher/${id}/log`, {
+export function logVoucherEvent(id, event, meta = {}, options = {}) {
+  const extra = options.keepalive ? { keepalive: true } : {};
+  return fetchJson(`/api/v1/voucher/${encodeURIComponent(id)}/events`, {
     method: 'POST',
     body: JSON.stringify({ event, meta }),
+    ...extra,
   });
 }
 

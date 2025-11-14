@@ -52,7 +52,8 @@ async function buildDetail(raw, origin) {
     voucherCode: raw.voucher.value,
     origin,
   });
-  const passUrl = new URL(`/wallet/${encodeURIComponent(raw.voucher.value)}.pkpass`, origin).toString();
+  const passSerial = raw.voucher.value;
+  const passUrl = buildPassDownloadUrl(passSerial, origin);
 
   const qrDataUrl = await QRCode.toDataURL(qrUrl, {
     margin: 1,
@@ -76,6 +77,7 @@ async function buildDetail(raw, origin) {
 
   return {
     ...summary,
+    passSerial,
     qrUrl,
     qrPayload: qrUrl,
     barcodePayload: raw.voucher.value,
@@ -352,4 +354,43 @@ function resolveRequestOrigin(req) {
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
   const host = req.get('host');
   return `${protocol}://${host}`;
+}
+
+function normalizeBaseUrl(candidate) {
+  if (!candidate || typeof candidate !== 'string') {
+    return null;
+  }
+  const trimmed = candidate.trim();
+  if (!trimmed) {
+    return null;
+  }
+  const prefixed = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return prefixed.replace(/\/+$/, '');
+}
+
+function resolveAppBaseUrl(origin) {
+  const envBase = process.env.PUBLIC_BASE_URL || process.env.APP_BASE_URL;
+  const normalizedEnv = normalizeBaseUrl(envBase);
+  if (normalizedEnv) {
+    return normalizedEnv;
+  }
+  const normalizedOrigin = normalizeBaseUrl(origin);
+  if (normalizedOrigin) {
+    return normalizedOrigin;
+  }
+  return 'https://wallet.namo.uz';
+}
+
+function buildPassDownloadUrl(serial, origin) {
+  const normalizedSerial = typeof serial === 'string' ? serial.trim() : '';
+  if (!normalizedSerial) {
+    return null;
+  }
+  const base = process.env.PASS_BASE_URL || resolveAppBaseUrl(origin);
+  const normalizedBase = normalizeBaseUrl(base);
+  if (!normalizedBase) {
+    return null;
+  }
+  const encodedSerial = encodeURIComponent(normalizedSerial);
+  return `${normalizedBase}/wallet/${encodedSerial}.pkpass`;
 }
