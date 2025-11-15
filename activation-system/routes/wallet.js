@@ -98,26 +98,30 @@ router.get('/wallet/:serial.pkpass', async (req, res) => {
           message: activationUrl,
           messageEncoding: 'iso-8859-1'
         }
-      ],
-
-      // Динамические поля StoreCard
-      storeCard: {
-        primaryFields: [
-          { key: 'balance', label: 'Баланс', value: voucher.amountLabel }
-        ],
-        secondaryFields: [
-          { key: 'code', label: 'Код ваучера', value: voucher.serial }
-        ],
-        auxiliaryFields: [
-          { key: 'status', label: 'Статус', value: voucher.status }
-        ]
-      }
+      ]
     };
 
     const pass = await PKPass.from(
       { model: MODEL_DIR, certificates: CERTS },
       overrides
     );
+
+    const replaceFields = (fields, next = []) => {
+      fields.splice(0, fields.length); // очистить шаблонные значения
+      if (next.length) {
+        fields.push(...next);
+      }
+    };
+
+    replaceFields(pass.primaryFields, [
+      { key: 'balance', label: 'Баланс', value: voucher.amountLabel }
+    ]);
+    replaceFields(pass.secondaryFields, [
+      { key: 'code', label: 'Код ваучера', value: voucher.serial }
+    ]);
+    replaceFields(pass.auxiliaryFields, [
+      { key: 'status', label: 'Статус', value: voucher.status }
+    ]);
 
     if (onlineLink?.clientId) {
       try {
