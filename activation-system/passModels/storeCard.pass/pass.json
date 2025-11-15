@@ -6,14 +6,19 @@
   "description": "Namo Voucher",
   "serialNumber": "VCH-000001",
   "logoText": "NAMO",
-  "barcode": {
-    "format": "PKBarcodeFormatQR",
-    "message": "VCH-000001",
-    "messageEncoding": "iso-8859-1"
-  },
+  "barcodes": [
+    {
+      "format": "PKBarcodeFormatQR",
+      "message": "VCH-000001",
+      "messageEncoding": "iso-8859-1"
+    }
+  ],
   "storeCard": {
     "primaryFields": [
       { "key": "balance", "label": "Баланс", "value": "100 000 сум" }
+    ],
+    "secondaryFields": [
+      { "key": "code", "label": "Код ваучера", "value": "VCH-000001" }
     ],
     "auxiliaryFields": [
       { "key": "status", "label": "Статус", "value": "Active" }
