@@ -1,4 +1,4 @@
-<div id="voucherModal" class="fixed inset-0 z-50 hidden items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-center">
+<div id="voucherModal" class="fixed inset-0 z-50 hidden flex items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-center">
   <div class="relative w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 sm:rounded-3xl max-h-[90svh] overflow-y-auto overscroll-contain">
     <button id="voucherModalClose" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600" aria-label="Close modal">
       <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -41,38 +41,7 @@
     </div>
   </div>
 </div>
-<script>
-(function(){
-  const modal = document.getElementById('voucherModal');
-  const btn   = document.getElementById('voucherModalAddApple');
-
-  function isIOS() {
-    return /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
-  }
-
-  function resolveBaseUrl() {
-    const configured = typeof window.__APP_BASE_URL__ === 'string' ? window.__APP_BASE_URL__.trim() : '';
-    const base = configured || window.location.origin;
-    return base.replace(/\/+$/, '');
-  }
-
-  function setPassMeta(meta = {}) {
-    if (!modal) return;
-    modal.dataset.serial = meta.serial || '';
-    modal.dataset.passUrl = meta.passUrl || '';
-  }
-
-  if (btn) {
-    btn.classList.toggle('hidden', !isIOS());
-    btn.addEventListener('click', () => {
-      const presetUrl = modal?.dataset?.passUrl || '';
-      const serial = modal?.dataset?.serial || '';
-      if (!presetUrl && !serial) return;
-      const targetUrl = presetUrl || `${resolveBaseUrl()}/wallet/${encodeURIComponent(serial)}.pkpass`;
-      window.location.href = targetUrl;
-    });
-  }
-
-  window.__setWalletModalSerial = setPassMeta;
-})();
-</script>
+<% if (isClient) { %>
+  <script src="/vendor/capacitor/capacitor.js"></script>
+<% } %>
+<script src="/js/voucher-modal.js" defer></script>

@@ -1,7 +1,6 @@
 import { registerServiceWorker } from './register-sw.js';
 import walletOfflineStore from './wallet-offline-store.js';
 import { getVouchers, getVoucher, logVoucherEvent, registerPush, OFFLINE_QUEUE_EVENT } from './wallet-api.js';
-import { resolvePassUrl } from './wallet-pass.js';
 
 const state = {
   vouchers: [],
@@ -225,13 +224,11 @@ fetchAndRender.pending = false;
 
 function openModal() {
   selectors.modal.classList.remove('hidden');
-  selectors.modal.classList.add('flex');
   document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
   selectors.modal.classList.add('hidden');
-  selectors.modal.classList.remove('flex');
   document.body.style.overflow = '';
 }
 
@@ -250,12 +247,33 @@ function bindModalControls() {
   }
 }
 
+function bindModalAppleTracking() {
+  if (!selectors.modalAddApple) {
+    return;
+  }
+  selectors.modalAddApple.addEventListener('click', () => {
+    const voucherId = Number(selectors.modalAddApple.dataset.voucherId);
+    if (!voucherId) {
+      return;
+    }
+    logVoucherEvent(voucherId, 'voucher.add_to_wallet', { device: 'ios' }, { keepalive: true }).catch(() => {});
+  });
+}
+
 function populateModal(detail) {
-  if (typeof window !== 'undefined' && typeof window.__setWalletModalSerial === 'function') {
-    window.__setWalletModalSerial({
-      serial: detail.value || detail.voucherCode || '',
-      passUrl: detail.passUrl || null,
-    });
+  const voucherSerial = detail.value || detail.voucherCode || '';
+  const walletPayload = {
+    serial: voucherSerial,
+    productName: detail.productName,
+    amountLabel: detail.amountLabel || detail.displayValue || detail.value || '',
+    status: detail.statusLabel || detail.status || '',
+  };
+  let openedViaVoucherScript = false;
+  if (typeof window !== 'undefined' && typeof window.openVoucherModal === 'function') {
+    window.openVoucherModal(walletPayload);
+    openedViaVoucherScript = true;
+  } else if (selectors.modal) {
+    selectors.modal.dataset.serial = walletPayload.serial;
   }
   selectors.modalProduct.textContent = detail.productName;
   // Show full voucher code (no dots)
@@ -270,16 +288,9 @@ function populateModal(detail) {
     : '<p class="text-xs text-slate-400">Не удалось сформировать штрихкод</p>';
   selectors.modalTerms.textContent = detail.terms;
   selectors.modalSync.textContent = `Синхронизировано: ${new Date(detail.lastSyncAt).toLocaleString('ru-RU')}`;
-  selectors.modalAddApple.onclick = () => {
-    logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'ios' }, { keepalive: true }).catch(() => {});
-    const passUrl = resolvePassUrl(detail);
-    if (!passUrl) {
-      console.error('passUrl unavailable for voucher', detail.id);
-      alert('Не удалось сформировать Apple Wallet пасс. Обратитесь в поддержку.');
-      return;
-    }
-    window.location.href = passUrl;
-  };
+  if (selectors.modalAddApple) {
+    selectors.modalAddApple.dataset.voucherId = detail.id;
+  }
   if (selectors.modalAddGoogle) {
     selectors.modalAddGoogle.onclick = () => {
       logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'android' }, { keepalive: true }).catch(() => {});
@@ -310,6 +321,7 @@ function populateModal(detail) {
       console.warn('Share unsupported', error);
     }
   };
+  return openedViaVoucherScript;
 }
 
 function bindAutoRefresh() {
@@ -350,8 +362,10 @@ async function handleCardClick(event) {
         state.detailsCache.set(voucherId, detail);
       }
     }
-    populateModal(detail);
-    openModal();
+    const openedViaVoucherScript = populateModal(detail);
+    if (!openedViaVoucherScript) {
+      openModal();
+    }
     logVoucherEvent(voucherId, 'voucher.view').catch(() => {});
   } catch (error) {
     console.error('Failed to load voucher detail', error);
@@ -362,6 +376,7 @@ async function handleCardClick(event) {
 async function bootstrap() {
   hydrateTheme();
   bindModalControls();
+  bindModalAppleTracking();
   bindAutoRefresh();
 
   const bootstrapData = window.__WALLET_BOOTSTRAP__ || { vouchers: [] };
