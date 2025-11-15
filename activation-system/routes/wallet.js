@@ -92,16 +92,21 @@ router.get('/wallet/:serial.pkpass', async (req, res) => {
       } : {}),
 
       // QR в самом .pkpass указывает на «умную» ссылку /activate?voucher=...
-      barcode: {
-        format: 'PKBarcodeFormatQR',
-        message: activationUrl,
-        messageEncoding: 'iso-8859-1'
-      },
+      barcodes: [
+        {
+          format: 'PKBarcodeFormatQR',
+          message: activationUrl,
+          messageEncoding: 'iso-8859-1'
+        }
+      ],
 
       // Динамические поля StoreCard
       storeCard: {
         primaryFields: [
           { key: 'balance', label: 'Баланс', value: voucher.amountLabel }
+        ],
+        secondaryFields: [
+          { key: 'code', label: 'Код ваучера', value: voucher.serial }
         ],
         auxiliaryFields: [
           { key: 'status', label: 'Статус', value: voucher.status }
