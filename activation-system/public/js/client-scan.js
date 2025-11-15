@@ -185,18 +185,32 @@ function updateHistoryList(items) {
 
 function openModal() {
   modal.classList.remove('hidden');
-  modal.classList.add('flex');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
   modal.classList.add('hidden');
-  modal.classList.remove('flex');
+  document.body.style.overflow = '';
   if (navigator.onLine) {
     setTimeout(() => startScanner(), 300);
   }
 }
 
 function populateModal(detail) {
+  const voucherSerial = detail.value || detail.voucherCode || '';
+  const walletPayload = {
+    serial: voucherSerial,
+    productName: detail.productName,
+    amountLabel: detail.amountLabel || detail.displayValue || detail.value || '',
+    status: detail.statusLabel || detail.status || '',
+  };
+  let openedViaVoucherScript = false;
+  if (typeof window !== 'undefined' && typeof window.openVoucherModal === 'function') {
+    window.openVoucherModal(walletPayload);
+    openedViaVoucherScript = true;
+  } else if (modal) {
+    modal.dataset.serial = walletPayload.serial;
+  }
   modalProduct.textContent = detail.productName;
   modalValue.textContent = detail.displayValue;
   modalStatus.innerHTML = `<span class="inline-flex h-2 w-2 rounded-full mr-2 ${detail.statusColor}"></span>${detail.statusLabel}`;
@@ -207,16 +221,7 @@ function populateModal(detail) {
   modalTerms.textContent = detail.terms;
   modalSync.textContent = `Синхронизировано: ${new Date(detail.lastSyncAt).toLocaleString('ru-RU')}`;
   if (modalAddApple) {
-    modalAddApple.onclick = () => {
-      logVoucherEvent(detail.id, 'voucher.add_to_wallet', { device: 'ios' }, { keepalive: true }).catch(() => {});
-      const passUrl = resolvePassUrl(detail);
-      if (!passUrl) {
-        console.error('passUrl unavailable for voucher', detail.id);
-        alert('Не удалось сформировать Apple Wallet пасс. Обратитесь в поддержку.');
-        return;
-      }
-      window.location.href = passUrl;
-    };
+    modalAddApple.dataset.voucherId = detail.id;
   }
   if (modalAddGoogle) {
     modalAddGoogle.onclick = () => {
@@ -224,6 +229,7 @@ function populateModal(detail) {
       window.location.href = `/wallet/google/${detail.id}`;
     };
   }
+  return openedViaVoucherScript;
 }
 
 function isIOSDevice() {
@@ -493,8 +499,10 @@ async function processPayload(rawPayload) {
       lastHandledAt = Date.now();
       return;
     }
-    populateModal(detail);
-    openModal();
+    const openedViaVoucherScript = populateModal(detail);
+    if (!openedViaVoucherScript) {
+      openModal();
+    }
     if (isIOSDevice()) {
       const passUrl = resolvePassUrl(detail);
       if (!passUrl) {
@@ -568,11 +576,25 @@ function bindModalInteractions() {
   }
 }
 
+function bindAppleWalletTracking() {
+  if (!modalAddApple) {
+    return;
+  }
+  modalAddApple.addEventListener('click', () => {
+    const voucherId = Number(modalAddApple.dataset.voucherId);
+    if (!voucherId) {
+      return;
+    }
+    logVoucherEvent(voucherId, 'voucher.add_to_wallet', { device: 'ios' }, { keepalive: true }).catch(() => {});
+  });
+}
+
 async function bootstrap() {
   await initHistory();
   updateOfflineState();
   await startScanner();
   bindModalInteractions();
+  bindAppleWalletTracking();
 
   if (switchCameraBtn) {
     switchCameraBtn.addEventListener('click', () => {
