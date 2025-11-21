@@ -1,11 +1,14 @@
 import axios from 'axios';
+import dotenv from 'dotenv';
 import { phoneForSms } from './phone.js';
 
+dotenv.config();
+
 // Данные авторизации Eskiz
-const ESKIZ_EMAIL = 'sales@keyspro.uz'; // твой email
-const ESKIZ_PASSWORD = 'iOYDQlBUHvpHWd1qT4075wEFYdP51kX9cwrC2dCg'; // твой секретный ключ
-const ESKIZ_API_URL = 'https://notify.eskiz.uz/api';
-const SENDER_NAME = '4546'; // заменить на утвержденный "from", если нужно
+const ESKIZ_EMAIL = process.env.ESKIZ_EMAIL; // твой email
+const ESKIZ_PASSWORD = process.env.ESKIZ_PASSWORD; // твой секретный ключ
+const ESKIZ_API_URL = process.env.ESKIZ_API_URL || 'https://notify.eskiz.uz/api';
+const SENDER_NAME = process.env.ESKIZ_SENDER_NAME || '4546'; // заменить на утвержденный "from", если нужно
 
 let token = null;
 
@@ -14,6 +17,10 @@ let token = null;
  */
 async function getEskizToken() {
   try {
+    if (!ESKIZ_EMAIL || !ESKIZ_PASSWORD) {
+      throw new Error('Не заданы переменные окружения ESKIZ_EMAIL или ESKIZ_PASSWORD');
+    }
+
     if (token) return token; // если токен уже получен, просто возвращаем
 
     const formData = new URLSearchParams();
