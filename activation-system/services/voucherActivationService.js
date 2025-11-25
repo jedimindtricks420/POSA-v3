@@ -28,6 +28,11 @@ export async function activateVoucherForVendor({ voucherCode, vendorId, userId }
           id: true,
           name: true,
           vendorId: true,
+          vendor: {
+            select: {
+              productType: true,
+            },
+          },
         },
       },
       onlineVouchers: {
@@ -48,6 +53,15 @@ export async function activateVoucherForVendor({ voucherCode, vendorId, userId }
 
   if (!voucher) {
     throw new ActivationError('Ваучер не найден', 'NOT_FOUND', 404);
+  }
+
+  // Проверка: ваучеры Rokky активируются только через клиентские магазины
+  if (voucher.product?.vendor?.productType === 'Rokky') {
+    throw new ActivationError(
+      'Этот ваучер активируется только через клиентский магазин. Отправьте клиенту ссылку на магазин активации.',
+      'ROKKY_VENDOR_ONLY',
+      403
+    );
   }
 
   if (!voucher.product || voucher.product.vendorId !== vendorId) {

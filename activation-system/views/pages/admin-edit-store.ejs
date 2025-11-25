@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Редактировать магазин</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-slate-900">Редактировать магазин</h2>
+                <p class="mt-1 text-sm text-slate-500">Изменить настройки магазина <%= store.name %>
+                </p>
+            </div>
+
+            <form method="POST" action="/admin/stores/edit/<%= store.id %>" enctype="multipart/form-data"
+                class="bg-white shadow-sm ring-1 ring-slate-200 sm:rounded-lg p-6">
+                <div class="space-y-6">
+                    <div>
+                        <label for="slug" class="block text-sm font-medium text-slate-700">Slug (URL)</label>
+                        <div class="mt-1">
+                            <input type="text" name="slug" id="slug" required value="<%= store.slug %>"
+                                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500">Будет доступен по адресу: /<%= store.slug %>
+                        </p>
+                    </div>
+
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-slate-700">Название</label>
+                        <div class="mt-1">
+                            <input type="text" name="name" id="name" required value="<%= store.name %>"
+                                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-200 pt-6">
+                        <h3 class="text-lg font-medium text-slate-900 mb-4">🎨 Оформление</h3>
+
+                        <div class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                            <!-- Logo Upload -->
+                            <div class="sm:col-span-6">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Логотип</label>
+                                <div class="flex items-start gap-4">
+                                    <% if (store.logoUrl) { %>
+                                        <div class="relative">
+                                            <div
+                                                class="h-20 w-20 rounded-lg overflow-hidden bg-slate-100 border-2 border-slate-200">
+                                                <img src="<%= store.logoUrl %>" alt="Logo"
+                                                    class="h-full w-full object-contain" id="logoPreview">
+                                            </div>
+                                            <button type="button"
+                                                onclick="document.getElementById('removeLogo').value='true'; document.getElementById('logoPreview').parentElement.parentElement.style.display='none';"
+                                                class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <% } %>
+                                            <div class="flex-1">
+                                                <input type="file" name="logo" id="logo" accept="image/*"
+                                                    onchange="previewLogo(this)"
+                                                    class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
+                                                <p class="mt-1 text-xs text-slate-500">PNG, JPG, SVG до 5MB.
+                                                    Рекомендуемый размер: 200x200px</p>
+                                            </div>
+                                </div>
+                                <input type="hidden" name="removeLogo" id="removeLogo" value="false">
+                            </div>
+
+                            <!-- Color Palettes -->
+                            <div class="sm:col-span-6 border-t border-slate-200 pt-4">
+                                <label class="block text-sm font-medium text-slate-700 mb-3">Готовые палитры</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <button type="button" onclick="applyPalette('#4F46E5', '#F8FAFC')"
+                                        class="palette-btn group">
+                                        <div
+                                            class="flex items-center gap-2 p-3 rounded-lg border-2 border-slate-200 hover:border-indigo-500 transition">
+                                            <div class="flex gap-1">
+                                                <div class="w-6 h-6 rounded" style="background: #4F46E5"></div>
+                                                <div class="w-6 h-6 rounded" style="background: #F8FAFC"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-slate-700">Индиго</span>
+                                        </div>
+                                    </button>
+                                    <button type="button" onclick="applyPalette('#10B981', '#ECFDF5')"
+                                        class="palette-btn group">
+                                        <div
+                                            class="flex items-center gap-2 p-3 rounded-lg border-2 border-slate-200 hover:border-green-500 transition">
+                                            <div class="flex gap-1">
+                                                <div class="w-6 h-6 rounded" style="background: #10B981"></div>
+                                                <div class="w-6 h-6 rounded" style="background: #ECFDF5"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-slate-700">Зелёный</span>
+                                        </div>
+                                    </button>
+                                    <button type="button" onclick="applyPalette('#F59E0B', '#FFFBEB')"
+                                        class="palette-btn group">
+                                        <div
+                                            class="flex items-center gap-2 p-3 rounded-lg border-2 border-slate-200 hover:border-amber-500 transition">
+                                            <div class="flex gap-1">
+                                                <div class="w-6 h-6 rounded" style="background: #F59E0B"></div>
+                                                <div class="w-6 h-6 rounded" style="background: #FFFBEB"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-slate-700">Янтарь</span>
+                                        </div>
+                                    </button>
+                                    <button type="button" onclick="applyPalette('#EF4444', '#FEF2F2')"
+                                        class="palette-btn group">
+                                        <div
+                                            class="flex items-center gap-2 p-3 rounded-lg border-2 border-slate-200 hover:border-red-500 transition">
+                                            <div class="flex gap-1">
+                                                <div class="w-6 h-6 rounded" style="background: #EF4444"></div>
+                                                <div class="w-6 h-6 rounded" style="background: #FEF2F2"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-slate-700">Красный</span>
+                                        </div>
+                                    </button>
+                                    <button type="button" onclick="applyPalette('#8B5CF6', '#F5F3FF')"
+                                        class="palette-btn group">
+                                        <div
+                                            class="flex items-center gap-2 p-3 rounded-lg border-2 border-slate-200 hover:border-violet-500 transition">
+                                            <div class="flex gap-1">
+                                                <div class="w-6 h-6 rounded" style="background: #8B5CF6"></div>
+                                                <div class="w-6 h-6 rounded" style="background: #F5F3FF"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-slate-700">Фиолет</span>
+                                        </div>
+                                    </button>
+                                    <button type="button" onclick="applyPalette('#06B6D4', '#ECFEFF')"
+                                        class="palette-btn group">
+                                        <div
+                                            class="flex items-center gap-2 p-3 rounded-lg border-2 border-slate-200 hover:border-cyan-500 transition">
+                                            <div class="flex gap-1">
+                                                <div class="w-6 h-6 rounded" style="background: #06B6D4"></div>
+                                                <div class="w-6 h-6 rounded" style="background: #ECFEFF"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-slate-700">Голубой</span>
+                                        </div>
+                                    </button>
+                                    <button type="button" onclick="applyPalette('#EC4899', '#FDF2F8')"
+                                        class="palette-btn group">
+                                        <div
+                                            class="flex items-center gap-2 p-3 rounded-lg border-2 border-slate-200 hover:border-pink-500 transition">
+                                            <div class="flex gap-1">
+                                                <div class="w-6 h-6 rounded" style="background: #EC4899"></div>
+                                                <div class="w-6 h-6 rounded" style="background: #FDF2F8"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-slate-700">Розовый</span>
+                                        </div>
+                                    </button>
+                                    <button type="button" onclick="applyPalette('#1F2937', '#F9FAFB')"
+                                        class="palette-btn group">
+                                        <div
+                                            class="flex items-center gap-2 p-3 rounded-lg border-2 border-slate-200 hover:border-slate-700 transition">
+                                            <div class="flex gap-1">
+                                                <div class="w-6 h-6 rounded" style="background: #1F2937"></div>
+                                                <div class="w-6 h-6 rounded" style="background: #F9FAFB"></div>
+                                            </div>
+                                            <span class="text-xs font-medium text-slate-700">Тёмный</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Custom Colors -->
+                            <div class="sm:col-span-3">
+                                <label for="themeColor" class="block text-sm font-medium text-slate-700 mb-2">Основной
+                                    цвет</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="color" name="themeColor" id="themeColor"
+                                        value="<%= store.themeColor || '#4F46E5' %>"
+                                        class="h-10 w-10 rounded-lg border-2 border-slate-300 cursor-pointer"
+                                        onchange="updateColorPreview()">
+                                    <input type="text" id="themeColorText" value="<%= store.themeColor || '#4F46E5' %>"
+                                        class="flex-1 rounded-md border-slate-300 shadow-sm sm:text-sm font-mono"
+                                        onchange="document.getElementById('themeColor').value = this.value; updateColorPreview()">
+                                </div>
+                            </div>
+
+                            <div class="sm:col-span-3">
+                                <label for="backgroundColor" class="block text-sm font-medium text-slate-700 mb-2">Цвет
+                                    фона</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="color" name="backgroundColor" id="backgroundColor"
+                                        value="<%= store.backgroundColor || '#F8FAFC' %>"
+                                        class="h-10 w-10 rounded-lg border-2 border-slate-300 cursor-pointer"
+                                        onchange="updateColorPreview()">
+                                    <input type="text" id="backgroundColorText"
+                                        value="<%= store.backgroundColor || '#F8FAFC' %>"
+                                        class="flex-1 rounded-md border-slate-300 shadow-sm sm:text-sm font-mono"
+                                        onchange="document.getElementById('backgroundColor').value = this.value; updateColorPreview()">
+                                </div>
+                            </div>
+
+                            <!-- Live Preview -->
+                            <div class="sm:col-span-6 border-t border-slate-200 pt-4">
+                                <label class="block text-sm font-medium text-slate-700 mb-3">Превью</label>
+                                <div id="colorPreview" class="rounded-lg p-6 transition-all duration-300"
+                                    style="background-color: <%= store.backgroundColor || '#F8FAFC' %>">
+                                    <div class="bg-white rounded-lg shadow-md p-4 max-w-sm mx-auto">
+                                        <h4 class="text-lg font-semibold text-slate-900 mb-3">
+                                            <%= store.name %>
+                                        </h4>
+                                        <button type="button" id="previewButton"
+                                            class="w-full py-2 px-4 rounded-lg text-white font-medium transition"
+                                            style="background-color: <%= store.themeColor || '#4F46E5' %>">
+                                            Активировать
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function applyPalette(themeColor, bgColor) {
+                            document.getElementById('themeColor').value = themeColor;
+                            document.getElementById('themeColorText').value = themeColor;
+                            document.getElementById('backgroundColor').value = bgColor;
+                            document.getElementById('backgroundColorText').value = bgColor;
+                            updateColorPreview();
+                        }
+
+                        function updateColorPreview() {
+                            const themeColor = document.getElementById('themeColor').value;
+                            const bgColor = document.getElementById('backgroundColor').value;
+                            document.getElementById('themeColorText').value = themeColor;
+                            document.getElementById('backgroundColorText').value = bgColor;
+                            document.getElementById('colorPreview').style.backgroundColor = bgColor;
+                            document.getElementById('previewButton').style.backgroundColor = themeColor;
+                        }
+
+                        function previewLogo(input) {
+                            if (input.files && input.files[0]) {
+                                const reader = new FileReader();
+                                reader.onload = function (e) {
+                                    let preview = document.getElementById('logoPreview');
+                                    if (!preview) {
+                                        const container = input.parentElement.parentElement;
+                                        const previewDiv = document.createElement('div');
+                                        previewDiv.className = 'relative';
+                                        previewDiv.innerHTML = `
+                                            <div class="h-20 w-20 rounded-lg overflow-hidden bg-slate-100 border-2 border-slate-200">
+                                                <img src="${e.target.result}" alt="Logo" class="h-full w-full object-contain" id="logoPreview">
+                                            </div>
+                                        `;
+                                        container.insertBefore(previewDiv, input.parentElement);
+                                    } else {
+                                        preview.src = e.target.result;
+                                    }
+                                }
+                                reader.readAsDataURL(input.files[0]);
+                            }
+                        }
+                    </script>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-2">Продукты</label>
+                        <div class="space-y-2 max-h-64 overflow-y-auto border border-slate-200 rounded-md p-3">
+                            <% const selectedProductIds=store.products.map(p=> p.id);
+                                allProducts.forEach(product => {
+                                %>
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="productIds" value="<%= product.id %>"
+                                        id="product-<%= product.id %>" <%=selectedProductIds.includes(product.id)
+                                        ? 'checked' : '' %>
+                                    class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                                    <label for="product-<%= product.id %>" class="ml-3 text-sm text-slate-700">
+                                        <%= product.name %> (<%= product.vendor.name %>)
+                                    </label>
+                                </div>
+                                <% }) %>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" name="isActive" id="isActive" <%=store.isActive ? 'checked' : '' %>
+                        class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                        <label for="isActive" class="ml-3 text-sm text-slate-700">
+                            Активен
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex items-center justify-end gap-x-3">
+                    <a href="/admin/stores"
+                        class="rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50">
+                        Отмена
+                    </a>
+                    <button type="submit"
+                        class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Сохранить изменения
+                    </button>
+                </div>
+            </form>
+        </div>
+</body>
+
+</html>

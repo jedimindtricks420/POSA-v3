@@ -49,7 +49,7 @@ export async function sendSMS(phone, message) {
   try {
     // Очищаем номер от символа +
     const cleanPhone = phone.replace(/^\+/, '');
-    
+
     const authToken = await getEskizToken();
 
     const formData = new URLSearchParams();
@@ -116,5 +116,5 @@ export async function sendSms(phone, message) {
 export async function sendOtpSms(phone, code) {
   // Используем утвержденный шаблон
   const message = `wallet.namo.uz Vash kod podtverjdeniya dlya sayta Tasdiqlash uchun kod: ${code}`;
-  return await sendSms(phone, message);
+  return await sendSMS(phone, message);
 }

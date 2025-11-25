@@ -11,6 +11,9 @@ import * as vendorController from '../controllers/admin/vendorController.js';
 import * as passwordController from '../controllers/admin/passwordController.js';
 import * as merchantController from '../controllers/admin/merchantController.js';
 import * as clientController from '../controllers/admin/clientController.js';
+import * as storeController from '../controllers/admin/storeController.js';
+import * as rokkyController from '../controllers/admin/rokkyController.js';
+import { upload } from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -82,6 +85,25 @@ router.get('/merchant/:id/payments', ensureAdmin, merchantController.showMerchan
 router.get('/vendor/:id/pay', ensureAdmin, vendorController.showVendorPaymentForm);
 router.post('/vendor/:id/pay', ensureAdmin, vendorController.handleVendorPayment);
 router.get('/vendor/:id/transactions', ensureAdmin, vendorController.showVendorTransactions);
+
+// Stores (Магазины активации)
+router.get('/stores', ensureAdmin, storeController.showStores);
+router.get('/stores/add', ensureAdmin, storeController.showAddStoreForm);
+router.post('/stores/add', ensureAdmin, storeController.handleAddStore);
+router.get('/stores/edit/:id', ensureAdmin, storeController.showEditStoreForm);
+router.post('/stores/edit/:id', ensureAdmin, upload.single('logo'), storeController.handleEditStore);
+
+// Rokky (Админ-панель Rokky)
+router.get('/rokky', ensureAdmin, rokkyController.showRokkyDashboard);
+router.get('/rokky/skus', ensureAdmin, rokkyController.showRokkySkus);
+router.get('/rokky/skus/add', ensureAdmin, rokkyController.showAddSkuForm);
+router.post('/rokky/skus/add', ensureAdmin, rokkyController.handleAddSku);
+router.get('/rokky/skus/edit/:id', ensureAdmin, rokkyController.showEditSkuForm);
+router.post('/rokky/skus/edit/:id', ensureAdmin, rokkyController.handleEditSku);
+router.get('/rokky/products', ensureAdmin, rokkyController.showRokkyProducts);
+router.post('/rokky/products/:id/bind', ensureAdmin, rokkyController.handleBindSku);
+router.get('/rokky/activations', ensureAdmin, rokkyController.showRokkyActivations);
+router.get('/rokky/finance', ensureAdmin, rokkyController.showRokkyFinance);
 
 
 export default router;

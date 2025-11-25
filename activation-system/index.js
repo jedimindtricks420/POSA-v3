@@ -16,6 +16,7 @@ import clientRoutes from './routes/clientRoutes.js';
 import clientApiRoutes from './routes/clientApiRoutes.js';
 import apiV1Routes from './routes/apiV1Routes.js';
 import walletRoutes from './routes/wallet.js';
+import storeRoutes from './routes/storeRoutes.js';
 import { checkSubdomain } from './middleware/checkSubdomain.js';
 import { SESSION_MAX_AGE, REMEMBER_ME_MAX_AGE } from './utils/authTokens.js';
 
@@ -159,7 +160,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// 3) Остальные маршруты (публичные)
+// 3) Store Routes (Dynamic slugs) - BEFORE public routes to avoid conflicts
+app.use('/', storeRoutes);
+
+// 4) Остальные маршруты (публичные)
 app.use('/', publicRoutes);
 
 // Запуск сервера
