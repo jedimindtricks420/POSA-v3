@@ -53,9 +53,66 @@ model Product {
   vendorId     Int
   vendor       Vendor    @relation(fields: [vendorId], references: [id])
   vouchers     Voucher[] @relation("ProductVouchers")
+  sales        Sale[]
 
   merchantCommissionPercent  Float
   vendorCommissionPercent    Float
+
+  storeId      Int?
+  store        Store?    @relation(fields: [storeId], references: [id])
+  rokkySku     String?  // Rokky SKU для интеграции
+}
+
+model Store {
+  id        Int       @id @default(autoincrement())
+  slug      String    @unique
+  name      String
+  isActive        Boolean   @default(true)
+  logoUrl         String?
+  themeColor      String?   @default("#4F46E5")
+  backgroundColor String?   @default("#F8FAFC")
+  products        Product[]
+}
+
+model RokkyOrder {
+  id            Int      @id @default(autoincrement())
+  voucherId     Int      @unique
+  rokkyOrderId  String
+  sku           String
+  status        String   // PENDING, COMPLETED, FAILED
+  key           String?  // Digital key from Rokky
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  voucher Voucher @relation(fields: [voucherId], references: [id])
+}
+
+model RokkyApiLog {
+  id            Int      @id @default(autoincrement())
+  method        String   // createOrder, getOrderContent
+  sku           String?
+  referenceId   String?
+  requestData   String?  @db.Text // JSON
+  responseData  String?  @db.Text // JSON
+  statusCode    Int?
+  success       Boolean
+  errorMessage  String?  @db.Text
+  duration      Int?     // ms
+  createdAt     DateTime @default(now())
+}
+
+model RokkySku {
+  id          Int      @id @default(autoincrement())
+  sku         String   @unique
+  name        String
+  description String?
+  category    String?
+  costPrice   Float?   // Закупочная цена от Rokky
+  retailPrice Float?   // Рекомендованная розничная цена
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum ProductStatus {
@@ -75,6 +132,7 @@ model Voucher {
   onlineVouchers OnlineVoucher[]
   smsLogs        VoucherSmsLog[]
   walletLogs     VoucherWalletLog[]
+  rokkyOrder     RokkyOrder?
 }
 
 enum VoucherStatus {
@@ -96,6 +154,7 @@ model Sale {
   price            Float
   status           SaleStatus @default(COMPLETED)
   productId        Int
+  product          Product   @relation(fields: [productId], references: [id])
   productName      String
   merchantUsername String
   date             DateTime  @default(now())
@@ -288,4 +347,15 @@ model AuthSmsLog {
 enum DeviceType {
   ios
   android
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  actorUserId Int?
+  role        String
+  action      String
+  entityType  String?
+  details     Json?
+  ip          String?
+  createdAt   DateTime @default(now())
 }

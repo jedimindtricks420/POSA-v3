@@ -35,15 +35,15 @@ export const showAllProducts = async (req, res) => {
   });
 };
 
-  
-  // Показать форму создания товара
-  export const showAddProductForm = async (req, res) => {
-    const vendors = await prisma.vendor.findMany({ orderBy: { name: 'asc' } });
-    res.render('pages/admin-add-product', { vendors, user: req.session.user, error: null });
-  };
-  
-  // Обработать создание товара
-  export const handleAddProduct = async (req, res) => {
+
+// Показать форму создания товара
+export const showAddProductForm = async (req, res) => {
+  const vendors = await prisma.vendor.findMany({ orderBy: { name: 'asc' } });
+  res.render('pages/admin-add-product', { vendors, user: req.session.user, error: null });
+};
+
+// Обработать создание товара
+export const handleAddProduct = async (req, res) => {
   const { name, price, status, vendorId, merchantCommissionPercent, vendorCommissionPercent } = req.body;
 
   try {
@@ -68,18 +68,18 @@ export const showAllProducts = async (req, res) => {
   }
 };
 
-  
-  // Показать форму редактирования товара
-  export const showEditProductForm = async (req, res) => {
-    const product = await prisma.product.findUnique({ where: { id: Number(req.params.id) } });
-    if (!product) return res.send('Товар не найден');
-    res.render('pages/edit-product', { product, user: req.session.user });
-  };
-  
-  // Обработать редактирование товара
+
+// Показать форму редактирования товара
+export const showEditProductForm = async (req, res) => {
+  const product = await prisma.product.findUnique({ where: { id: Number(req.params.id) } });
+  if (!product) return res.send('Товар не найден');
+  res.render('pages/edit-product', { product, user: req.session.user });
+};
+
+// Обработать редактирование товара
 export const handleEditProduct = async (req, res) => {
   const id = Number(req.params.id);
-  const { name, price, status, merchantCommissionPercent, vendorCommissionPercent } = req.body;
+  const { name, price, status, merchantCommissionPercent, vendorCommissionPercent, rokkySku } = req.body;
 
   const existing = await prisma.product.findUnique({ where: { id } });
   if (!existing) {
@@ -102,15 +102,16 @@ export const handleEditProduct = async (req, res) => {
       status,
       merchantCommissionPercent: parsedMerchantCommission,
       vendorCommissionPercent: parsedVendorCommission,
+      rokkySku: rokkySku || null,
     }
   });
 
   res.redirect('/admin/products');
 };
-  
-  // Удалить товар
-  export const handleDeleteProduct = async (req, res) => {
-    await prisma.product.delete({ where: { id: Number(req.params.id) } });
-    res.redirect('/admin/products');
-  };
-  
+
+// Удалить товар
+export const handleDeleteProduct = async (req, res) => {
+  await prisma.product.delete({ where: { id: Number(req.params.id) } });
+  res.redirect('/admin/products');
+};
+
