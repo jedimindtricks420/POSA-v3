@@ -283,6 +283,18 @@
                         </div>
                     </div>
 
+                    <div class="border-t border-slate-200 pt-6">
+                        <label for="activationSmsTemplate" class="block text-sm font-medium text-slate-700 mb-2">
+                            Текст SMS уведомления (для ручных активаций)
+                        </label>
+                        <textarea name="activationSmsTemplate" id="activationSmsTemplate" rows="3"
+                            class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            placeholder="Vash vaucher aktivirovan | Sizning vaucheringiz faollashtirildi https://namo.uz/link"><%= store.activationSmsTemplate || 'Vash vaucher aktivirovan | Sizning vaucheringiz faollashtirildi https://namo.uz/link' %></textarea>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Этот текст будет отправлен клиенту при завершении ручной активации оператором
+                        </p>
+                    </div>
+
                     <div class="flex items-center">
                         <input type="checkbox" name="isActive" id="isActive" <%=store.isActive ? 'checked' : '' %>
                         class="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">

@@ -82,6 +82,35 @@ export function buildDefaultReceiptSchema(vendorName = 'Vendor') {
   };
 }
 
+/**
+ * Получает шаблон чека с учетом приоритета:
+ * 1. Шаблон товара (если задан)
+ * 2. Шаблон вендора (если задан)
+ * 3. Дефолтный шаблон
+ * 
+ * @param {Object} product - Объект товара с полем receiptTemplate и vendor
+ * @param {Object} vendor - Объект вендора с полем receiptTemplate и name
+ * @returns {Object} Parsed receipt schema
+ */
+export function resolveReceiptTemplate(product, vendor) {
+  const vendorName = vendor?.name || product?.vendor?.name || 'Vendor';
+
+  // Приоритет 1: Шаблон товара
+  if (product?.receiptTemplate) {
+    return parseReceiptSchema(product.receiptTemplate, vendorName);
+  }
+
+  // Приоритет 2: Шаблон вендора
+  if (vendor?.receiptTemplate || product?.vendor?.receiptTemplate) {
+    const template = vendor?.receiptTemplate || product?.vendor?.receiptTemplate;
+    return parseReceiptSchema(template, vendorName);
+  }
+
+  // Приоритет 3: Дефолтный шаблон
+  return buildDefaultReceiptSchema(vendorName);
+}
+
+
 export function parseReceiptSchema(raw, vendorName) {
   if (!raw) {
     return buildDefaultReceiptSchema(vendorName);

@@ -196,7 +196,14 @@ export const activateVoucher = async (req, res) => {
         // Find voucher
         const voucher = await prisma.voucher.findUnique({
             where: { value: voucherCode },
-            include: { product: true }
+            include: {
+                product: {
+                    include: {
+                        vendor: true,
+                        store: true
+                    }
+                }
+            }
         });
 
         // Validation logic
@@ -263,6 +270,51 @@ export const activateVoucher = async (req, res) => {
             where: { id: voucher.id },
             data: { status: 'pending' }
         });
+
+        // CHECK: Manual vendor activation
+        if (voucher.product.vendor.productType === 'Manual') {
+            try {
+                // Импортируем telegramService динамически
+                const telegramService = (await import('../services/telegramService.js')).default;
+
+                // Создаем запрос на ручную активацию
+                const manualRequest = await prisma.manualActivationRequest.create({
+                    data: {
+                        voucherId: voucher.id,
+                        status: 'PENDING'
+                    }
+                });
+
+                // Получаем клиента
+                const client = await prisma.client.findUnique({ where: { id: clientId } });
+
+                // Отправляем уведомление в Telegram
+                const notification = telegramService.formatActivationNotification(
+                    voucher,
+                    client,
+                    store,
+                    voucher.product
+                );
+
+                await telegramService.sendNotificationToStore(store.id, notification);
+
+                console.log(`[Manual Activation] Request created: ${manualRequest.id} for voucher ${voucher.value}`);
+
+                return res.json({
+                    success: true,
+                    message: 'Ваша заявка принята. Ожидайте SMS с ключом активации в течение нескольких минут.',
+                    pending: true
+                });
+            } catch (manualError) {
+                console.error('[Manual Activation] Error:', manualError);
+                // Если не удалось создать запрос, откатываем статус
+                await prisma.voucher.update({
+                    where: { id: voucher.id },
+                    data: { status: 'sold' }
+                });
+                return res.status(500).json({ error: 'Произошла ошибка. Пожалуйста обратитесь в службу поддержки.' });
+            }
+        }
 
         // Call Rokky API
         let rokkyOrder;

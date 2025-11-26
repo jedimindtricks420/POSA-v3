@@ -1,4 +1,11 @@
 import prisma from '../../prisma/client.js';
+import {
+  parseReceiptSchema,
+  renderReceiptPreview,
+  buildSampleReceiptData,
+  resolveReceiptTemplate,
+} from '../../utils/receiptRenderer.js';
+
 
 // Показать список всех товаров
 // Показать список всех товаров с подсчётом активных ваучеров
@@ -71,17 +78,39 @@ export const handleAddProduct = async (req, res) => {
 
 // Показать форму редактирования товара
 export const showEditProductForm = async (req, res) => {
-  const product = await prisma.product.findUnique({ where: { id: Number(req.params.id) } });
-  if (!product) return res.send('Товар не найден');
-  res.render('pages/edit-product', { product, user: req.session.user });
+  const product = await prisma.product.findUnique({
+    where: { id: Number(req.params.id) },
+    include: { vendor: true },
+  });
+
+  if (!product) {
+    return res.status(404).send('Товар не найден');
+  }
+
+  // Парсим шаблон товара или используем шаблон вендора как базу
+  const schema = product.receiptTemplate
+    ? parseReceiptSchema(product.receiptTemplate, product.vendor.name)
+    : parseReceiptSchema(product.vendor?.receiptTemplate, product.vendor.name);
+
+  res.render('pages/edit-product', {
+    product,
+    vendor: product.vendor,
+    user: req.session.user,
+    templateSchema: JSON.stringify(schema),
+    hasCustomTemplate: !!product.receiptTemplate,
+  });
 };
 
 // Обработать редактирование товара
 export const handleEditProduct = async (req, res) => {
   const id = Number(req.params.id);
-  const { name, price, status, merchantCommissionPercent, vendorCommissionPercent, rokkySku } = req.body;
+  const { name, price, status, merchantCommissionPercent, vendorCommissionPercent, rokkySku, useCustomTemplate, templateSchema } = req.body;
 
-  const existing = await prisma.product.findUnique({ where: { id } });
+  const existing = await prisma.product.findUnique({
+    where: { id },
+    include: { vendor: true },
+  });
+
   if (!existing) {
     return res.redirect('/admin/products');
   }
@@ -94,6 +123,16 @@ export const handleEditProduct = async (req, res) => {
     ? parseFloat(vendorCommissionPercent)
     : existing.vendorCommissionPercent;
 
+  // Обработка шаблона чека
+  let schemaToSave = null;
+  if (useCustomTemplate === 'true' && templateSchema) {
+    try {
+      schemaToSave = parseReceiptSchema(templateSchema, existing.vendor.name);
+    } catch (error) {
+      console.error('Invalid template schema:', error);
+    }
+  }
+
   await prisma.product.update({
     where: { id },
     data: {
@@ -103,6 +142,7 @@ export const handleEditProduct = async (req, res) => {
       merchantCommissionPercent: parsedMerchantCommission,
       vendorCommissionPercent: parsedVendorCommission,
       rokkySku: rokkySku || null,
+      receiptTemplate: schemaToSave ? JSON.stringify(schemaToSave) : null,
     }
   });
 
@@ -115,3 +155,31 @@ export const handleDeleteProduct = async (req, res) => {
   res.redirect('/admin/products');
 };
 
+// Предпросмотр шаблона чека товара
+export const previewProductReceiptTemplate = async (req, res) => {
+  const productId = Number(req.params.id);
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    include: { vendor: true },
+  });
+
+  if (!product) {
+    return res.status(404).send('Товар не найден');
+  }
+
+  const incomingSchema = req.body?.schema;
+  const schema = parseReceiptSchema(incomingSchema || product.receiptTemplate, product.vendor.name);
+
+  const samplePayload = buildSampleReceiptData({
+    vendorName: product.vendor.name,
+    product: { name: product.name, price: product.price },
+  });
+
+  try {
+    const html = await renderReceiptPreview(schema, samplePayload);
+    res.send(html);
+  } catch (error) {
+    console.error('Receipt preview error:', error);
+    res.status(500).send('<h1>Ошибка рендера чека</h1><p>Проверьте структуру шаблона.</p>');
+  }
+};

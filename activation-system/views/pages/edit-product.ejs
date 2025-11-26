@@ -13,14 +13,14 @@
 <body class="bg-slate-50 min-h-screen">
   <%- include('../partials/admin-navbar', { user }) %>
 
-    <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
       <div class="md:flex md:items-center md:justify-between mb-6">
         <div class="min-w-0 flex-1">
           <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
             Редактирование товара
           </h2>
           <p class="mt-1 text-sm text-slate-500">
-            <%= product.name %>
+            <%= product.name %> (Вендор: <%= vendor.name %>)
           </p>
         </div>
         <div class="mt-4 flex md:ml-4 md:mt-0">
@@ -34,71 +34,523 @@
         </div>
       </div>
 
-      <form method="POST" action="/admin/edit-product/<%= product.id %>"
-        class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg p-6">
-        <div class="space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-slate-700">Название</label>
-            <div class="mt-1">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Левая часть: форма -->
+        <div>
+          <form id="productForm" method="POST" action="/admin/edit-product/<%= product.id %>"
+            class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg p-6 space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Название</label>
               <input type="text" name="name" value="<%= product.name %>" required
-                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                placeholder="Введите название товара" />
+                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
             </div>
-          </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700">Цена (UZS)</label>
-            <div class="mt-1">
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Цена (UZS)</label>
               <input type="number" step="0.01" min="0" name="price"
                 value="<%= typeof product.price === 'number' ? product.price : 0 %>" required
-                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                placeholder="Введите цену" />
+                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
             </div>
-          </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700">Статус</label>
-            <div class="mt-1">
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Статус</label>
               <select name="status"
-                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                 <option value="on" <%=product.status==='on' ? 'selected' : '' %>>Активен</option>
                 <option value="off" <%=product.status==='off' ? 'selected' : '' %>>Выключен</option>
               </select>
             </div>
-          </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700">Комиссия мерчанта (%)</label>
-            <div class="mt-1">
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Комиссия мерчанта (%)</label>
               <input type="number" step="0.01" min="0" max="100" name="merchantCommissionPercent"
                 value="<%= typeof product.merchantCommissionPercent === 'number' ? product.merchantCommissionPercent : 0 %>"
-                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                placeholder="Введите процент комиссии" required />
+                required
+                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
             </div>
-          </div>
 
-          <div>
-            <label class="block text-sm font-medium text-slate-700">Выплата вендору (%)</label>
-            <div class="mt-1">
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Выплата вендору (%)</label>
               <input type="number" step="0.01" min="0" max="100" name="vendorCommissionPercent"
                 value="<%= typeof product.vendorCommissionPercent === 'number' ? product.vendorCommissionPercent : 0 %>"
-                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                placeholder="Введите процент комиссии" required />
+                required
+                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+            </div>
+
+            <% if (product.rokkySku !== undefined) { %>
+              <div>
+                <label class="block text-sm font-medium text-slate-700">Rokky SKU</label>
+                <input type="text" name="rokkySku" value="<%= product.rokkySku || '' %>"
+                  class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="Введите SKU Rokky (опционально)" />
+              </div>
+            <% } %>
+
+            <!-- Чекбокс для включения кастомного шаблона -->
+            <div class="pt-4 border-t border-slate-200">
+              <label class="inline-flex items-center cursor-pointer">
+                <input type="checkbox" name="useCustomTemplate" id="useCustomTemplate" value="true"
+                  <%= hasCustomTemplate ? 'checked' : '' %>
+                  class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                <span class="ml-2 text-sm font-medium text-slate-700">
+                  Использовать уникальный шаблон чека для этого товара
+                </span>
+              </label>
+              <p class="mt-1 ml-6 text-xs text-slate-500">
+                Если выключено, будет использоваться шаблон вендора "<%= vendor.name %>"
+              </p>
+            </div>
+
+            <!-- Конструктор шаблона -->
+            <section id="templateBuilder" style="<%= hasCustomTemplate ? '' : 'display:none' %>">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-medium text-slate-900">Конструктор шаблона чека</h3>
+                  <p class="text-sm text-slate-500">Перетащите блоки, чтобы собрать макет чека.</p>
+                </div>
+              </div>
+
+              <input type="hidden" id="templateSchemaField" name="templateSchema" />
+
+              <div class="space-y-4">
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <h4 class="text-sm font-semibold text-slate-700 mb-3">Библиотека блоков</h4>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button type="button" data-component="heading"
+                      class="builder-tool inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition">Заголовок</button>
+                    <button type="button" data-component="text"
+                      class="builder-tool inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition">Текст</button>
+                    <button type="button" data-component="divider"
+                      class="builder-tool inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition">Разделитель</button>
+                    <button type="button" data-component="line-items"
+                      class="builder-tool inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition">Список
+                      товаров</button>
+                    <button type="button" data-component="total"
+                      class="builder-tool inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition">Итого</button>
+                    <button type="button" data-component="qr"
+                      class="builder-tool inline-flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 transition">QR</button>
+                  </div>
+                  <p class="mt-4 text-xs text-slate-500 leading-relaxed">
+                    Доступные переменные: <code>{{merchant}}</code>, <code>{{vendorName}}</code>,
+                    <code>{{date}}</code>, <code>{{time}}</code>, <code>{{total}}</code>,
+                    <code>{{voucher}}</code>, <code>{{voucherMasked}}</code>
+                  </p>
+                </div>
+
+                <div class="rounded-lg border border-indigo-200 bg-white p-4 min-h-[240px]" id="builderCanvas">
+                  <h4 class="text-sm font-semibold text-slate-700 mb-3 flex items-center justify-between">
+                    Макет чека
+                    <span class="text-xs text-slate-400">Перетащите блоки для изменения порядка</span>
+                  </h4>
+                  <ul id="componentList" class="space-y-2"></ul>
+                </div>
+
+                <div id="componentConfig" class="rounded-lg border border-slate-200 bg-white p-4 hidden"></div>
+              </div>
+            </section>
+
+            <div class="pt-4">
+              <button type="submit"
+                class="w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Сохранить изменения
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Правая часть: превью -->
+        <div>
+          <div class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg p-6 h-full flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-medium leading-6 text-slate-900">Предпросмотр чека</h3>
+              <button type="button" id="refreshPreviewBtn"
+                class="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-500">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 4v6h6M20 20v-6h-6M5 19a9 9 0 009 0m0-14a9 9 0 019 0" />
+                </svg>
+                Обновить
+              </button>
+            </div>
+            <iframe id="receiptPreviewFrame" title="Receipt preview"
+              class="w-full flex-1 rounded-lg border border-slate-200 bg-slate-100"></iframe>
+            <div class="mt-4 rounded-md bg-blue-50 p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clip-rule="evenodd" />
+                  </svg>
+                </div>
+                <div class="ml-3">
+                  <h3 class="text-sm font-medium text-blue-800">Как это работает</h3>
+                  <p class="mt-2 text-sm text-blue-700">
+                    <% if (hasCustomTemplate) { %>
+                      Предпросмотр отображает ваш кастомный шаблон чека для этого товара.
+                    <% } else { %>
+                      Предпросмотр отображает шаблон вендора "<%= vendor.name %>". Включите чекбокс выше, чтобы создать уникальный шаблон.
+                    <% } %>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-
-          <div class="pt-4">
-            <button type="submit"
-              class="w-full inline-flex justify-center items-center rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
-              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
-              Сохранить изменения
-            </button>
-          </div>
         </div>
-      </form>
+      </div>
     </div>
+
+    <script type="application/json" id="templateSchemaData"><%- templateSchema %></script>
+    <script>
+      (function () {
+        const productId = <%= product.id %>;
+        const useCustomCheckbox = document.getElementById('useCustomTemplate');
+        const templateBuilder = document.getElementById('templateBuilder');
+        const paletteButtons = document.querySelectorAll('.builder-tool');
+        const componentList = document.getElementById('componentList');
+        const configPanel = document.getElementById('componentConfig');
+        const schemaField = document.getElementById('templateSchemaField');
+        const previewFrame = document.getElementById('receiptPreviewFrame');
+        const refreshButton = document.getElementById('refreshPreviewBtn');
+        const form = document.getElementById('productForm');
+
+        // Показать/скрыть конструктор при изменении чекбокса
+        useCustomCheckbox.addEventListener('change', (e) => {
+          templateBuilder.style.display = e.target.checked ? 'block' : 'none';
+          if (e.target.checked) {
+            schedulePreview(true);
+          }
+        });
+
+        const initialSchemaJSON = document.getElementById('templateSchemaData').textContent;
+        const parsedSchema = (() => {
+          try {
+            return JSON.parse(initialSchemaJSON);
+          } catch (error) {
+            return { version: 1, elements: [] };
+          }
+        })();
+
+        const friendlyNames = {
+          heading: 'Заголовок',
+          text: 'Текст',
+          divider: 'Разделитель',
+          'line-items': 'Список товаров',
+          total: 'Итого',
+          qr: 'QR',
+        };
+
+        let state = {
+          version: parsedSchema.version || 1,
+          meta: parsedSchema.meta || {},
+          elements: Array.isArray(parsedSchema.elements) ? parsedSchema.elements : [],
+        };
+        let selectedId = null;
+        let previewTimeout = null;
+
+        function uid(prefix) {
+          return `${prefix}-${Math.random().toString(36).slice(2, 8)}`;
+        }
+
+        function ensureLineItemsExists(type) {
+          if (type === 'line-items') {
+            const exists = state.elements.some((el) => el.type === 'line-items');
+            if (exists) {
+              return false;
+            }
+          }
+          return true;
+        }
+
+        function createDefaultElement(type) {
+          switch (type) {
+            case 'heading':
+              return { id: uid('heading'), type, text: '🧾 Чек продажи', align: 'center' };
+            case 'text':
+              return { id: uid('text'), type, text: 'Введите текст...', align: 'left' };
+            case 'divider':
+              return { id: uid('divider'), type, style: 'dashed' };
+            case 'line-items':
+              return { id: uid('items'), type, showPrice: true, showQty: true };
+            case 'total':
+              return { id: uid('total'), type, label: 'Итого' };
+            case 'qr':
+              return { id: uid('qr'), type, caption: 'Сканируйте для активации' };
+            default:
+              return { id: uid('el'), type: 'text', text: '' };
+          }
+        }
+
+        function setState(updater) {
+          state = typeof updater === 'function' ? updater(state) : updater;
+          renderComponentList();
+          renderConfigPanel();
+          updateSchemaField();
+          schedulePreview();
+        }
+
+        function updateSchemaField() {
+          schemaField.value = JSON.stringify(state);
+        }
+
+        function renderComponentList() {
+          if (!state.elements.length) {
+            componentList.innerHTML = '<li class="rounded-md border border-dashed border-slate-300 p-4 text-center text-sm text-slate-400">Добавьте блоки из библиотеки выше</li>';
+            return;
+          }
+
+          componentList.innerHTML = '';
+          state.elements.forEach((element, index) => {
+            const li = document.createElement('li');
+            li.className = `builder-item rounded-md border border-slate-200 bg-white px-3 py-2 flex items-center justify-between gap-2 ${selectedId === element.id ? 'ring-2 ring-indigo-400' : ''}`;
+            li.setAttribute('data-id', element.id);
+            li.setAttribute('draggable', 'true');
+
+            const label = document.createElement('div');
+            label.className = 'flex items-center gap-2 text-sm text-slate-700';
+            label.innerHTML = `
+            <span class="cursor-move text-slate-300">≡</span>
+            <span>${friendlyNames[element.type] || element.type}</span>
+          `;
+
+            const actions = document.createElement('div');
+            actions.className = 'flex items-center gap-2';
+
+            const editButton = document.createElement('button');
+            editButton.type = 'button';
+            editButton.className = 'text-xs text-indigo-600 hover:text-indigo-500';
+            editButton.textContent = 'Настроить';
+            editButton.addEventListener('click', () => {
+              selectedId = element.id;
+              renderComponentList();
+              renderConfigPanel();
+            });
+
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'text-xs text-red-500 hover:text-red-400';
+            removeButton.textContent = 'Удалить';
+            removeButton.addEventListener('click', () => removeComponent(element.id));
+
+            actions.append(editButton, removeButton);
+            li.append(label, actions);
+
+            li.addEventListener('click', (event) => {
+              if (event.target === removeButton) return;
+              selectedId = element.id;
+              renderComponentList();
+              renderConfigPanel();
+            });
+
+            li.addEventListener('dragstart', (event) => {
+              event.dataTransfer.setData('text/plain', element.id);
+              event.dataTransfer.effectAllowed = 'move';
+            });
+
+            li.addEventListener('dragover', (event) => {
+              event.preventDefault();
+              event.dataTransfer.dropEffect = 'move';
+              li.classList.add('bg-indigo-50');
+            });
+
+            li.addEventListener('dragleave', () => {
+              li.classList.remove('bg-indigo-50');
+            });
+
+            li.addEventListener('drop', (event) => {
+              event.preventDefault();
+              li.classList.remove('bg-indigo-50');
+              const draggedId = event.dataTransfer.getData('text/plain');
+              if (!draggedId || draggedId === element.id) return;
+              reorderComponent(draggedId, index);
+            });
+
+            componentList.appendChild(li);
+          });
+        }
+
+        function renderConfigPanel() {
+          const component = state.elements.find((el) => el.id === selectedId);
+          if (!component) {
+            configPanel.classList.add('hidden');
+            configPanel.innerHTML = '';
+            return;
+          }
+
+          configPanel.classList.remove('hidden');
+
+          const commonAlignment = `
+          <label class="block text-xs font-semibold text-slate-600 mt-3 mb-1">Выравнивание</label>
+          <select data-field="align" class="w-full rounded-md border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+            <option value="left" ${component.align === 'left' ? 'selected' : ''}>Слева</option>
+            <option value="center" ${component.align === 'center' ? 'selected' : ''}>По центру</option>
+            <option value="right" ${component.align === 'right' ? 'selected' : ''}>Справа</option>
+          </select>
+        `;
+
+          switch (component.type) {
+            case 'heading':
+            case 'text':
+              configPanel.innerHTML = `
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">${friendlyNames[component.type]}</h4>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Содержимое</label>
+              <textarea data-field="text" rows="4"
+                        class="w-full rounded-md border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">${component.text || ''}</textarea>
+              ${commonAlignment}
+            `;
+              break;
+            case 'divider':
+              configPanel.innerHTML = `
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">${friendlyNames[component.type]}</h4>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Стиль</label>
+              <select data-field="style" class="w-full rounded-md border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500">
+                <option value="solid" ${component.style === 'solid' ? 'selected' : ''}>Сплошная</option>
+                <option value="dashed" ${component.style !== 'solid' ? 'selected' : ''}>Пунктирная</option>
+              </select>
+            `;
+              break;
+            case 'line-items':
+              configPanel.innerHTML = `
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">${friendlyNames[component.type]}</h4>
+              <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" data-field="showQty" ${component.showQty !== false ? 'checked' : ''} /> Показывать количество
+              </label>
+              <label class="inline-flex items-center gap-2 text-sm text-slate-700 mt-2">
+                <input type="checkbox" data-field="showPrice" ${component.showPrice !== false ? 'checked' : ''} /> Показывать цену
+              </label>
+            `;
+              break;
+            case 'total':
+              configPanel.innerHTML = `
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">${friendlyNames[component.type]}</h4>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Подпись</label>
+              <input type="text" data-field="label" value="${component.label || ''}"
+                     class="w-full rounded-md border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+            `;
+              break;
+            case 'qr':
+              configPanel.innerHTML = `
+              <h4 class="text-sm font-semibold text-slate-700 mb-2">${friendlyNames[component.type]}</h4>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Подпись</label>
+              <input type="text" data-field="caption" value="${component.caption || ''}"
+                     class="w-full rounded-md border-slate-300 text-sm focus:border-indigo-500 focus:ring-indigo-500" />
+            `;
+              break;
+            default:
+              configPanel.innerHTML = '';
+          }
+
+          configPanel.querySelectorAll('[data-field]').forEach((input) => {
+            input.addEventListener('input', handleConfigChange);
+            input.addEventListener('change', handleConfigChange);
+          });
+        }
+
+        function handleConfigChange(event) {
+          const field = event.target.getAttribute('data-field');
+          const componentIndex = state.elements.findIndex((el) => el.id === selectedId);
+          if (componentIndex === -1 || !field) return;
+
+          const component = { ...state.elements[componentIndex] };
+          if (event.target.type === 'checkbox') {
+            component[field] = event.target.checked;
+          } else {
+            component[field] = event.target.value;
+          }
+
+          setState((prev) => {
+            const next = { ...prev, elements: [...prev.elements] };
+            next.elements[componentIndex] = component;
+            return next;
+          });
+        }
+
+        function reorderComponent(id, newIndex) {
+          setState((prev) => {
+            const elements = [...prev.elements];
+            const currentIndex = elements.findIndex((el) => el.id === id);
+            if (currentIndex === -1) return prev;
+            const [moved] = elements.splice(currentIndex, 1);
+            elements.splice(newIndex, 0, moved);
+            return { ...prev, elements };
+          });
+        }
+
+        function removeComponent(id) {
+          if (selectedId === id) {
+            selectedId = null;
+          }
+          setState((prev) => ({
+            ...prev,
+            elements: prev.elements.filter((el) => el.id !== id),
+          }));
+        }
+
+        function addComponent(type) {
+          if (!ensureLineItemsExists(type)) {
+            alert('Блок "Список товаров" уже добавлен. Допускается только один.');
+            return;
+          }
+          const element = createDefaultElement(type);
+          setState((prev) => ({
+            ...prev,
+            elements: [...prev.elements, element],
+          }));
+          selectedId = element.id;
+        }
+
+        paletteButtons.forEach((button) => {
+          button.addEventListener('click', () => {
+            const type = button.dataset.component;
+            addComponent(type);
+          });
+        });
+
+        function schedulePreview(force = false) {
+          if (!useCustomCheckbox.checked) return;
+          if (force) {
+            fetchPreview();
+            return;
+          }
+          clearTimeout(previewTimeout);
+          previewTimeout = setTimeout(fetchPreview, 400);
+        }
+
+        async function fetchPreview() {
+          try {
+            const response = await fetch(`/admin/products/${productId}/receipt/preview`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ schema: state }),
+            });
+            const html = await response.text();
+            previewFrame.srcdoc = html;
+          } catch (error) {
+            previewFrame.srcdoc = '<h2 style="font-family: sans-serif; color: #ef4444; text-align: center; margin-top: 80px;">Ошибка загрузки предпросмотра</h2>';
+          }
+        }
+
+        refreshButton.addEventListener('click', () => {
+          schedulePreview(true);
+        });
+
+        form.addEventListener('submit', () => {
+          updateSchemaField();
+        });
+
+        renderComponentList();
+        renderConfigPanel();
+        updateSchemaField();
+        if (useCustomCheckbox.checked) {
+          schedulePreview(true);
+        }
+      })();
+    </script>
 </body>
 
 </html>

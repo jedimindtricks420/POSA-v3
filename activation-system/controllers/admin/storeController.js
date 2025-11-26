@@ -107,6 +107,7 @@ export const handleEditStore = async (req, res) => {
             isActive: isActive === 'on',
             themeColor: req.body.themeColor,
             backgroundColor: req.body.backgroundColor,
+            activationSmsTemplate: req.body.activationSmsTemplate || null,
             products: {
                 set: productIdArray.map(id => ({ id }))
             }
