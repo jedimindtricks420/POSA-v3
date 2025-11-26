@@ -13,6 +13,8 @@ import * as merchantController from '../controllers/admin/merchantController.js'
 import * as clientController from '../controllers/admin/clientController.js';
 import * as storeController from '../controllers/admin/storeController.js';
 import * as rokkyController from '../controllers/admin/rokkyController.js';
+import * as telegramBotController from '../controllers/admin/telegramBotController.js';
+import * as manualActivationController from '../controllers/admin/manualActivationController.js';
 import { upload } from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
@@ -34,6 +36,8 @@ router.post('/add-product', ensureAdmin, productController.handleAddProduct);
 router.get('/edit-product/:id', ensureAdmin, productController.showEditProductForm);
 router.post('/edit-product/:id', ensureAdmin, productController.handleEditProduct);
 router.post('/delete-product/:id', ensureAdmin, productController.handleDeleteProduct);
+router.post('/products/:id/receipt/preview', ensureAdmin, productController.previewProductReceiptTemplate);
+
 
 // Ваучеры
 router.get('/vouchers', ensureAdmin, voucherController.showAllVouchers);
@@ -104,6 +108,21 @@ router.get('/rokky/products', ensureAdmin, rokkyController.showRokkyProducts);
 router.post('/rokky/products/:id/bind', ensureAdmin, rokkyController.handleBindSku);
 router.get('/rokky/activations', ensureAdmin, rokkyController.showRokkyActivations);
 router.get('/rokky/finance', ensureAdmin, rokkyController.showRokkyFinance);
+
+// Telegram боты
+router.get('/telegram-bots', ensureAdmin, telegramBotController.listBots);
+router.get('/telegram-bots/create', ensureAdmin, telegramBotController.showCreateForm);
+router.post('/telegram-bots/create', ensureAdmin, telegramBotController.createBot);
+router.get('/telegram-bots/:id/edit', ensureAdmin, telegramBotController.showEditForm);
+router.post('/telegram-bots/:id/edit', ensureAdmin, telegramBotController.updateBot);
+router.post('/telegram-bots/:id/delete', ensureAdmin, telegramBotController.deleteBot);
+router.post('/telegram-bots/:id/test', ensureAdmin, telegramBotController.testBot);
+
+// Ручные активации
+router.get('/manual-activations', ensureAdmin, manualActivationController.listRequests);
+router.get('/manual-activations/:id', ensureAdmin, manualActivationController.showRequestDetails);
+router.post('/manual-activations/:id/complete', ensureAdmin, manualActivationController.completeRequest);
+router.post('/manual-activations/:id/reject', ensureAdmin, manualActivationController.rejectRequest);
 
 
 export default router;

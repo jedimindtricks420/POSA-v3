@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ручные активации - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50">
+    <%- include('../partials/admin-navbar') %>
+
+        <div class="container mx-auto px-4 py-8 mt-20">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Ручные активации</h1>
+
+            <!-- Фильтры -->
+            <div class="bg-white rounded-lg shadow p-4 mb-6">
+                <form method="GET" class="flex gap-4 flex-wrap">
+                    <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">Все статусы</option>
+                        <option value="PENDING" <%=filters.status==='PENDING' ? 'selected' : '' %>>Ожидание</option>
+                        <option value="COMPLETED" <%=filters.status==='COMPLETED' ? 'selected' : '' %>>Завершено
+                        </option>
+                        <option value="REJECTED" <%=filters.status==='REJECTED' ? 'selected' : '' %>>Отклонено</option>
+                    </select>
+                    <select name="storeId" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">Все магазины</option>
+                        <% stores.forEach(store=> { %>
+                            <option value="<%= store.id %>" <%=filters.storeId==store.id ? 'selected' : '' %>>
+                                <%= store.name %>
+                            </option>
+                            <% }) %>
+                    </select>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg">
+                        Применить
+                    </button>
+                </form>
+            </div>
+
+            <% if (requests.length===0) { %>
+                <div class="bg-white rounded-lg shadow p-8 text-center">
+                    <p class="text-gray-500">Нет запросов на активацию</p>
+                </div>
+                <% } else { %>
+                    <div class="bg-white rounded-lg shadow overflow-hidden">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Магазин
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Товар
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Код
+                                        ваучера</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Телефон
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Дата
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <% requests.forEach(request=> {
+                                    const client = request.voucher.onlineVouchers[0]?.client;
+                                    %>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#<%= request.id %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <%= request.voucher.product.store?.name || 'N/A' %>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-900">
+                                            <%= request.voucher.product.name %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <code
+                                                class="text-sm bg-gray-100 px-2 py-1 rounded"><%= request.voucher.value %></code>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            <%= client ? client.phoneNumber : 'N/A' %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <%= new Date(request.createdAt).toLocaleString('ru-RU') %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <% if (request.status==='PENDING' ) { %>
+                                                <span
+                                                    class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                    Ожидание
+                                                </span>
+                                                <% } else if (request.status==='COMPLETED' ) { %>
+                                                    <span
+                                                        class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                        Завершено
+                                                    </span>
+                                                    <% } else if (request.status==='REJECTED' ) { %>
+                                                        <span
+                                                            class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                                            Отклонено
+                                                        </span>
+                                                        <% } %>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <% if (request.status==='PENDING' ) { %>
+                                                <button
+                                                    onclick="showCompleteModal(<%= request.id %>, '<%= request.voucher.value %>')"
+                                                    class="text-green-600 hover:text-green-900 mr-2">
+                                                    Обработать
+                                                </button>
+                                                <button onclick="rejectRequest(<%= request.id %>)"
+                                                    class="text-red-600 hover:text-red-900">
+                                                    Отклонить
+                                                </button>
+                                                <% } else { %>
+                                                    <% if (request.key) { %>
+                                                        <code
+                                                            class="text-xs bg-gray-100 px-2 py-1 rounded"><%= request.key %></code>
+                                                        <% } %>
+                                                            <% } %>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% } %>
+        </div>
+
+        <!-- Modal для ввода ключа -->
+        <div id="completeModal"
+            class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 class="text-lg font-bold mb-4">Ввести ключ активации</h3>
+                <p class="text-sm text-gray-600 mb-4">Ваучер: <code id="modalVoucherCode"
+                        class="bg-gray-100 px-2 py-1 rounded"></code></p>
+                <input type="text" id="activationKey"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Введите ключ активации">
+                <div class="flex gap-3">
+                    <button onclick="completeRequest()"
+                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                        Отправить
+                    </button>
+                    <button onclick="closeModal()"
+                        class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-lg">
+                        Отмена
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let currentRequestId = null;
+
+            function showCompleteModal(requestId, voucherCode) {
+                currentRequestId = requestId;
+                document.getElementById('modalVoucherCode').textContent = voucherCode;
+                document.getElementById('activationKey').value = '';
+                document.getElementById('completeModal').classList.remove('hidden');
+            }
+
+            function closeModal() {
+                document.getElementById('completeModal').classList.add('hidden');
+                currentRequestId = null;
+            }
+
+            async function completeRequest() {
+                const key = document.getElementById('activationKey').value.trim();
+                if (!key) {
+                    alert('Введите ключ активации');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/admin/manual-activations/${currentRequestId}/complete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ key })
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Активация завершена успешно!');
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                    }
+                } catch (error) {
+                    alert('Ошибка: ' + error.message);
+                }
+            }
+
+            async function rejectRequest(requestId) {
+                if (!confirm('Отклонить запрос?')) return;
+
+                try {
+                    const response = await fetch(`/admin/manual-activations/${requestId}/reject`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Запрос отклонен');
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + (result.error || 'Неизвестная ошибка'));
+                    }
+                } catch (error) {
+                    alert('Ошибка: ' + error.message);
+                }
+            }
+        </script>
+</body>
+
+</html>

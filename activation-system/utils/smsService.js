@@ -115,6 +115,6 @@ export async function sendSms(phone, message) {
  */
 export async function sendOtpSms(phone, code) {
   // Используем утвержденный шаблон
-  const message = `wallet.namo.uz Vash kod podtverjdeniya dlya sayta Tasdiqlash uchun kod: ${code}`;
+  const message = `Vash kod podtverjdeniya dlya sayta Tasdiqlash uchun kod: ${code} https://wallet.namo.uz`;
   return await sendSMS(phone, message);
 }

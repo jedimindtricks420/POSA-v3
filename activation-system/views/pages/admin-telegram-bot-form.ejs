@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= bot ? 'Редактировать' : 'Создать' %> Telegram Бота - Admin Panel
+    </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-50">
+    <%- include('../partials/admin-navbar') %>
+
+        <div class="container mx-auto px-4 py-8 mt-20 max-w-2xl">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">
+                <%= bot ? 'Редактировать' : 'Создать' %> Telegram Бота
+            </h1>
+
+            <% if (error) { %>
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    <%= error %>
+                </div>
+                <% } %>
+
+                    <form action="<%= bot ? `/admin/telegram-bots/${bot.id}/edit` : '/admin/telegram-bots/create' %>"
+                        method="POST" class="bg-white rounded-lg shadow p-6">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">
+                                Название бота *
+                            </label>
+                            <input type="text" name="name" value="<%= bot ? bot.name : '' %>" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Например: Microsoft Notifications">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">
+                                Токен бота (от @BotFather) *
+                            </label>
+                            <input type="text" name="token" value="<%= bot ? bot.token : '' %>" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-sm"
+                                placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                            <p class="text-xs text-gray-500 mt-1">Получите токен у @BotFather в Telegram</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">
+                                Telegram ID авторизованных пользователей *
+                            </label>
+                            <input type="text" name="authorizedUsers"
+                                value="<%= bot ? bot.authorizedUsersString : '' %>" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="123456789, 987654321">
+                            <p class="text-xs text-gray-500 mt-1">Введите Telegram ID через запятую. Узнать ID можно у
+                                @userinfobot</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="block text-gray-700 text-sm font-bold mb-2">
+                                Привязанные магазины
+                            </label>
+                            <div class="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                                <% stores.forEach(store=> { %>
+                                    <label class="flex items-center">
+                                        <input type="checkbox" name="storeIds" value="<%= store.id %>" <% if (bot &&
+                                            bot.stores.some(s=> s.storeId === store.id)) { %>checked<% } %>
+                                            class="mr-2 rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span class="text-sm text-gray-700">
+                                                <%= store.name %> (<%= store.slug %>)
+                                            </span>
+                                    </label>
+                                    <% }) %>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Выберите магазины, от которых будут приходить
+                                уведомления</p>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="isActive" <%=bot && bot.isActive ? 'checked' : (!bot
+                                    ? 'checked' : '' ) %>
+                                class="mr-2 rounded text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm font-medium text-gray-700">Активен</span>
+                            </label>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button type="submit"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition">
+                                <%= bot ? 'Сохранить' : 'Создать' %>
+                            </button>
+                            <a href="/admin/telegram-bots"
+                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg transition">
+                                Отмена
+                            </a>
+                        </div>
+                    </form>
+        </div>
+</body>
+
+</html>
