@@ -20,6 +20,7 @@ model User {
 
   activations   VoucherActivation[] @relation("UserActivations")
   refreshTokens RefreshToken[]
+  manualActivations ManualActivationRequest[] @relation("ManualActivationOperator")
 }
 
 enum Role {
@@ -61,6 +62,7 @@ model Product {
   storeId      Int?
   store        Store?    @relation(fields: [storeId], references: [id])
   rokkySku     String?  // Rokky SKU для интеграции
+  receiptTemplate String?  // JSON-схема шаблона чека для конкретного товара
 }
 
 model Store {
@@ -71,7 +73,9 @@ model Store {
   logoUrl         String?
   themeColor      String?   @default("#4F46E5")
   backgroundColor String?   @default("#F8FAFC")
+  activationSmsTemplate String? @default("Vash vaucher aktivirovan | Sizning vaucheringiz faollashtirildi https://namo.uz/link")
   products        Product[]
+  telegramBots    StoreTelegramBot[]
 }
 
 model RokkyOrder {
@@ -133,6 +137,7 @@ model Voucher {
   smsLogs        VoucherSmsLog[]
   walletLogs     VoucherWalletLog[]
   rokkyOrder     RokkyOrder?
+  manualActivationRequest ManualActivationRequest?
 }
 
 enum VoucherStatus {
@@ -359,3 +364,47 @@ model AuditLog {
   ip          String?
   createdAt   DateTime @default(now())
 }
+
+model TelegramBot {
+  id              Int      @id @default(autoincrement())
+  name            String
+  token           String
+  authorizedUsers String   @default("[]")
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  stores          StoreTelegramBot[]
+}
+
+model StoreTelegramBot {
+  id            Int      @id @default(autoincrement())
+  storeId       Int
+  telegramBotId Int
+
+  store         Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  telegramBot   TelegramBot  @relation(fields: [telegramBotId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, telegramBotId])
+}
+
+model ManualActivationRequest {
+  id          Int      @id @default(autoincrement())
+  voucherId   Int      @unique
+  status      ManualActivationStatus @default(PENDING)
+  key         String?
+  operatorId  Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  voucher     Voucher  @relation(fields: [voucherId], references: [id])
+  operator    User?    @relation("ManualActivationOperator", fields: [operatorId], references: [id])
+}
+
+enum ManualActivationStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+  CANCELLED
+}
+

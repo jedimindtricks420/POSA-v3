@@ -5,8 +5,9 @@ import path from 'path';
 import prisma from '../../prisma/client.js';
 import { sendSMS } from '../../utils/smsService.js';
 import { normalizePhone } from '../../utils/phone.js';
-import { parseReceiptSchema } from '../../utils/receiptRenderer.js';
+import { parseReceiptSchema, resolveReceiptTemplate } from '../../utils/receiptRenderer.js';
 import { buildVoucherTokenUrl, buildVoucherQrUrl } from '../../utils/qr.js';
+
 
 function buildReceiptQrUrl(serial, origin) {
   const trimmed = typeof serial === 'string' ? serial.trim() : '';
@@ -63,7 +64,7 @@ export const confirmCheckout = async (req, res) => {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
-  }); 
+  });
 
   const formattedTime = now.toLocaleTimeString('ru-RU', {
     hour: '2-digit',
@@ -130,7 +131,8 @@ export const confirmCheckout = async (req, res) => {
   }
 
   let processedVoucher = null;
-  const schemaForVendor = parseReceiptSchema(product.vendor?.receiptTemplate, product.vendor?.name || 'Вендор');
+  const schemaForVendor = resolveReceiptTemplate(product, product.vendor);
+
 
   try {
     const { updatedVoucher, saleId } = await prisma.$transaction(async (tx) => {
@@ -279,7 +281,7 @@ export const confirmCheckout = async (req, res) => {
                 iframe.style.width = '0';
                 iframe.style.height = '0';
                 iframe.style.border = '0';
-                iframe.src = '/${receiptPath.replace(/\\\\/g,'/')}';
+                iframe.src = '/${receiptPath.replace(/\\\\/g, '/')}';
                 iframe.onload = () => { try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(e) {} };
                 document.body.appendChild(iframe);
               }
@@ -304,7 +306,7 @@ export const confirmCheckout = async (req, res) => {
                 <a href="/merchant/sales" class="block w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
                   Перейти к продажам
                 </a>
-                <a href="/${receiptPath.replace(/\\\\/g,'/')}" target="_blank" class="block w-full bg-slate-200 text-slate-700 py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">
+                <a href="/${receiptPath.replace(/\\\\/g, '/')}" target="_blank" class="block w-full bg-slate-200 text-slate-700 py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">
                   Печать чека
                 </a>
               </div>
@@ -610,11 +612,11 @@ async function generatePDFReceipt({ absolutePath, merchant, segments = [], schem
 async function sendVoucherSMS(client, vouchers) {
   try {
     for (const item of vouchers) {
-      const messageLines = ["Dobavlen noviy vaucher | Yangi vaucher qo'shildi wallet.namo.uz"];
+      const messageLines = ["Dobavlen noviy vaucher | Yangi vaucher qo'shildi https://wallet.namo.uz"];
       const message = messageLines.join('\n');
-      
+
       const smsResult = await sendSMS(client.phoneNumber, message);
-      
+
       // Логирование SMS
       await prisma.voucherSmsLog.create({
         data: {
