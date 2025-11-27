@@ -56,10 +56,17 @@
               <select name="productType" required
                 class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                 <option value="Telegram" <%=vendor.productType==='Telegram' ? 'selected' : '' %>>Telegram</option>
-                <option value="API" <%=vendor.productType==='API' ? 'selected' : '' %>>API</option>
-                <option value="Ваучеры" <%=vendor.productType==='Ваучеры' ? 'selected' : '' %>>Ваучеры</option>
-                <option value="Rokky" <%=vendor.productType==='Rokky' ? 'selected' : '' %>>Rokky</option>
+                <option value="API" <%=vendor.productType==='API' ? 'selected' : '' %>>API (устаревший)</option>
+                <option value="Ваучеры" <%=vendor.productType==='Ваучеры' ? 'selected' : '' %>>Ваучеры (устаревший)
+                </option>
+                <option value="Rokky" <%=vendor.productType==='Rokky' ? 'selected' : '' %>>Rokky (автоматическая
+                  активация)</option>
+                <option value="Manual" <%=vendor.productType==='Manual' ? 'selected' : '' %>>Manual (ручная активация)
+                </option>
               </select>
+              <p class="mt-1 text-xs text-slate-500">
+                Для новых вендоров с ручной активацией выберите "Manual"
+              </p>
             </div>
 
             <div>
