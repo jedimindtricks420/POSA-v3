@@ -40,8 +40,11 @@
                                     <%= item.voucher.product.name %>
                                 </td>
                                 <td>
-                                    <% if (item.voucher.rokkyOrder && item.voucher.rokkyOrder.key) { %>
-                                        <code><%= item.voucher.rokkyOrder.key %></code>
+                                    <% let key=null; if (item.voucher.rokkyOrder && item.voucher.rokkyOrder.key) {
+                                        key=item.voucher.rokkyOrder.key; } else if (item.voucher.manualActivationRequest
+                                        && item.voucher.manualActivationRequest.key) {
+                                        key=item.voucher.manualActivationRequest.key; } if (key) { %>
+                                        <code><%= key %></code>
                                         <% } else { %>
                                             <span class="badge bg-warning text-dark">Ожидание</span>
                                             <% } %>
