@@ -42,7 +42,8 @@ export const getStorePage = async (req, res) => {
                     voucher: {
                         include: {
                             product: true,
-                            rokkyOrder: true
+                            rokkyOrder: true,
+                            manualActivationRequest: true
                         }
                     }
                 },
@@ -216,16 +217,37 @@ export const activateVoucher = async (req, res) => {
             error = 'Invalid code for this store';
             console.log(`Activation failed: Store mismatch. Voucher StoreId: ${voucher.product.storeId}, Current StoreId: ${store.id}`);
         }
-        else if (!['sold', 'active', 'pending'].includes(voucher.status)) {
+        // SECURITY: Only allow activation for SOLD or PENDING vouchers
+        else if (voucher.status === 'active') {
+            error = 'Code not sold yet';
+            console.log(`Activation failed: Voucher not sold yet (status: ${voucher.status})`);
+        }
+        else if (voucher.status === 'activated') {
+            error = 'Code already used';
+            console.log(`Activation failed: Voucher already activated`);
+        }
+        else if (!['sold', 'pending'].includes(voucher.status)) {
             error = 'Code already used or invalid';
             console.log(`Activation failed: Invalid status ${voucher.status}`);
         }
         else if (voucher.status === 'pending') {
             // Check if it's a stuck pending (failed attempt)
-            const existingOrder = await prisma.rokkyOrder.findUnique({ where: { voucherId: voucher.id } });
-            if (existingOrder && existingOrder.status === 'COMPLETED') {
-                error = 'Code already activated';
-                console.log(`Activation failed: Voucher pending but already has COMPLETED order`);
+            // For Rokky vendors, check RokkyOrder
+            if (voucher.product.vendor.productType === 'Rokky') {
+                const existingOrder = await prisma.rokkyOrder.findUnique({ where: { voucherId: voucher.id } });
+                if (existingOrder && existingOrder.status === 'COMPLETED') {
+                    error = 'Code already activated';
+                    console.log(`Activation failed: Voucher pending but already has COMPLETED Rokky order`);
+                }
+            }
+            // For Manual vendors, check ManualActivationRequest
+            else if (voucher.product.vendor.productType === 'Manual') {
+                const existingRequest = await prisma.manualActivationRequest.findUnique({ where: { voucherId: voucher.id } });
+                if (existingRequest && existingRequest.status === 'COMPLETED') {
+                    error = 'Code already activated';
+                    console.log(`Activation failed: Voucher pending but already has COMPLETED manual request`);
+                }
+                // If request exists and is PENDING, allow retry (user might have refreshed page)
             }
             // If no order or failed/pending order, we allow retry (logic continues)
         }
@@ -277,28 +299,37 @@ export const activateVoucher = async (req, res) => {
                 // Импортируем telegramService динамически
                 const telegramService = (await import('../services/telegramService.js')).default;
 
-                // Создаем запрос на ручную активацию
-                const manualRequest = await prisma.manualActivationRequest.create({
-                    data: {
-                        voucherId: voucher.id,
-                        status: 'PENDING'
-                    }
+                // Проверяем, существует ли уже запрос
+                let manualRequest = await prisma.manualActivationRequest.findUnique({
+                    where: { voucherId: voucher.id }
                 });
 
-                // Получаем клиента
-                const client = await prisma.client.findUnique({ where: { id: clientId } });
+                // Создаем запрос только если его еще нет
+                if (!manualRequest) {
+                    manualRequest = await prisma.manualActivationRequest.create({
+                        data: {
+                            voucherId: voucher.id,
+                            status: 'PENDING'
+                        }
+                    });
 
-                // Отправляем уведомление в Telegram
-                const notification = telegramService.formatActivationNotification(
-                    voucher,
-                    client,
-                    store,
-                    voucher.product
-                );
+                    // Получаем клиента
+                    const client = await prisma.client.findUnique({ where: { id: clientId } });
 
-                await telegramService.sendNotificationToStore(store.id, notification);
+                    // Отправляем уведомление в Telegram только для нового запроса
+                    const notification = telegramService.formatActivationNotification(
+                        voucher,
+                        client,
+                        store,
+                        voucher.product
+                    );
 
-                console.log(`[Manual Activation] Request created: ${manualRequest.id} for voucher ${voucher.value}`);
+                    await telegramService.sendNotificationToStore(store.id, notification);
+
+                    console.log(`[Manual Activation] Request created: ${manualRequest.id} for voucher ${voucher.value}`);
+                } else {
+                    console.log(`[Manual Activation] Request already exists: ${manualRequest.id} for voucher ${voucher.value}`);
+                }
 
                 return res.json({
                     success: true,
@@ -316,55 +347,88 @@ export const activateVoucher = async (req, res) => {
             }
         }
 
-        // Call Rokky API
-        let rokkyOrder;
-        try {
-            const sku = voucher.product.rokkySku;
-            if (!sku) throw new Error('Product missing Rokky SKU');
+        // Call Rokky API (only for Rokky vendors)
+        if (voucher.product.vendor.productType === 'Rokky') {
+            let rokkyOrder;
+            try {
+                const sku = voucher.product.rokkySku;
+                if (!sku) throw new Error('Product missing Rokky SKU');
 
-            const orderResult = await rokkyService.createOrder(sku, String(voucher.id), voucher.product.price);
+                const orderResult = await rokkyService.createOrder(sku, String(voucher.id), voucher.product.price);
 
-            rokkyOrder = await prisma.rokkyOrder.upsert({
-                where: { voucherId: voucher.id },
-                update: {
-                    rokkyOrderId: orderResult.rokkyOrderId,
-                    sku: sku,
-                    status: orderResult.status,
-                    key: orderResult.key,
-                    errorMessage: null
-                },
-                create: {
-                    voucherId: voucher.id,
-                    rokkyOrderId: orderResult.rokkyOrderId,
-                    sku: sku,
-                    status: orderResult.status,
-                    key: orderResult.key
-                }
+                rokkyOrder = await prisma.rokkyOrder.upsert({
+                    where: { voucherId: voucher.id },
+                    update: {
+                        rokkyOrderId: orderResult.rokkyOrderId,
+                        sku: sku,
+                        status: orderResult.status,
+                        key: orderResult.key,
+                        errorMessage: null
+                    },
+                    create: {
+                        voucherId: voucher.id,
+                        rokkyOrderId: orderResult.rokkyOrderId,
+                        sku: sku,
+                        status: orderResult.status,
+                        key: orderResult.key
+                    }
+                });
+
+            } catch (apiError) {
+                console.error('Rokky API Error:', apiError);
+                await prisma.rokkyOrder.upsert({
+                    where: { voucherId: voucher.id },
+                    update: {
+                        rokkyOrderId: 'error',
+                        status: 'FAILED',
+                        errorMessage: apiError.message
+                    },
+                    create: {
+                        voucherId: voucher.id,
+                        rokkyOrderId: 'error',
+                        sku: voucher.product.rokkySku || 'unknown',
+                        status: 'FAILED',
+                        errorMessage: apiError.message
+                    }
+                });
+                return res.status(500).json({ error: 'Произошла ошибка. Пожалуйста обратитесь в службу поддержки.' });
+            }
+
+            // If we got the key immediately
+            if (rokkyOrder.status === 'COMPLETED' && rokkyOrder.key) {
+                // Create Activation
+                await prisma.voucherActivation.create({
+                    data: {
+                        voucherId: voucher.id,
+                        vendorId: voucher.product.vendorId,
+                        clientId: clientId,
+                        activatedBy: null // System
+                    }
+                });
+
+                await prisma.voucher.update({
+                    where: { id: voucher.id },
+                    data: { status: 'activated' }
+                });
+
+                return res.json({ success: true, key: rokkyOrder.key });
+            }
+
+            // If pending (async)
+            return res.json({ success: true, message: 'Activation in progress. Please check back later.' });
+        } // End of Rokky vendor block
+        else {
+            // For other vendor types (API, Ваучеры, or any legacy types)
+            // These are treated as simple vendor vouchers without special activation logic
+            console.log(`[Activation] Legacy vendor type: ${voucher.product.vendor.productType}`);
+
+            // Simply mark as activated
+            await prisma.voucher.update({
+                where: { id: voucher.id },
+                data: { status: 'activated' }
             });
 
-        } catch (apiError) {
-            console.error('Rokky API Error:', apiError);
-            await prisma.rokkyOrder.upsert({
-                where: { voucherId: voucher.id },
-                update: {
-                    rokkyOrderId: 'error',
-                    status: 'FAILED',
-                    errorMessage: apiError.message
-                },
-                create: {
-                    voucherId: voucher.id,
-                    rokkyOrderId: 'error',
-                    sku: voucher.product.rokkySku || 'unknown',
-                    status: 'FAILED',
-                    errorMessage: apiError.message
-                }
-            });
-            return res.status(500).json({ error: 'Произошла ошибка. Пожалуйста обратитесь в службу поддержки.' });
-        }
-
-        // If we got the key immediately
-        if (rokkyOrder.status === 'COMPLETED' && rokkyOrder.key) {
-            // Create Activation
+            // Create activation record
             await prisma.voucherActivation.create({
                 data: {
                     voucherId: voucher.id,
@@ -374,16 +438,12 @@ export const activateVoucher = async (req, res) => {
                 }
             });
 
-            await prisma.voucher.update({
-                where: { id: voucher.id },
-                data: { status: 'activated' }
+            return res.json({
+                success: true,
+                message: 'Voucher activated successfully',
+                legacy: true
             });
-
-            return res.json({ success: true, key: rokkyOrder.key });
         }
-
-        // If pending (async)
-        return res.json({ success: true, message: 'Activation in progress. Please check back later.' });
 
     } catch (error) {
         console.error('activateVoucher error:', error);
