@@ -321,7 +321,8 @@ export const activateVoucher = async (req, res) => {
                         voucher,
                         client,
                         store,
-                        voucher.product
+                        voucher.product,
+                        manualRequest.id
                     );
 
                     await telegramService.sendNotificationToStore(store.id, notification);
