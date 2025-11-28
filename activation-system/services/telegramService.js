@@ -126,8 +126,9 @@ class TelegramService {
      * @param {Object} client - Клиент
      * @param {Object} store - Магазин
      * @param {Object} product - Продукт
+     * @param {number} manualRequestId - ID заявки на ручную активацию (опционально)
      */
-    formatActivationNotification(voucher, client, store, product) {
+    formatActivationNotification(voucher, client, store, product, manualRequestId = null) {
         const date = new Date().toLocaleString('ru-RU', {
             timeZone: 'Asia/Tashkent',
             day: '2-digit',
@@ -137,17 +138,25 @@ class TelegramService {
             minute: '2-digit'
         });
 
-        return `🔔 <b>Новая заявка на активацию</b>
+        let message = `🔔 <b>Новая заявка на активацию</b>
 
 <b>Магазин:</b> ${store.name}
 <b>Товар:</b> ${product.name}
-<b>Код ваучера:</b> <code>${voucher.value}</code>
+<b>Код ваучера:</b> <code>${voucher.value}</code>`;
+
+        if (manualRequestId) {
+            message += `\n<b>ID заявки:</b> #${manualRequestId}`;
+        }
+
+        message += `
 
 <b>Клиент:</b>
 📱 Телефон: ${client.phoneNumber}
 📅 Дата: ${date}
 
 Для обработки перейдите в админ-панель`;
+
+        return message;
     }
 
     /**
