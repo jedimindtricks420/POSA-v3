@@ -102,19 +102,47 @@ export const handleEditVendor = async (req, res) => {
     schemaToSave = buildDefaultReceiptSchema(name);
   }
 
-  await prisma.vendor.update({
-    where: { id: vendorId },
-    data: {
-      name,
-      category,
-      productType,
-      description,
-      receiptTemplate: JSON.stringify(schemaToSave),
-      defaultCommissionPercent: Number(defaultCommissionPercent),
-    },
-  });
+  try {
+    await prisma.vendor.update({
+      where: { id: vendorId },
+      data: {
+        name,
+        category,
+        productType,
+        description,
+        receiptTemplate: JSON.stringify(schemaToSave),
+        defaultCommissionPercent: Number(defaultCommissionPercent),
+      },
+    });
 
-  res.redirect('/admin/vendors');
+    res.redirect('/admin/vendors');
+  } catch (error) {
+    console.error('Error updating vendor:', error);
+    // Fetch vendor again to render the form
+    const vendor = await prisma.vendor.findUnique({
+      where: { id: vendorId },
+      include: {
+        products: {
+          orderBy: { id: 'asc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!vendor) {
+      return res.status(404).send('Вендор не найден');
+    }
+
+    const schema = parseReceiptSchema(vendor.receiptTemplate, vendor.name);
+
+    res.render('pages/admin-edit-vendor', {
+      vendor: { ...vendor, name, category, productType, description, defaultCommissionPercent }, // Preserve user input
+      user: req.session.user,
+      templateSchema: JSON.stringify(schema),
+      sampleProduct: vendor.products?.[0] || null,
+      error: 'Ошибка при обновлении вендора. Проверьте введенные данные.'
+    });
+  }
 };
   
 

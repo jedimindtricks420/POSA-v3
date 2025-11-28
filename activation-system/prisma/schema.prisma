@@ -29,6 +29,12 @@ enum Role {
   vendor_user
 }
 
+enum VendorProductType {
+  ROKKY
+  MANUAL
+  VOUCHER
+}
+
 model Merchant {
   id         Int     @id @default(autoincrement())
   username   String  @unique
@@ -184,7 +190,7 @@ model Vendor {
   id           Int      @id @default(autoincrement())
   name         String
   category     String
-  productType  String
+  productType  VendorProductType
   description  String?
   receiptTemplate String?
   balance                  Float             @default(0)

@@ -233,7 +233,7 @@ export const activateVoucher = async (req, res) => {
         else if (voucher.status === 'pending') {
             // Check if it's a stuck pending (failed attempt)
             // For Rokky vendors, check RokkyOrder
-            if (voucher.product.vendor.productType === 'Rokky') {
+            if (voucher.product.vendor.productType === 'ROKKY') {
                 const existingOrder = await prisma.rokkyOrder.findUnique({ where: { voucherId: voucher.id } });
                 if (existingOrder && existingOrder.status === 'COMPLETED') {
                     error = 'Code already activated';
@@ -241,7 +241,7 @@ export const activateVoucher = async (req, res) => {
                 }
             }
             // For Manual vendors, check ManualActivationRequest
-            else if (voucher.product.vendor.productType === 'Manual') {
+            else if (voucher.product.vendor.productType === 'MANUAL') {
                 const existingRequest = await prisma.manualActivationRequest.findUnique({ where: { voucherId: voucher.id } });
                 if (existingRequest && existingRequest.status === 'COMPLETED') {
                     error = 'Code already activated';
@@ -294,7 +294,7 @@ export const activateVoucher = async (req, res) => {
         });
 
         // CHECK: Manual vendor activation
-        if (voucher.product.vendor.productType === 'Manual') {
+        if (voucher.product.vendor.productType === 'MANUAL') {
             try {
                 // Импортируем telegramService динамически
                 const telegramService = (await import('../services/telegramService.js')).default;
@@ -348,7 +348,7 @@ export const activateVoucher = async (req, res) => {
         }
 
         // Call Rokky API (only for Rokky vendors)
-        if (voucher.product.vendor.productType === 'Rokky') {
+        if (voucher.product.vendor.productType === 'ROKKY') {
             let rokkyOrder;
             try {
                 const sku = voucher.product.rokkySku;
@@ -417,10 +417,11 @@ export const activateVoucher = async (req, res) => {
             // If pending (async)
             return res.json({ success: true, message: 'Activation in progress. Please check back later.' });
         } // End of Rokky vendor block
-        else {
-            // For other vendor types (API, Ваучеры, or any legacy types)
-            // These are treated as simple vendor vouchers without special activation logic
-            console.log(`[Activation] Legacy vendor type: ${voucher.product.vendor.productType}`);
+        else if (voucher.product.vendor.productType === 'VOUCHER') {
+            // For VOUCHER type vendors - these are activated outside our system
+            // (e.g., in vendor's own system like Spotify balance top-up)
+            // We just mark as activated for record-keeping
+            console.log(`[Activation] VOUCHER type vendor: ${voucher.product.vendor.name}`);
 
             // Simply mark as activated
             await prisma.voucher.update({
@@ -441,8 +442,13 @@ export const activateVoucher = async (req, res) => {
             return res.json({
                 success: true,
                 message: 'Voucher activated successfully',
-                legacy: true
+                voucher: true
             });
+        }
+        else {
+            // Unknown vendor type - should not happen with enum
+            console.error(`[Activation] Unknown vendor type: ${voucher.product.vendor.productType}`);
+            return res.status(500).json({ error: 'Произошла ошибка. Пожалуйста обратитесь в службу поддержки.' });
         }
 
     } catch (error) {
