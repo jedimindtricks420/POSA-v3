@@ -56,7 +56,7 @@ export async function activateVoucherForVendor({ voucherCode, vendorId, userId }
   }
 
   // Проверка: ваучеры Rokky активируются только через клиентские магазины
-  if (voucher.product?.vendor?.productType === 'Rokky') {
+  if (voucher.product?.vendor?.productType === 'ROKKY') {
     throw new ActivationError(
       'Этот ваучер активируется только через клиентский магазин. Отправьте клиенту ссылку на магазин активации.',
       'ROKKY_VENDOR_ONLY',

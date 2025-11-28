@@ -150,9 +150,45 @@ export const handleEditProduct = async (req, res) => {
 };
 
 // Удалить товар
+// Удалить товар
 export const handleDeleteProduct = async (req, res) => {
-  await prisma.product.delete({ where: { id: Number(req.params.id) } });
-  res.redirect('/admin/products');
+  const productId = Number(req.params.id);
+  try {
+    await prisma.product.delete({ where: { id: productId } });
+    res.redirect('/admin/products');
+  } catch (error) {
+    console.error('Error deleting product:', error);
+
+    let errorMessage = 'Ошибка при удалении товара';
+
+    // P2003: Foreign key constraint failed
+    if (error.code === 'P2003') {
+      errorMessage = 'Требуется удаление ваучеров и истории продаж перед удалением товара.';
+    }
+
+    // Рендерим страницу списка товаров с ошибкой
+    try {
+      const products = await prisma.product.findMany({ orderBy: { id: 'desc' } });
+      const productIds = products.map(p => p.id);
+      const voucherCounts = await prisma.voucher.groupBy({
+        by: ['productId'],
+        where: { status: 'active', productId: { in: productIds } },
+        _count: { _all: true }
+      });
+      const voucherMap = {};
+      voucherCounts.forEach(vc => { voucherMap[vc.productId] = vc._count._all; });
+      const enrichedProducts = products.map(p => ({ ...p, activeVoucherCount: voucherMap[p.id] || 0 }));
+
+      res.render('pages/admin-products', {
+        products: enrichedProducts,
+        user: req.session.user,
+        error: errorMessage
+      });
+    } catch (renderError) {
+      console.error('Error rendering products page after delete fail:', renderError);
+      res.status(500).send(errorMessage);
+    }
+  }
 };
 
 // Предпросмотр шаблона чека товара
