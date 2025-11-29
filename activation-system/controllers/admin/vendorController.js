@@ -209,19 +209,58 @@ export const handleVendorPayment = async (req, res) => {
   const balanceBefore = Number(vendor.balance ?? 0);
   const balanceAfter = balanceBefore - paymentAmount;
 
-  await prisma.vendorPayment.create({
-    data: {
-      vendorId,
-      amount: paymentAmount,
-      comment: comment || '',
-      balanceBefore,
-      balanceAfter,
-    }
-  });
+  await prisma.$transaction(async (tx) => {
+    await tx.vendorPayment.create({
+      data: {
+        vendorId,
+        amount: paymentAmount,
+        comment: comment || '',
+        balanceBefore,
+        balanceAfter,
+      }
+    });
 
-  await prisma.vendor.update({
-    where: { id: vendorId },
-    data: { balance: balanceAfter }
+    await tx.vendor.update({
+      where: { id: vendorId },
+      data: { balance: balanceAfter }
+    });
+
+    // Гасим начисления для вендора (PENDING) на сумму выплаты
+    let remaining = paymentAmount;
+    const pendingTx = await tx.voucherTransaction.findMany({
+      where: { vendorId, status: 'PENDING' },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    for (const row of pendingTx) {
+      if (remaining <= 0) break;
+      const payout = Number(row.vendorDebt ?? row.adminDebt ?? 0);
+      if (payout <= 0) {
+        await tx.voucherTransaction.update({
+          where: { id: row.id },
+          data: { status: 'COMPLETED' },
+        });
+        continue;
+      }
+
+      if (remaining >= payout) {
+        remaining -= payout;
+        await tx.voucherTransaction.update({
+          where: { id: row.id },
+          data: {
+            status: 'COMPLETED',
+            vendorDebt: 0,
+          },
+        });
+      } else {
+        const updatedDebt = Math.max(0, payout - remaining);
+        remaining = 0;
+        await tx.voucherTransaction.update({
+          where: { id: row.id },
+          data: { vendorDebt: updatedDebt },
+        });
+      }
+    }
   });
 
   res.redirect('/admin/vendors');

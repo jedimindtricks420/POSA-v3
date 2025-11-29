@@ -19,7 +19,14 @@ export const showTransactions = async (req, res) => {
   }
 
   try {
-    const [transactions, payments, pendingAgg, totalAgg] = await Promise.all([
+    const [
+      transactions,
+      payments,
+      pendingVendorAgg,
+      pendingAdminAgg,
+      totalVendorAgg,
+      totalAdminAgg,
+    ] = await Promise.all([
       prisma.voucherTransaction.findMany({
         where: { vendorId },
         include: {
@@ -44,7 +51,19 @@ export const showTransactions = async (req, res) => {
           status: 'PENDING',
         },
         _sum: {
+          vendorDebt: true,
+        },
+      }),
+      prisma.voucherTransaction.aggregate({
+        where: { vendorId },
+        _sum: {
           adminDebt: true,
+        },
+      }),
+      prisma.voucherTransaction.aggregate({
+        where: { vendorId },
+        _sum: {
+          vendorDebt: true,
         },
       }),
       prisma.voucherTransaction.aggregate({
@@ -55,14 +74,18 @@ export const showTransactions = async (req, res) => {
       }),
     ]);
 
-    const maskedTransactions = transactions.map((row) => ({
-      ...row,
-      maskedVoucherValue: maskVoucherValue(row.voucherValue),
-    }));
+    const maskedTransactions = transactions.map((row) => {
+      const payoutAmount = Number(row.vendorDebt ?? row.adminDebt ?? 0);
+      return {
+        ...row,
+        payoutAmount,
+        maskedVoucherValue: maskVoucherValue(row.voucherValue),
+      };
+    });
 
     const summary = {
-      pendingAmount: Number(pendingAgg?._sum?.adminDebt ?? 0),
-      totalAmount: Number(totalAgg?._sum?.adminDebt ?? 0),
+      pendingAmount: Number(pendingVendorAgg?._sum?.vendorDebt ?? pendingAdminAgg?._sum?.adminDebt ?? 0),
+      totalAmount: Number(totalVendorAgg?._sum?.vendorDebt ?? totalAdminAgg?._sum?.adminDebt ?? 0),
       lastPayment: payments[0] ? payments[0].createdAt : null,
     };
 
