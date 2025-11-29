@@ -1,126 +1,162 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Панель мерчанта</title>
+  <link rel="icon" type="image/svg+xml" href="/images/Vector.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/admin.css" />
 </head>
+
 <body class="bg-slate-100 min-h-screen text-slate-800">
   <%- include('../partials/merchant-navbar', { user }) %>
 
-  <% const totalSales = (sales || []).length; %>
-  <% const totalAmount = (sales || []).reduce((sum, sale) => sum + (sale.price || 0), 0); %>
-  <% const lastSale = (sales || [])[0]; %>
+    <% const totalSales=(sales || []).length; %>
+      <% const totalAmount=(sales || []).reduce((sum, sale)=> sum + (sale.price || 0), 0); %>
+        <% const lastSale=(sales || [])[0]; %>
 
-  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-8">
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p class="text-sm uppercase tracking-wide text-slate-400">Здравствуйте</p>
-        <h1 class="mt-1 text-2xl sm:text-3xl font-bold text-slate-900"><%= user?.username || 'Мерчант' %></h1>
-        <p class="mt-2 text-sm sm:text-base text-slate-500">Следите за ключевыми показателями и управляйте продажами в одном окне.</p>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
-          <p class="text-xs uppercase tracking-wide text-slate-400">Продаж</p>
-          <p class="text-xl font-semibold text-slate-900"><%= totalSales %></p>
-        </div>
-        <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
-          <p class="text-xs uppercase tracking-wide text-slate-400">Выручка</p>
-          <p class="text-xl font-semibold text-slate-900"><%= totalAmount.toLocaleString('ru-RU') %> сум</p>
-        </div>
-      </div>
-    </section>
+          <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-8">
+            <section
+              class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p class="text-sm uppercase tracking-wide text-slate-400">Здравствуйте</p>
+                <h1 class="mt-1 text-2xl sm:text-3xl font-bold text-slate-900">
+                  <%= user?.username || 'Мерчант' %>
+                </h1>
+                <p class="mt-2 text-sm sm:text-base text-slate-500">Следите за ключевыми показателями и управляйте
+                  продажами в одном окне.</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+                  <p class="text-xs uppercase tracking-wide text-slate-400">Продаж</p>
+                  <p class="text-xl font-semibold text-slate-900">
+                    <%= totalSales %>
+                  </p>
+                </div>
+                <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+                  <p class="text-xs uppercase tracking-wide text-slate-400">Выручка</p>
+                  <p class="text-xl font-semibold text-slate-900">
+                    <%= totalAmount.toLocaleString('ru-RU') %> сум
+                  </p>
+                </div>
+              </div>
+            </section>
 
-    <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <article class="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-4">
-        <header class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-slate-900">Быстрые действия</h2>
-        </header>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <a href="/merchant/sell" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" />
-            </svg>
-            Новая продажа
-          </a>
-          <a href="/merchant/checkout" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l3-7H6.4M7 13L5.4 5M7 13l-2 9m13-9l2 9m-5-4a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Текущий чек
-          </a>
-        </div>
-      </article>
+            <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <article class="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-4">
+                <header class="flex items-center justify-between">
+                  <h2 class="text-lg font-semibold text-slate-900">Быстрые действия</h2>
+                </header>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <a href="/merchant/sell"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" />
+                    </svg>
+                    Новая продажа
+                  </a>
+                  <a href="/merchant/checkout"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 3h2l.4 2M7 13h10l3-7H6.4M7 13L5.4 5M7 13l-2 9m13-9l2 9m-5-4a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Текущий чек
+                  </a>
+                </div>
+              </article>
 
-      <article class="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
-        <header class="flex items-center justify-between">
-          <h2 class="text-lg font-semibold text-slate-900">Последняя продажа</h2>
-          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500"><%= lastSale ? new Date(lastSale.date).toLocaleString('ru-RU') : '—' %></span>
-        </header>
-        <% if (!lastSale) { %>
-          <p class="mt-4 text-sm text-slate-500">У вас пока нет оформленных продаж. Начните с создания первой транзакции.</p>
-        <% } else { %>
-          <dl class="mt-6 space-y-3 text-sm">
-            <div class="flex justify-between">
-              <dt class="text-slate-500">Товар</dt>
-              <dd class="font-medium text-slate-900"><%= lastSale.productName %></dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-slate-500">Сумма</dt>
-              <dd class="font-semibold text-slate-900"><%= lastSale.price.toLocaleString('ru-RU') %> сум</dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-slate-500">Тип продажи</dt>
-              <dd class="font-medium text-slate-900"><%= lastSale.saleType === 'ONLINE' ? 'Онлайн' : 'Оффлайн' %></dd>
-            </div>
-            <div class="flex justify-between">
-              <dt class="text-slate-500">Ваучер</dt>
-              <dd><code class="rounded-md bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= lastSale.maskedVoucher || lastSale.voucherValue %></code></dd>
-            </div>
-          </dl>
-        <% } %>
-      </article>
-    </section>
+              <article class="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
+                <header class="flex items-center justify-between">
+                  <h2 class="text-lg font-semibold text-slate-900">Последняя продажа</h2>
+                  <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
+                    <%= lastSale ? new Date(lastSale.date).toLocaleString('ru-RU') : '—' %>
+                  </span>
+                </header>
+                <% if (!lastSale) { %>
+                  <p class="mt-4 text-sm text-slate-500">У вас пока нет оформленных продаж. Начните с создания первой
+                    транзакции.</p>
+                  <% } else { %>
+                    <dl class="mt-6 space-y-3 text-sm">
+                      <div class="flex justify-between">
+                        <dt class="text-slate-500">Товар</dt>
+                        <dd class="font-medium text-slate-900">
+                          <%= lastSale.productName %>
+                        </dd>
+                      </div>
+                      <div class="flex justify-between">
+                        <dt class="text-slate-500">Сумма</dt>
+                        <dd class="font-semibold text-slate-900">
+                          <%= lastSale.price.toLocaleString('ru-RU') %> сум
+                        </dd>
+                      </div>
+                      <div class="flex justify-between">
+                        <dt class="text-slate-500">Тип продажи</dt>
+                        <dd class="font-medium text-slate-900">
+                          <%= lastSale.saleType==='ONLINE' ? 'Онлайн' : 'Оффлайн' %>
+                        </dd>
+                      </div>
+                      <div class="flex justify-between">
+                        <dt class="text-slate-500">Ваучер</dt>
+                        <dd><code
+                            class="rounded-md bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= lastSale.maskedVoucher || lastSale.voucherValue %></code>
+                        </dd>
+                      </div>
+                    </dl>
+                    <% } %>
+              </article>
+            </section>
 
-    <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-        <h2 class="text-lg font-semibold text-slate-900">Последние продажи</h2>
-        <a href="/merchant/sales" class="text-sm font-semibold text-indigo-600 hover:text-indigo-500">Посмотреть все</a>
-      </div>
-      <% if (!totalSales) { %>
-        <div class="px-6 py-10 text-center text-sm text-slate-500">Нет доступных записей. Завершите первую продажу, чтобы увидеть здесь данные.</div>
-      <% } else { %>
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50 text-left font-semibold uppercase tracking-wide text-xs text-slate-500">
-              <tr>
-                <th class="px-6 py-3">Дата</th>
-                <th class="px-6 py-3">Товар</th>
-                <th class="px-6 py-3">Тип</th>
-                <th class="px-6 py-3">Сумма</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 bg-white">
-              <% sales.slice(0, 5).forEach(sale => { %>
-                <tr class="hover:bg-slate-50">
-                  <td class="px-6 py-4 text-slate-600"><%= new Date(sale.date).toLocaleString('ru-RU') %></td>
-                  <td class="px-6 py-4 font-medium text-slate-900"><%= sale.productName %></td>
-                  <td class="px-6 py-4">
-                    <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium <%= sale.saleType === 'ONLINE' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600' %>">
-                      <span class="h-1.5 w-1.5 rounded-full <%= sale.saleType === 'ONLINE' ? 'bg-green-500' : 'bg-slate-400' %>"></span>
-                      <%= sale.saleType === 'ONLINE' ? 'Онлайн' : 'Оффлайн' %>
-                    </span>
-                  </td>
-                  <td class="px-6 py-4 font-semibold text-slate-900"><%= sale.price.toLocaleString('ru-RU') %> сум</td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
-      <% } %>
-    </section>
-  </main>
+            <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h2 class="text-lg font-semibold text-slate-900">Последние продажи</h2>
+                <a href="/merchant/sales" class="text-sm font-semibold text-indigo-600 hover:text-indigo-500">Посмотреть
+                  все</a>
+              </div>
+              <% if (!totalSales) { %>
+                <div class="px-6 py-10 text-center text-sm text-slate-500">Нет доступных записей. Завершите первую
+                  продажу, чтобы увидеть здесь данные.</div>
+                <% } else { %>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                      <thead class="bg-slate-50 text-left font-semibold uppercase tracking-wide text-xs text-slate-500">
+                        <tr>
+                          <th class="px-6 py-3">Дата</th>
+                          <th class="px-6 py-3">Товар</th>
+                          <th class="px-6 py-3">Тип</th>
+                          <th class="px-6 py-3">Сумма</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100 bg-white">
+                        <% sales.slice(0, 5).forEach(sale=> { %>
+                          <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 text-slate-600">
+                              <%= new Date(sale.date).toLocaleString('ru-RU') %>
+                            </td>
+                            <td class="px-6 py-4 font-medium text-slate-900">
+                              <%= sale.productName %>
+                            </td>
+                            <td class="px-6 py-4">
+                              <span
+                                class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium <%= sale.saleType === 'ONLINE' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600' %>">
+                                <span
+                                  class="h-1.5 w-1.5 rounded-full <%= sale.saleType === 'ONLINE' ? 'bg-green-500' : 'bg-slate-400' %>"></span>
+                                <%= sale.saleType==='ONLINE' ? 'Онлайн' : 'Оффлайн' %>
+                              </span>
+                            </td>
+                            <td class="px-6 py-4 font-semibold text-slate-900">
+                              <%= sale.price.toLocaleString('ru-RU') %> сум
+                            </td>
+                          </tr>
+                          <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                  <% } %>
+            </section>
+          </main>
 </body>
+
 </html>
