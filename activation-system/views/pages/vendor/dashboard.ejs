@@ -1,161 +1,200 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Панель вендора</title>
+  <link rel="icon" type="image/svg+xml" href="/images/Vector.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/admin.css" />
 </head>
+
 <body class="bg-slate-100 min-h-screen text-slate-800">
   <%- include('../../partials/vendor-navbar', { user, active: 'dashboard' }) %>
 
-  <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-10">
-    <% if (typeof error !== 'undefined' && error) { %>
-      <div class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 shadow-sm">
-        <div class="flex items-start gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-10">
+      <% if (typeof error !=='undefined' && error) { %>
+        <div class="rounded-xl border border-red-200 bg-red-50 px-6 py-4 shadow-sm">
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-sm font-semibold text-red-800">Не удалось загрузить данные</h2>
+              <p class="mt-1 text-sm text-red-600">
+                <%= error %>
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 class="text-sm font-semibold text-red-800">Не удалось загрузить данные</h2>
-            <p class="mt-1 text-sm text-red-600"><%= error %></p>
-          </div>
         </div>
-      </div>
-    <% } %>
-
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p class="text-sm uppercase tracking-wide text-slate-400">Здравствуйте</p>
-        <h1 class="mt-1 text-2xl sm:text-3xl font-bold text-slate-900"><%= user?.username || 'Vendor user' %></h1>
-        <p class="mt-1 text-sm text-slate-400">Вендор: <span class="font-semibold text-slate-700"><%= vendor?.name || '—' %></span></p>
-        <p class="mt-2 text-sm sm:text-base text-slate-500">Контролируйте активации и задолженность платформы перед вашим бизнесом.</p>
-      </div>
-      <div class="grid grid-cols-1 gap-3">
-        <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
-          <p class="text-xs uppercase tracking-wide text-slate-400">Баланс</p>
-          <p class="mt-1 text-xl font-semibold text-slate-900"><%= Number(metrics?.balance ?? 0).toLocaleString('ru-RU') %> сум</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-        <p class="text-xs uppercase tracking-wide text-slate-400">Активации за 7 дней</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900"><%= Number(metrics?.activationsLast7Days ?? 0).toLocaleString('ru-RU') %></p>
-      </div>
-      <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
-        <p class="text-xs uppercase tracking-wide text-slate-400">Активировано всего</p>
-        <p class="mt-2 text-2xl font-semibold text-slate-900"><%= Number(metrics?.totalActivated ?? 0).toLocaleString('ru-RU') %></p>
-      </div>
-    </section>
-
-    <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-6">
-      <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h2 class="text-lg font-semibold text-slate-900">Динамика активированных ваучеров</h2>
-        <p class="text-sm text-slate-500">Последние <%= trendRange %> дней</p>
-      </header>
-      <% if (!activationTrend || activationTrend.length === 0) { %>
-        <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-sm text-slate-500 text-center">
-          Нет данных для графика. Активации появятся здесь после первых операций.
-        </div>
-      <% } else { %>
-        <div class="overflow-x-auto">
-          <table class="min-w-full text-sm text-slate-600">
-            <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
-              <tr>
-                <th class="px-4 py-2 text-left">Дата</th>
-                <th class="px-4 py-2 text-left">Количество</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              <% activationTrend.forEach((row) => { %>
-                <tr>
-                  <td class="px-4 py-2 font-medium text-slate-900"><%= row.date %></td>
-                  <td class="px-4 py-2"><%= row.count %></td>
-                </tr>
-              <% }) %>
-            </tbody>
-          </table>
-        </div>
-      <% } %>
-    </section>
-
-    <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <h2 class="text-lg font-semibold text-slate-900">Последние активации</h2>
-          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500"><%= recentActivations?.length || 0 %></span>
-        </div>
-        <% if (!recentActivations || recentActivations.length === 0) { %>
-          <p class="px-6 py-8 text-sm text-slate-500">Активаций пока не было.</p>
-        <% } else { %>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-              <thead class="bg-slate-50 text-left uppercase tracking-wide text-xs text-slate-400">
-                <tr>
-                  <th class="px-6 py-3">Дата</th>
-                  <th class="px-6 py-3">Товар</th>
-                  <th class="px-6 py-3">Ключ</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <% recentActivations.forEach((item) => { %>
-                  <tr>
-                    <td class="px-6 py-3 text-slate-600"><%= new Date(item.activatedAt).toLocaleString('ru-RU') %></td>
-                    <td class="px-6 py-3 font-medium text-slate-900"><%= item.voucher?.productName || '—' %></td>
-                    <td class="px-6 py-3">
-                      <code class="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= item.voucher?.value %></code>
-                    </td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
         <% } %>
-      </div>
 
-      <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <h2 class="text-lg font-semibold text-slate-900">Очередь к активации</h2>
-          <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500"><%= pendingQueue?.length || 0 %></span>
-        </div>
-        <% if (!pendingQueue || pendingQueue.length === 0) { %>
-          <p class="px-6 py-8 text-sm text-slate-500">Все ваучеры активированы. Новые продажи появятся здесь автоматически.</p>
-        <% } else { %>
-          <div class="overflow-x-auto">
-            <table class="min-w-full text-sm">
-              <thead class="bg-slate-50 text-left uppercase tracking-wide text-xs text-slate-400">
-                <tr>
-                  <th class="px-6 py-3">Ваучер</th>
-                  <th class="px-6 py-3">Товар</th>
-                  <th class="px-6 py-3">Статус</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                <% pendingQueue.forEach((item) => { %>
-                  <tr>
-                    <td class="px-6 py-3">
-                      <code class="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= item.maskedValue %></code>
-                    </td>
-                    <td class="px-6 py-3 font-medium text-slate-900"><%= item.product?.name || item.productName %></td>
-                    <td class="px-6 py-3">
-                      <span class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium <%= item.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600' %>">
-                        <span class="h-1.5 w-1.5 rounded-full <%= item.status === 'pending' ? 'bg-amber-500' : 'bg-slate-400' %>"></span>
-                        <%= item.status %>
-                      </span>
-                    </td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-        <% } %>
-      </div>
-    </section>
-  </main>
+          <section
+            class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm uppercase tracking-wide text-slate-400">Здравствуйте</p>
+              <h1 class="mt-1 text-2xl sm:text-3xl font-bold text-slate-900">
+                <%= user?.username || 'Vendor user' %>
+              </h1>
+              <p class="mt-1 text-sm text-slate-400">Вендор: <span class="font-semibold text-slate-700">
+                  <%= vendor?.name || '—' %>
+                </span></p>
+              <p class="mt-2 text-sm sm:text-base text-slate-500">Контролируйте активации и задолженность платформы
+                перед вашим бизнесом.</p>
+            </div>
+            <div class="grid grid-cols-1 gap-3">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-center">
+                <p class="text-xs uppercase tracking-wide text-slate-400">Баланс</p>
+                <p class="mt-1 text-xl font-semibold text-slate-900">
+                  <%= Number(metrics?.balance ?? 0).toLocaleString('ru-RU') %> сум
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
+              <p class="text-xs uppercase tracking-wide text-slate-400">Активации за 7 дней</p>
+              <p class="mt-2 text-2xl font-semibold text-slate-900">
+                <%= Number(metrics?.activationsLast7Days ?? 0).toLocaleString('ru-RU') %>
+              </p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm p-5">
+              <p class="text-xs uppercase tracking-wide text-slate-400">Активировано всего</p>
+              <p class="mt-2 text-2xl font-semibold text-slate-900">
+                <%= Number(metrics?.totalActivated ?? 0).toLocaleString('ru-RU') %>
+              </p>
+            </div>
+          </section>
+
+          <section class="rounded-2xl border border-slate-200 bg-white shadow-sm p-6 space-y-6">
+            <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 class="text-lg font-semibold text-slate-900">Динамика активированных ваучеров</h2>
+              <p class="text-sm text-slate-500">Последние <%= trendRange %> дней</p>
+            </header>
+            <% if (!activationTrend || activationTrend.length===0) { %>
+              <div
+                class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-sm text-slate-500 text-center">
+                Нет данных для графика. Активации появятся здесь после первых операций.
+              </div>
+              <% } else { %>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                      <tr>
+                        <th class="px-4 py-2 text-left">Дата</th>
+                        <th class="px-4 py-2 text-left">Количество</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                      <% activationTrend.forEach((row)=> { %>
+                        <tr>
+                          <td class="px-4 py-2 font-medium text-slate-900">
+                            <%= row.date %>
+                          </td>
+                          <td class="px-4 py-2">
+                            <%= row.count %>
+                          </td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+                <% } %>
+          </section>
+
+          <section class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h2 class="text-lg font-semibold text-slate-900">Последние активации</h2>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
+                  <%= recentActivations?.length || 0 %>
+                </span>
+              </div>
+              <% if (!recentActivations || recentActivations.length===0) { %>
+                <p class="px-6 py-8 text-sm text-slate-500">Активаций пока не было.</p>
+                <% } else { %>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                      <thead class="bg-slate-50 text-left uppercase tracking-wide text-xs text-slate-400">
+                        <tr>
+                          <th class="px-6 py-3">Дата</th>
+                          <th class="px-6 py-3">Товар</th>
+                          <th class="px-6 py-3">Ключ</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        <% recentActivations.forEach((item)=> { %>
+                          <tr>
+                            <td class="px-6 py-3 text-slate-600">
+                              <%= new Date(item.activatedAt).toLocaleString('ru-RU') %>
+                            </td>
+                            <td class="px-6 py-3 font-medium text-slate-900">
+                              <%= item.voucher?.productName || '—' %>
+                            </td>
+                            <td class="px-6 py-3">
+                              <code
+                                class="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= item.voucher?.value %></code>
+                            </td>
+                          </tr>
+                          <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                  <% } %>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h2 class="text-lg font-semibold text-slate-900">Очередь к активации</h2>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-500">
+                  <%= pendingQueue?.length || 0 %>
+                </span>
+              </div>
+              <% if (!pendingQueue || pendingQueue.length===0) { %>
+                <p class="px-6 py-8 text-sm text-slate-500">Все ваучеры активированы. Новые продажи появятся здесь
+                  автоматически.</p>
+                <% } else { %>
+                  <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
+                      <thead class="bg-slate-50 text-left uppercase tracking-wide text-xs text-slate-400">
+                        <tr>
+                          <th class="px-6 py-3">Ваучер</th>
+                          <th class="px-6 py-3">Товар</th>
+                          <th class="px-6 py-3">Статус</th>
+                        </tr>
+                      </thead>
+                      <tbody class="divide-y divide-slate-100">
+                        <% pendingQueue.forEach((item)=> { %>
+                          <tr>
+                            <td class="px-6 py-3">
+                              <code
+                                class="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-700"><%= item.maskedValue %></code>
+                            </td>
+                            <td class="px-6 py-3 font-medium text-slate-900">
+                              <%= item.product?.name || item.productName %>
+                            </td>
+                            <td class="px-6 py-3">
+                              <span
+                                class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium <%= item.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600' %>">
+                                <span
+                                  class="h-1.5 w-1.5 rounded-full <%= item.status === 'pending' ? 'bg-amber-500' : 'bg-slate-400' %>"></span>
+                                <%= item.status %>
+                              </span>
+                            </td>
+                          </tr>
+                          <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                  <% } %>
+            </div>
+          </section>
+    </main>
 </body>
+
 </html>

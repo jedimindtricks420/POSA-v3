@@ -1,129 +1,155 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Продажа товаров</title>
+  <link rel="icon" type="image/svg+xml" href="/images/Vector.svg">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/css/admin.css" />
 </head>
+
 <body class="bg-slate-100 min-h-screen text-slate-800">
   <%- include('../partials/merchant-navbar', { user }) %>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-8">
-    <section class="bg-white shadow-sm ring-1 ring-slate-200 rounded-xl p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Оформление продажи</h1>
-        <p class="mt-2 text-sm sm:text-base text-slate-500">Выберите продукты, добавьте их в чек и завершите оформление в пару шагов.</p>
-      </div>
-      <div class="grid grid-cols-2 gap-3 w-full sm:w-auto">
-        <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-          <p class="text-xs uppercase tracking-wide text-slate-400">В корзине</p>
-          <p class="text-xl font-semibold text-slate-900"><%= (cart || []).reduce((sum, item) => sum + item.quantity, 0) %></p>
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-8">
+      <section
+        class="bg-white shadow-sm ring-1 ring-slate-200 rounded-xl p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Оформление продажи</h1>
+          <p class="mt-2 text-sm sm:text-base text-slate-500">Выберите продукты, добавьте их в чек и завершите
+            оформление в пару шагов.</p>
         </div>
-        <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-          <p class="text-xs uppercase tracking-wide text-slate-400">Позиции</p>
-          <p class="text-xl font-semibold text-slate-900"><%= (cart || []).length %></p>
-        </div>
-      </div>
-    </section>
-
-    <% if (typeof error !== 'undefined') { %>
-      <div class="bg-red-50 border border-red-200 rounded-xl px-6 py-4 shadow-sm">
-        <div class="flex items-start gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
+        <div class="grid grid-cols-2 gap-3 w-full sm:w-auto">
+          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <p class="text-xs uppercase tracking-wide text-slate-400">В корзине</p>
+            <p class="text-xl font-semibold text-slate-900">
+              <%= (cart || []).reduce((sum, item)=> sum + item.quantity, 0) %>
+            </p>
           </div>
-          <div class="space-y-1">
-            <h2 class="text-sm font-semibold text-red-800">Ошибка при добавлении товара</h2>
-            <p class="text-sm text-red-600"><%= error %></p>
+          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <p class="text-xs uppercase tracking-wide text-slate-400">Позиции</p>
+            <p class="text-xl font-semibold text-slate-900">
+              <%= (cart || []).length %>
+            </p>
           </div>
         </div>
-      </div>
-    <% } %>
+      </section>
 
-    <section class="space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h2 class="text-lg font-semibold text-slate-900">Активные товары</h2>
-        <div class="flex-1">
-          <label class="sr-only" for="productSearch">Поиск товара</label>
-          <input id="productSearch" type="text" inputmode="search" autocomplete="off" placeholder="Поиск по ID или названию" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+      <% if (typeof error !=='undefined' ) { %>
+        <div class="bg-red-50 border border-red-200 rounded-xl px-6 py-4 shadow-sm">
+          <div class="flex items-start gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div class="space-y-1">
+              <h2 class="text-sm font-semibold text-red-800">Ошибка при добавлении товара</h2>
+              <p class="text-sm text-red-600">
+                <%= error %>
+              </p>
+            </div>
+          </div>
         </div>
-        <a href="/merchant/checkout" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500">
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l3-7H6.4M7 13L5.4 5M7 13l-2 9m13-9l2 9m-5-4a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          Перейти к чеку
-        </a>
-      </div>
+        <% } %>
 
-      <% if (!products.length) { %>
-        <div class="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
-          <h3 class="text-lg font-medium text-slate-700">Нет доступных товаров</h3>
-          <p class="mt-2 text-sm">Попросите администратора добавить продукты в каталог.</p>
-        </div>
-      <% } else { %>
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3" id="productGrid">
-          <% products.forEach(product => { %>
-            <article data-product-card data-name="<%= (product.name || '').toLowerCase() %>" data-id="<%= product.id %>" class="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <h3 class="text-lg font-semibold text-slate-900"><%= product.name %></h3>
-                  <p class="mt-1 text-sm text-slate-500">ID: <span class="font-mono text-xs">#<%= product.id %></span></p>
+          <section class="space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <h2 class="text-lg font-semibold text-slate-900">Активные товары</h2>
+              <div class="flex-1">
+                <label class="sr-only" for="productSearch">Поиск товара</label>
+                <input id="productSearch" type="text" inputmode="search" autocomplete="off"
+                  placeholder="Поиск по ID или названию"
+                  class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
+              </div>
+              <a href="/merchant/checkout"
+                class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 3h2l.4 2M7 13h10l3-7H6.4M7 13L5.4 5M7 13l-2 9m13-9l2 9m-5-4a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                Перейти к чеку
+              </a>
+            </div>
+
+            <% if (!products.length) { %>
+              <div class="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
+                <h3 class="text-lg font-medium text-slate-700">Нет доступных товаров</h3>
+                <p class="mt-2 text-sm">Попросите администратора добавить продукты в каталог.</p>
+              </div>
+              <% } else { %>
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3" id="productGrid">
+                  <% products.forEach(product=> { %>
+                    <article data-product-card data-name="<%= (product.name || '').toLowerCase() %>"
+                      data-id="<%= product.id %>"
+                      class="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                      <div class="flex items-start justify-between gap-3">
+                        <div>
+                          <h3 class="text-lg font-semibold text-slate-900">
+                            <%= product.name %>
+                          </h3>
+                          <p class="mt-1 text-sm text-slate-500">ID: <span class="font-mono text-xs">#<%= product.id %>
+                                </span></p>
+                        </div>
+                        <span
+                          class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">В
+                          наличии</span>
+                      </div>
+                      <div class="mt-6 mb-8">
+                        <p class="text-3xl font-bold text-slate-900">
+                          <%= product.price.toLocaleString('ru-RU') %>
+                            <span class="text-sm font-medium text-slate-400 ml-1">сум</span>
+                        </p>
+                      </div>
+                      <form method="POST" action="/merchant/add-to-cart" class="mt-auto">
+                        <input type="hidden" name="productId" value="<%= product.id %>" />
+                        <button type="submit"
+                          class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                          Добавить в чек
+                        </button>
+                      </form>
+                    </article>
+                    <% }) %>
                 </div>
-                <span class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">В наличии</span>
-              </div>
-              <div class="mt-6 mb-8">
-                <p class="text-3xl font-bold text-slate-900">
-                  <%= product.price.toLocaleString('ru-RU') %>
-                  <span class="text-sm font-medium text-slate-400 ml-1">сум</span>
-                </p>
-              </div>
-              <form method="POST" action="/merchant/add-to-cart" class="mt-auto">
-                <input type="hidden" name="productId" value="<%= product.id %>" />
-                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Добавить в чек
-                </button>
-              </form>
-            </article>
-          <% }) %>
-        </div>
-        <p id="productSearchEmpty" class="hidden text-center text-sm text-slate-500">Ничего не найдено</p>
-      <% } %>
-    </section>
-  </main>
-  <script>
-    (function() {
-      const input = document.getElementById('productSearch');
-      const cards = Array.from(document.querySelectorAll('[data-product-card]'));
-      const empty = document.getElementById('productSearchEmpty');
+                <p id="productSearchEmpty" class="hidden text-center text-sm text-slate-500">Ничего не найдено</p>
+                <% } %>
+          </section>
+    </main>
+    <script>
+      (function () {
+        const input = document.getElementById('productSearch');
+        const cards = Array.from(document.querySelectorAll('[data-product-card]'));
+        const empty = document.getElementById('productSearchEmpty');
 
-      function norm(v){ return String(v || '').toLowerCase().trim(); }
-      function match(card, q){
-        if (!q) return true;
-        return card.dataset.name.includes(q) || card.dataset.id.includes(q);
-      }
-      function filter(){
-        const q = norm(input.value);
-        let visible = 0;
-        cards.forEach(c => {
-          const ok = match(c, q);
-          c.style.display = ok ? '' : 'none';
-          if (ok) visible++;
-        });
-        if (empty) empty.classList.toggle('hidden', visible !== 0);
-      }
-      if (input) {
-        input.addEventListener('input', filter);
-        // Autofocus on page open for quick search
-        setTimeout(() => { try { input.focus({ preventScroll: true }); } catch(_){} }, 0);
-      }
-    })();
-  </script>
+        function norm(v) { return String(v || '').toLowerCase().trim(); }
+        function match(card, q) {
+          if (!q) return true;
+          return card.dataset.name.includes(q) || card.dataset.id.includes(q);
+        }
+        function filter() {
+          const q = norm(input.value);
+          let visible = 0;
+          cards.forEach(c => {
+            const ok = match(c, q);
+            c.style.display = ok ? '' : 'none';
+            if (ok) visible++;
+          });
+          if (empty) empty.classList.toggle('hidden', visible !== 0);
+        }
+        if (input) {
+          input.addEventListener('input', filter);
+          // Autofocus on page open for quick search
+          setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { } }, 0);
+        }
+      })();
+    </script>
 </body>
+
 </html>
