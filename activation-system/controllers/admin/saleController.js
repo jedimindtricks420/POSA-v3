@@ -19,8 +19,6 @@ export const confirmCheckout = async (req, res) => {
     return res.redirect('/merchant/sell'); // если корзина пуста
   }
 
-  let total = 0;
-
   for (const item of cart) {
     const { productId, quantity } = item;
 
@@ -56,8 +54,10 @@ export const confirmCheckout = async (req, res) => {
         }
       });
 
-      // считаем сумму
-      total += product.price;
+      // создаём запись в таблице VoucherTransaction c едиными формулами комиссий
+      const merchantDebt = product.price * (1 - product.merchantCommissionPercent / 100);
+      const vendorPayout = product.price * (1 - product.vendorCommissionPercent / 100);
+      const platformMargin = product.price * (product.vendorCommissionPercent / 100);
 
       // создаём запись в таблице VoucherTransaction
       const merchant = await prisma.merchant.findUnique({
@@ -72,32 +72,33 @@ export const confirmCheckout = async (req, res) => {
           productId: product.id,
           productName: product.name,
           price: product.price,
-          merchantDebt: product.price, // пока без учёта комиссий
-          adminDebt: product.price * (product.vendorCommissionPercent / 100)
+          merchantDebt,
+          vendorDebt: vendorPayout,
+          adminDebt: platformMargin
+        }
+      });
+
+      // Изменяем баланс вендора (платформа должна ему)
+      await prisma.vendor.update({
+        where: { id: product.vendorId },
+        data: {
+          balance: {
+            increment: vendorPayout
+          }
+        }
+      });
+
+      // Увеличиваем долг мерчанта (balance) на его payable
+      await prisma.merchant.update({
+        where: { username: user.username },
+        data: {
+          balance: {
+            increment: merchantDebt
+          }
         }
       });
     }
   }
-
-  // Изменение баланса Вендора
-  await prisma.vendor.update({
-    where: { id: product.vendorId },
-    data: {
-      balance: {
-        increment: product.price * (product.vendorCommissionPercent / 100)
-      }
-    }
-  });
-
-  // Увеличиваем долг мерчанта (balance)
-  await prisma.merchant.update({
-    where: { username: user.username },
-    data: {
-      balance: {
-        increment: total
-      }
-    }
-  });
 
   // очищаем корзину
   req.session.cart = [];
