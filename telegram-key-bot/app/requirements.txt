@@ -1,5 +1,0 @@
-pyrogram
-tgcrypto
-sqlalchemy
-asyncpg
-python-dotenv
