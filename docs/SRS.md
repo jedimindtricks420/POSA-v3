@@ -94,9 +94,9 @@ SRS структурирован на: контекст системы, функ
 - **SRS-CART-04**: При подтверждении продажи система **должна**:  
   a) перевести ваучеры `active/reserved → sold`;  
   b) создать `Sale` с `deliveryType` = `offline`/`online`;  
-  c) на каждый ваучер создать `VoucherTransaction` с расчётом `merchantDebt` и `adminDebt`;  
+  c) на каждый ваучер создать `VoucherTransaction` с расчётом `merchantDebt`, `vendorDebt` (выплата вендору) и `adminDebt` (маржа платформы);  
   d) обновить `Merchant.balance += Σ merchantDebt`;  
-  e) обновить `Vendor.balance += Σ adminDebt`;  
+  e) обновить `Vendor.balance += Σ vendorDebt`;  
   f) сгенерировать **PDF-чек** (PDFKit), сохранить `receiptPath`;  
   g) редиректить на `/merchant/sales`.
 - **SRS-CART-05**: При сбое подтверждения система **должна** откатить незавершённые резервы и гарантировать отсутствие дублирующих `Sale`.
@@ -121,14 +121,14 @@ SRS структурирован на: контекст системы, функ
 - **SRS-VEND-05**: Все активации **должны** писаться в `AuditLog`.
 - **SRS-VEND-06**: Кабинет вендора **должен** предоставлять разделы `/vendor/dashboard`, `/vendor/activate`, `/vendor/vouchers`, `/vendor/transactions`, `/vendor/settings` с единым navbar и фильтрами по статусам/продуктам; все запросы обязаны проходить ACL (`role=vendor_user`, совпадение `vendorId`).
 
-### 3.7. Финансы и балансы
+### 3.7. Финансы и балансы (фактическая реализация)
 - **SRS-FIN-01**: Для каждой позиции продажи система **должна** рассчитывать:  
-  `adminDebt = price * vendorCommissionPercent / 100`  
-  `merchantReward = price * merchantCommissionPercent / 100`  
-  `platformGross = price - adminDebt - merchantReward`  
-  `merchantDebt = price - merchantReward`
+  `adminDebt = price * vendorCommissionPercent / 100` — маржа платформы;  
+  `vendorDebt = price * (1 - vendorCommissionPercent / 100)` — выплата вендору;  
+  `merchantReward = price * merchantCommissionPercent / 100`;  
+  `merchantDebt = price - merchantReward`.
 - **SRS-FIN-02**: `Merchant.balance` **должен** увеличиваться на `Σ merchantDebt` при продажах и уменьшаться на суммы `MerchantPayment`.  
-- **SRS-FIN-03**: `Vendor.balance` **должен** увеличиваться на `Σ adminDebt` при продажах и уменьшаться на суммы `VendorPayment`.  
+- **SRS-FIN-03**: `Vendor.balance` **должен** увеличиваться на `Σ vendorDebt` при продажах и уменьшаться на суммы `VendorPayment`.  
 - **SRS-FIN-04**: Система **должна** обеспечивать формы ввода `MerchantPayment` и `VendorPayment` с фиксацией `balanceBefore/After`.  
 - **SRS-FIN-05**: Отчётные страницы `/admin/merchants` и `/admin/vendors` **должны** показывать актуальные балансы и историю транзакций/платежей.
 

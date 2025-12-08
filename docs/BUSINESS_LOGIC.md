@@ -155,23 +155,22 @@
 
 ## 6) Комиссии, расчёты, балансы, транзакции
 
-### 6.1. Параметры на уровне Product
-- `vendorCommissionPercent` — процент от цены `price`, который платформа должна **выплатить вендору**.  
+### 6.1. Параметры на уровне Product (как реализовано в коде)
+- `vendorCommissionPercent` — **процент, удерживаемый платформой с вендора** (маржа платформы).  
 - `merchantCommissionPercent` — процент от `price`, который получает мерчант.  
-- **Комиссия платформы** = `price - (vendorCommission + merchantCommission)`.
+- Выплата вендору по умолчанию = `price * (1 - vendorCommissionPercent / 100)`.  
 
-### 6.2. Формулы на 1 ваучер (цена `price`)
-- `adminDebt` (долг платформы вендору) = `price * vendorCommissionPercent / 100`.  
-- `merchantReward` (вознаграждение мерчанта) = `price * merchantCommissionPercent / 100`.  
-- `platformGross` = `price - adminDebt - merchantReward`.  
-- `merchantDebt` (долг мерчанта администратору) = `price - merchantReward`.  
-  > Логика: мерчант получает вознаграждение, остальную сумму он должен платформе (если расчёты не моментальные).
+### 6.2. Формулы на 1 ваучер (цена `price`, текущая реализация)
+- `adminDebt` = `price * (vendorCommissionPercent / 100)` — маржа платформы (не выплата).  
+- `vendorDebt` = `price * (1 - vendorCommissionPercent / 100)` — выплата вендору.  
+- `merchantReward` = `price * (merchantCommissionPercent / 100)` — вознаграждение мерчанта.  
+- `merchantDebt` = `price - merchantReward` — долг мерчанта платформе после удержания его вознаграждения.  
 
-### 6.3. Обновление балансов при подтверждённой продаже
-На **каждую** строку (ваучер) создаётся `VoucherTransaction` с вычисленными полями.  
-- `Merchant.balance += merchantDebt`  
-- `Vendor.balance += adminDebt`  
-- (При необходимости может вестись агрегированный `platformGross` в отдельной аналитике.)
+### 6.3. Обновление балансов при подтверждённой продаже (реализация)
+На **каждую** строку (ваучер) создаётся `VoucherTransaction` с полями `merchantDebt`, `vendorDebt`, `adminDebt`.  
+- `Merchant.balance += merchantDebt` (долг мерчанта перед платформой).  
+- `Vendor.balance += vendorDebt` (платформа должна вендору).  
+- Маржа платформы (`adminDebt`) хранится в транзакции, в баланс не добавляется.
 
 ### 6.4. Платежи
 - **MerchantPayment** (мерчант → платформа):  
