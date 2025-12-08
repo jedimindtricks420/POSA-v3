@@ -22,6 +22,10 @@ const router = express.Router();
 // Дашборд
 router.get('/dashboard', ensureAdmin, dashboardController.showAdminDashboard);
 router.get('/merchants', ensureAdmin, merchantController.showMerchantsWithDebt);
+router.get('/add-merchant', ensureAdmin, merchantController.showAddMerchantForm);
+router.post('/add-merchant', ensureAdmin, merchantController.handleAddMerchant);
+router.get('/merchants/edit/:id', ensureAdmin, merchantController.showEditMerchantForm);
+router.post('/merchants/edit/:id', ensureAdmin, merchantController.handleEditMerchant);
 
 // Клиенты
 router.get('/clients', ensureAdmin, clientController.showAllClients);

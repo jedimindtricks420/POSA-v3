@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Добавление мерчанта</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body class="bg-slate-50 min-h-screen font-[Inter]">
+  <%- include('../partials/admin-navbar', { user }) %>
+
+  <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+    <div class="md:flex md:items-center md:justify-between mb-6">
+      <div class="min-w-0 flex-1">
+        <h1 class="text-3xl font-bold tracking-tight text-slate-900">Добавить мерчанта</h1>
+        <p class="mt-2 text-sm text-slate-500">Создайте учётную запись мерчанта и заполните юридическую информацию</p>
+      </div>
+      <div class="mt-4 md:ml-4 md:mt-0">
+        <a href="/admin/merchants"
+           class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          Назад к списку
+        </a>
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="mb-6 rounded-md bg-red-50 p-4">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-11a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 7zm0 6a.75.75 0 100 1.5.75.75 0 000-1.5z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-red-800">Ошибка</h3>
+            <div class="mt-2 text-sm text-red-700"><%= error %></div>
+          </div>
+        </div>
+      </div>
+    <% } %>
+
+    <form method="POST" action="/admin/add-merchant" class="rounded-2xl bg-white p-6 shadow ring-1 ring-slate-200">
+      <div class="space-y-6">
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Логин</label>
+          <div class="mt-1">
+            <input type="text" name="username" required
+                   value="<%= (formData && formData.username) || '' %>"
+                   class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                   placeholder="merchant01" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Пароль</label>
+          <div class="mt-1">
+            <input type="password" name="password" required minlength="6"
+                   class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                   placeholder="Не менее 6 символов" />
+          </div>
+          <p class="mt-1 text-xs text-slate-500">Пароль используется для входа мерчанта в кабинет.</p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Статус</label>
+          <div class="mt-1">
+            <select name="status"
+                    class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+              <option value="active" <%= !formData || formData.status === 'active' ? 'selected' : '' %>>Активен</option>
+              <option value="off" <%= formData && formData.status === 'off' ? 'selected' : '' %>>Выключен</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">Юридическая информация</label>
+          <div class="mt-1">
+            <textarea name="legalInfo" rows="4" required
+                      class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                      placeholder="ООО «Demo Corp», ИНН ..."><%= (formData && formData.legalInfo) || '' %></textarea>
+          </div>
+          <p class="mt-1 text-xs text-slate-500">Эта информация отображается в чеках и отчётах.</p>
+        </div>
+      </div>
+
+      <div class="mt-8 flex justify-end gap-3">
+        <a href="/admin/merchants"
+           class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          Отмена
+        </a>
+        <button type="submit"
+                class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500">
+          Сохранить мерчанта
+        </button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
