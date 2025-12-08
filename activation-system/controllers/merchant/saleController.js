@@ -174,6 +174,9 @@ export const confirmCheckout = async (req, res) => {
         });
       }
 
+      const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
+      const merchantPayable = product.price * (1 - product.merchantCommissionPercent / 100);
+
       await tx.voucherTransaction.create({
         data: {
           voucherValue: updated.value,
@@ -182,23 +185,23 @@ export const confirmCheckout = async (req, res) => {
           productId: product.id,
           productName: product.name,
           price: product.price,
-          merchantDebt: product.price * (1 - product.merchantCommissionPercent / 100),
+          // Store how much merchant owes the platform for the sale
+          merchantDebt: merchantPayable,
           adminDebt: product.price * (product.vendorCommissionPercent / 100),
-          vendorDebt: product.price * (1 - product.vendorCommissionPercent / 100),
+          vendorDebt,
         },
       });
 
-      const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
       await tx.vendor.update({
         where: { id: product.vendorId },
         data: { balance: { increment: vendorDebt } },
       });
 
-      const merchantDebt = product.price * (1 - product.merchantCommissionPercent / 100);
-      await tx.merchant.update({
-        where: { id: merchant.id },
-        data: { balance: { increment: merchantDebt } },
-      });
+        // Increase merchant balance by the payable part of the sale (price minus commission)
+        await tx.merchant.update({
+          where: { id: merchant.id },
+          data: { balance: { increment: merchantPayable } },
+        });
 
       return { updatedVoucher: updated, saleId: sale.id };
     });
