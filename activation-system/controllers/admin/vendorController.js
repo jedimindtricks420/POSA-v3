@@ -11,20 +11,54 @@ import {
 
 // Показать список вендоров
 export const showVendors = async (req, res) => {
-  const vendors = await prisma.vendor.findMany({
-    orderBy: { id: 'desc' },
-    include: {
-      transactions: true,
-      payments: true
-    }
-  });
+  const [vendorsRaw, transactionAgg, vendorPaymentsAgg] = await Promise.all([
+    prisma.vendor.findMany({ orderBy: { id: 'desc' } }),
+    prisma.voucherTransaction.aggregate({
+      _sum: {
+        vendorDebt: true,
+        adminDebt: true,
+        price: true,
+      },
+      _count: { id: true },
+    }),
+    prisma.vendorPayment.aggregate({
+      _sum: { amount: true },
+      _count: { _all: true },
+    }),
+  ]);
 
-  // Добавим расчёт баланса
+  const vendors = vendorsRaw.map((vendor) => ({
+    ...vendor,
+    balance: Number(vendor.balance ?? 0),
+  }));
+
+  const totalOutstanding = vendors.reduce((sum, vendor) => sum + Number(vendor.balance ?? 0), 0);
+  const totalTransactions = Number(transactionAgg._count?.id ?? 0);
+  const totalSalesVolume = Number(transactionAgg._sum?.price ?? 0);
+  const vendorPayoutAccrued = Number(transactionAgg._sum?.vendorDebt ?? 0);
+  const vendorPayoutPaid = Number(vendorPaymentsAgg._sum?.amount ?? 0);
+  const platformRevenueShare = Number(transactionAgg._sum?.adminDebt ?? 0);
+  const vendorPaymentsCount = Number(vendorPaymentsAgg._count?._all ?? 0);
+
+  const stats = {
+    totalVendors: vendors.length,
+    vendorOutstanding: totalOutstanding,
+    vendorPayoutAccrued,
+    vendorPayoutPaid,
+    platformRevenueShare,
+    totalTransactions,
+    totalSalesVolume,
+    averageTransactionValue: totalTransactions > 0 ? totalSalesVolume / totalTransactions : 0,
+    averageVendorPayout: totalTransactions > 0 ? vendorPayoutAccrued / totalTransactions : 0,
+    averageVendorPayment: vendorPaymentsCount > 0 ? vendorPayoutPaid / vendorPaymentsCount : 0,
+  };
+
   res.render('pages/admin-vendors', {
     vendors,
+    stats,
     user: req.session.user
   });
-  };
+};
 
   
   // Показать форму добавления
