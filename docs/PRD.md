@@ -71,7 +71,7 @@
 1. **Продажа Оффлайн:** Мерчант добавляет товары → подтверждает → печатает PDF-чек с QR → клиент сканирует → (iOS) добавляет в Wallet или (Android) в веб-кабинет → статус ваучера `pending` → Вендор активирует → `activated`.
 2. **Продажа Онлайн:** Мерчант подтверждает продажу с телефоном клиента → система отправляет SMS через Eskiz → клиент по ссылке добавляет Wallet/web → `pending` → Вендор активирует → `activated`.
 3. **Активация у Вендора:** Vendor/VendorUser сканирует/вводит код → ACL проверка `vendorId` → статус `sold|pending` → `activated` + AuditLog.
-4. **Финансовая сверка:** при каждой продаже считаем `merchantDebt` и `adminDebt`, денормализуем **Merchant.balance**/**Vendor.balance**; Admin делает **MerchantPayment/VendorPayment**; отчёты по периодам.
+4. **Финансовая сверка:** при каждой продаже считаем `merchantDebt`, `vendorDebt`, `adminDebt` (маржа платформы), денормализуем **Merchant.balance**/**Vendor.balance** (по `merchantDebt` и `vendorDebt`); Admin делает **MerchantPayment/VendorPayment**; отчёты по периодам.
 5. **Telegram-вендор:** при необходимости получения ключа — Python запрашивает у бота → парсит только строку ключа → записывает в ваучер/лог.
 
 ---
@@ -94,9 +94,9 @@
 - C2. Подтверждение продажи:
   - Перевод ваучеров `active/reserved → sold`;
   - Создание `Sale` (`deliveryType: offline|online`);
-  - На каждый ваучер — `VoucherTransaction` с расчётом `merchantDebt` и `adminDebt`;
+  - На каждый ваучер — `VoucherTransaction` с расчётом `merchantDebt`, `vendorDebt` (выплата вендору), `adminDebt` (маржа платформы);
   - Обновление `Merchant.balance += Σ merchantDebt`;
-  - Обновление `Vendor.balance += Σ adminDebt`;
+  - Обновление `Vendor.balance += Σ vendorDebt`;
   - Генерация PDF чека (PDFKit), `receiptPath`.
 - C3. Идемпотентность подтверждения (см. §10.4).
 
@@ -176,7 +176,7 @@ VendorUser → ввод/скан кода → ACL `vendorId` → OK → смен
 - Разрешённые переходы: только `sold|pending → activated`.
 
 ### AC-Finance-01 (P0)
-- `Merchant.balance` и `Vendor.balance` совпадают с суммами начислений минус суммы платежей; отчёты выводят те же цифры.
+- `Merchant.balance` и `Vendor.balance` совпадают с суммами начислений (`merchantDebt` / `vendorDebt`) минус суммы платежей; отчёты выводят те же цифры.
 
 ---
 
@@ -271,8 +271,8 @@ VendorUser → ввод/скан кода → ACL `vendorId` → OK → смен
 - **Voucher** — цифровой ваучер (1 ваучер = 1 ключ).
 - **Sale** — подтверждённая продажа набора ваучеров.
 - **VoucherTransaction** — запись начислений по конкретному ваучеру.
-- **Merchant.balance** — текущая задолженность мерчанта перед платформой.
-- **Vendor.balance** — текущая задолженность платформы перед вендором.
+- **Merchant.balance** — текущая задолженность мерчанта перед платформой (сумма `merchantDebt` - платежи мерчанта).
+- **Vendor.balance** — текущая задолженность платформы перед вендором (сумма `vendorDebt` - выплаты вендору).
 - **DeliveryType** — `offline` (PDF+QR) или `online` (SMS).
 - **Pending** — доставлен клиенту (Wallet/web), ждёт активации у вендора.
 
