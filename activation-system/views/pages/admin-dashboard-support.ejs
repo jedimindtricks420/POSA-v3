@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <%- include('../partials/head', { title: 'Поддержка' }) %>
+</head>
+
+<body class="bg-gray-50">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">Рабочий стол оператора</h1>
+
+            <!-- Main Queue Widget -->
+            <div
+                class="bg-white shadow rounded-lg p-6 mb-8 text-center md:text-left md:flex md:items-center md:justify-between">
+                <div>
+                    <h2 class="text-lg font-medium text-gray-900">Очередь ручных активаций</h2>
+                    <p class="text-gray-500">Заявки от клиентов, ожидающие ввода ключа.</p>
+                </div>
+                <div class="mt-4 md:mt-0 flex items-center">
+                    <span
+                        class="text-5xl font-bold <%= stats.pendingRequests > 0 ? 'text-indigo-600' : 'text-gray-300' %>">
+                        <%= stats.pendingRequests %>
+                    </span>
+                    <a href="/admin/manual-activations"
+                        class="ml-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                        Начать работу
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent History -->
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Последние успешные активации</h3>
+            <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <ul class="divide-y divide-gray-200">
+                    <% stats.recentActivations.forEach(function(request) { %>
+                        <li>
+                            <div class="px-4 py-4 sm:px-6">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-sm font-medium text-indigo-600 truncate">
+                                        <%= request.voucher.productName || 'Ваучер' %>
+                                    </p>
+                                    <div class="ml-2 flex-shrink-0 flex">
+                                        <p
+                                            class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                            <%= request.status %>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="mt-2 sm:flex sm:justify-between">
+                                    <div class="sm:flex">
+                                        <p class="flex items-center text-sm text-gray-500">
+                                            Код ваучера: <%= request.voucher.value %>
+                                        </p>
+                                    </div>
+                                    <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
+                                        <p>
+                                            <%= new Date(request.updatedAt).toLocaleString('ru-RU') %>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <% }); %>
+                            <% if (stats.recentActivations.length===0) { %>
+                                <li class="px-4 py-4 text-sm text-gray-500 text-center">Нет недавних активаций</li>
+                                <% } %>
+                </ul>
+            </div>
+
+            <div class="mt-8">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Поиск клиента</h3>
+                <div class="bg-white shadow rounded-lg p-6">
+                    <form action="/admin/clients" method="GET" class="flex gap-4">
+                        <input type="text" name="search" placeholder="Номер телефона (998...)"
+                            class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                        <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
+                            Найти
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+</body>
+
+</html>
