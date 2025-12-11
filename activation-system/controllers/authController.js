@@ -47,7 +47,7 @@ export const handleLogin = async (req, res) => {
     clearRememberCookies(res);
   }
 
-  if (user.role === 'admin') {
+  if (user.role === 'admin' || user.role === 'financial_mgr' || user.role === 'content_mgr' || user.role === 'support_agent') {
     return res.redirect('/admin/dashboard');
   } else if (user.role === 'merchant') {
     return res.redirect('/merchant/dashboard');

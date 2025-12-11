@@ -1,6 +1,6 @@
 import prisma from '../../prisma/client.js';
 
-import prisma from '../../prisma/client.js';
+
 
 // Главный вход в дашборд - перенаправляет в зависимости от роли
 export const showAdminDashboard = async (req, res) => {
