@@ -1,5 +1,6 @@
 import express from 'express';
-import { ensureAdmin } from '../middleware/auth.js';
+
+// Контроллеры по модулям
 
 // Контроллеры по модулям
 import * as dashboardController from '../controllers/admin/dashboardController.js';
@@ -15,69 +16,75 @@ import * as storeController from '../controllers/admin/storeController.js';
 import * as rokkyController from '../controllers/admin/rokkyController.js';
 import * as telegramBotController from '../controllers/admin/telegramBotController.js';
 import * as manualActivationController from '../controllers/admin/manualActivationController.js';
+import { ensureAdmin, ensureAuthenticated, allowFinance, allowContent, allowSupport } from '../middleware/auth.js';
 import { upload } from '../middleware/uploadMiddleware.js';
+import { generationLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
 // Дашборд
-router.get('/dashboard', ensureAdmin, dashboardController.showAdminDashboard);
-router.get('/merchants', ensureAdmin, merchantController.showMerchantsWithDebt);
+router.get('/dashboard', ensureAuthenticated, dashboardController.showAdminDashboard);
+
+// 1. Финансовый/Коммерческий блок (Admin + Finance)
+// ----------------------------------------------------
+router.get('/sales', allowFinance, saleController.showSales);
+router.get('/merchants', allowFinance, merchantController.showMerchantsWithDebt);
+router.get('/merchant/:id/pay', allowFinance, merchantController.showPaymentForm);
+router.post('/merchant/:id/pay', allowFinance, merchantController.handleMerchantPayment);
+router.get('/merchant/:id/transactions', allowFinance, merchantController.showMerchantTransactions);
+router.get('/merchant/:id/payments', allowFinance, merchantController.showMerchantPaymentHistory);
+
+router.get('/vendor/:id/pay', allowFinance, vendorController.showVendorPaymentForm);
+router.post('/vendor/:id/pay', allowFinance, vendorController.handleVendorPayment);
+router.get('/vendor/:id/transactions', allowFinance, vendorController.showVendorTransactions);
+
+
+// 2. Мерчанты: Управление (Admin only - они создаются редко)
+// ----------------------------------------------------
 router.get('/add-merchant', ensureAdmin, merchantController.showAddMerchantForm);
 router.post('/add-merchant', ensureAdmin, merchantController.handleAddMerchant);
 router.get('/merchants/edit/:id', ensureAdmin, merchantController.showEditMerchantForm);
 router.post('/merchants/edit/:id', ensureAdmin, merchantController.handleEditMerchant);
 
-// Клиенты
-router.get('/clients', ensureAdmin, clientController.showAllClients);
-router.get('/clients/:id', ensureAdmin, clientController.showClientDetails);
-router.post('/clients/:id/delete', ensureAdmin, clientController.deleteClient);
+// 3. Клиенты: Просмотр (Admin + Support)
+// ----------------------------------------------------
+router.get('/clients', allowSupport, clientController.showAllClients);
+router.get('/clients/:id', allowSupport, clientController.showClientDetails);
+router.post('/clients/:id/delete', ensureAdmin, clientController.deleteClient); // Удалять - только Админ
 
+// 4. Товары и Контент (Admin + Content)
+// ----------------------------------------------------
+router.get('/products', allowContent, productController.showAllProducts);
+router.get('/add-product', allowContent, productController.showAddProductForm);
+router.post('/add-product', allowContent, productController.handleAddProduct);
+router.get('/edit-product/:id', allowContent, productController.showEditProductForm);
+router.post('/edit-product/:id', allowContent, productController.handleEditProduct);
+router.post('/delete-product/:id', allowContent, productController.handleDeleteProduct);
+router.post('/products/:id/receipt/preview', allowContent, productController.previewProductReceiptTemplate);
 
-// Товары
-router.get('/products', ensureAdmin, productController.showAllProducts);
-router.get('/add-product', ensureAdmin, productController.showAddProductForm);
-router.post('/add-product', ensureAdmin, productController.handleAddProduct);
-router.get('/edit-product/:id', ensureAdmin, productController.showEditProductForm);
-router.post('/edit-product/:id', ensureAdmin, productController.handleEditProduct);
-router.post('/delete-product/:id', ensureAdmin, productController.handleDeleteProduct);
-router.post('/products/:id/receipt/preview', ensureAdmin, productController.previewProductReceiptTemplate);
+router.get('/vouchers', allowContent, voucherController.showAllVouchers);
+router.get('/add-voucher', allowContent, voucherController.showAddVoucherForm);
+router.post('/add-voucher', allowContent, voucherController.handleAddVoucher);
+router.get('/vouchers/add', allowContent, voucherController.showAddVouchersPage);
+router.post('/vouchers/add', allowContent, voucherController.addVouchers);
+router.post('/vouchers/generate', ensureAdmin, generationLimiter, voucherController.generateVouchers); // Генерация - только админ
 
+router.get('/stores', allowContent, storeController.showStores);
+router.get('/stores/add', allowContent, storeController.showAddStoreForm);
+router.post('/stores/add', allowContent, storeController.handleAddStore);
+router.get('/stores/edit/:id', allowContent, storeController.showEditStoreForm);
+router.post('/stores/edit/:id', allowContent, upload.single('logo'), storeController.handleEditStore);
 
-// Ваучеры
-router.get('/vouchers', ensureAdmin, voucherController.showAllVouchers);
-router.get('/add-voucher', ensureAdmin, voucherController.showAddVoucherForm);
-router.post('/add-voucher', ensureAdmin, voucherController.handleAddVoucher);
-router.get('/vouchers/add', ensureAdmin, voucherController.showAddVouchersPage);
-router.post('/vouchers/add', ensureAdmin, voucherController.addVouchers);
-router.post('/vouchers/generate', ensureAdmin, voucherController.generateVouchers);
-
-// Продажи
-router.get('/sales', ensureAdmin, saleController.showSales);
-
-// Пользователи
-router.get('/add-user', ensureAdmin, userController.showCreateUserForm);
-router.post('/add-user', ensureAdmin, userController.handleCreateUser);
-router.get('/users', ensureAdmin, userController.showUsersList);
-router.get('/users/:id/delete', ensureAdmin, userController.deleteUser);
-
-// Пароли
-router.get('/users/:id/password', ensureAdmin, passwordController.showChangePasswordForm);
-router.post('/users/:id/password', ensureAdmin, passwordController.changeUserPassword);
-
-// Вендоры
-router.get('/vendors', ensureAdmin, vendorController.showVendors);
-router.get('/add-vendor', ensureAdmin, vendorController.showAddVendorForm);
-router.post('/add-vendor', ensureAdmin, vendorController.handleAddVendor);
-router.get('/vendors/edit/:id', ensureAdmin, vendorController.showEditVendorForm);
-router.post('/vendors/edit/:id', ensureAdmin, vendorController.handleEditVendor);
-router.post('/vendors/:id/receipt/preview', ensureAdmin, vendorController.previewReceiptTemplate);
-
-// Оплаты и страница погашения долга
-router.get('/merchants', ensureAdmin, merchantController.showMerchantsWithDebt);
-router.get('/merchant/:id/pay', ensureAdmin, merchantController.showPaymentForm);
-router.post('/merchant/:id/pay', ensureAdmin, merchantController.handleMerchantPayment);
-
-router.get('/merchant/:id/transactions', ensureAdmin, merchantController.showMerchantTransactions);
+// 5. Вендоры: Список (Content + Finance + Admin)
+// Чтобы контент мог привязать, а финансы выплатить.
+// Дадим доступ allowContent (так как там список), но кнопки выплат скрыты во View для контента.
+// Или можно создать отдельный middleware. Проще пока дать обоим, но по логике "Content" управляет сущностями.
+router.get('/vendors', allowContent, vendorController.showVendors);
+router.get('/add-vendor', allowContent, vendorController.showAddVendorForm);
+router.post('/add-vendor', allowContent, vendorController.handleAddVendor);
+router.get('/vendors/edit/:id', allowContent, vendorController.showEditVendorForm);
+router.post('/vendors/edit/:id', allowContent, vendorController.handleEditVendor);
+router.post('/vendors/:id/receipt/preview', allowContent, vendorController.previewReceiptTemplate);
 
 import {
   showAddVendorUserForm,
@@ -87,21 +94,19 @@ import {
 router.get('/add-vendor-users', ensureAdmin, showAddVendorUserForm);
 router.post('/add-vendor-users', ensureAdmin, createVendorUser);
 
-router.get('/merchant/:id/payments', ensureAdmin, merchantController.showMerchantPaymentHistory);
+
+// 6. Пользователи (Admin only)
+// ----------------------------------------------------
+router.get('/add-user', ensureAdmin, userController.showCreateUserForm);
+router.post('/add-user', ensureAdmin, userController.handleCreateUser);
+router.get('/users', ensureAdmin, userController.showUsersList);
+router.get('/users/:id/delete', ensureAdmin, userController.deleteUser);
+router.get('/users/:id/password', ensureAdmin, passwordController.showChangePasswordForm);
+router.post('/users/:id/password', ensureAdmin, passwordController.changeUserPassword);
 
 
-router.get('/vendor/:id/pay', ensureAdmin, vendorController.showVendorPaymentForm);
-router.post('/vendor/:id/pay', ensureAdmin, vendorController.handleVendorPayment);
-router.get('/vendor/:id/transactions', ensureAdmin, vendorController.showVendorTransactions);
-
-// Stores (Магазины активации)
-router.get('/stores', ensureAdmin, storeController.showStores);
-router.get('/stores/add', ensureAdmin, storeController.showAddStoreForm);
-router.post('/stores/add', ensureAdmin, storeController.handleAddStore);
-router.get('/stores/edit/:id', ensureAdmin, storeController.showEditStoreForm);
-router.post('/stores/edit/:id', ensureAdmin, upload.single('logo'), storeController.handleEditStore);
-
-// Rokky (Админ-панель Rokky)
+// 7. Rokky (Admin only - техническая интеграция)
+// ----------------------------------------------------
 router.get('/rokky', ensureAdmin, rokkyController.showRokkyDashboard);
 router.get('/rokky/skus', ensureAdmin, rokkyController.showRokkySkus);
 router.get('/rokky/skus/add', ensureAdmin, rokkyController.showAddSkuForm);
@@ -111,9 +116,10 @@ router.post('/rokky/skus/edit/:id', ensureAdmin, rokkyController.handleEditSku);
 router.get('/rokky/products', ensureAdmin, rokkyController.showRokkyProducts);
 router.post('/rokky/products/:id/bind', ensureAdmin, rokkyController.handleBindSku);
 router.get('/rokky/activations', ensureAdmin, rokkyController.showRokkyActivations);
-router.get('/rokky/finance', ensureAdmin, rokkyController.showRokkyFinance);
+router.get('/rokky/finance', allowFinance, rokkyController.showRokkyFinance); // Финансы можно видет финансисту
 
-// Telegram боты
+// 8. Telegram боты (Admin only)
+// ----------------------------------------------------
 router.get('/telegram-bots', ensureAdmin, telegramBotController.listBots);
 router.get('/telegram-bots/create', ensureAdmin, telegramBotController.showCreateForm);
 router.post('/telegram-bots/create', ensureAdmin, telegramBotController.createBot);
@@ -122,11 +128,12 @@ router.post('/telegram-bots/:id/edit', ensureAdmin, telegramBotController.update
 router.post('/telegram-bots/:id/delete', ensureAdmin, telegramBotController.deleteBot);
 router.post('/telegram-bots/:id/test', ensureAdmin, telegramBotController.testBot);
 
-// Ручные активации
-router.get('/manual-activations', ensureAdmin, manualActivationController.listRequests);
-router.get('/manual-activations/:id', ensureAdmin, manualActivationController.showRequestDetails);
-router.post('/manual-activations/:id/complete', ensureAdmin, manualActivationController.completeRequest);
-router.post('/manual-activations/:id/reject', ensureAdmin, manualActivationController.rejectRequest);
+// 9. Ручные активации (Support + Admin)
+// ----------------------------------------------------
+router.get('/manual-activations', allowSupport, manualActivationController.listRequests);
+router.get('/manual-activations/:id', allowSupport, manualActivationController.showRequestDetails);
+router.post('/manual-activations/:id/complete', allowSupport, manualActivationController.completeRequest);
+router.post('/manual-activations/:id/reject', allowSupport, manualActivationController.rejectRequest);
 
 
 export default router;

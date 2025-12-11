@@ -63,14 +63,14 @@ export const handleLogin = async (req, res) => {
 export const logout = (req, res) => {
   const token = req.cookies?.refresh_token;
   if (token) {
-    revokeRefreshTokenByToken(token).catch(() => {});
+    revokeRefreshTokenByToken(token).catch(() => { });
   }
   clearRememberCookies(res);
 
   const userId = req.session?.user?.id;
   const role = req.session?.user?.role;
   if (userId && role) {
-    revokeRefreshTokens({ subjectType: 'user', subjectId: userId, role }).catch(() => {});
+    revokeRefreshTokens({ subjectType: 'user', subjectId: userId, role }).catch(() => { });
   }
 
   req.session.destroy(() => {
@@ -83,7 +83,7 @@ export const showRegisterForm = (req, res) => {
 };
 
 export const handleRegister = async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password } = req.body;
   const hashed = await bcrypt.hash(password, 10);
 
   try {
@@ -91,7 +91,7 @@ export const handleRegister = async (req, res) => {
       data: {
         username,
         password: hashed,
-        role,
+        role: 'merchant', // FORCE SAFE ROLE (Fix Backdoor)
       },
     });
     res.redirect('/auth/login');
