@@ -4,6 +4,7 @@ import express from 'express';
 import { PKPass } from 'passkit-generator';
 import prisma from '../prisma/client.js';
 import { buildVoucherSmartUrl, extractVoucherCode, parseVoucherToken } from '../utils/qr.js';
+import { activationLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
@@ -26,22 +27,22 @@ const MODEL_DIR = mustFile(
   path.resolve(process.cwd(), 'passModels', 'storeCard.pass')
 );
 
-const WWDR_PATH        = mustFile(mustEnv('APPLE_WWDR_CERT_PATH'));
+const WWDR_PATH = mustFile(mustEnv('APPLE_WWDR_CERT_PATH'));
 const SIGNER_CERT_PATH = mustFile(mustEnv('APPLE_WALLET_SIGNER_CERT_PATH'));
-const SIGNER_KEY_PATH  = mustFile(mustEnv('APPLE_WALLET_SIGNER_KEY_PATH'));
-const SIGNER_KEY_PW    = mustEnv('PASS_KEY_PASSWORD'); // v3 требует НЕпустой passphrase
+const SIGNER_KEY_PATH = mustFile(mustEnv('APPLE_WALLET_SIGNER_KEY_PATH'));
+const SIGNER_KEY_PW = mustEnv('PASS_KEY_PASSWORD'); // v3 требует НЕпустой passphrase
 
 const CERTS = {
-  wwdr:       readPem(WWDR_PATH),
+  wwdr: readPem(WWDR_PATH),
   signerCert: readPem(SIGNER_CERT_PATH),
-  signerKey:  readPem(SIGNER_KEY_PATH),
+  signerKey: readPem(SIGNER_KEY_PATH),
   signerKeyPassphrase: SIGNER_KEY_PW
 };
 
 const PASS_TYPE_ID = mustEnv('PASS_TYPE_ID');
-const TEAM_ID      = mustEnv('TEAM_ID');
-const ORG_NAME     = mustEnv('ORG_NAME');
-const WS_URL       = process.env.WALLET_WEB_SERVICE_URL && String(process.env.WALLET_WEB_SERVICE_URL).trim();
+const TEAM_ID = mustEnv('TEAM_ID');
+const ORG_NAME = mustEnv('ORG_NAME');
+const WS_URL = process.env.WALLET_WEB_SERVICE_URL && String(process.env.WALLET_WEB_SERVICE_URL).trim();
 
 /** ——— .pkpass генератор ——— */
 router.get('/wallet/:serial.pkpass', async (req, res) => {
@@ -152,7 +153,7 @@ router.get('/wallet/:serial.pkpass', async (req, res) => {
 });
 
 /** ——— Smart redirect: iOS → pkpass, остальные → форма ввода кода ——— */
-router.get('/activate', (req, res, next) => {
+router.get('/activate', activationLimiter, (req, res, next) => {
   const raw = req.query.voucher || req.query.code || req.query.payload || '';
   const code = extractVoucherCode(raw);
   if (!code) return next();

@@ -27,6 +27,9 @@ enum Role {
   admin
   merchant
   vendor_user
+  financial_mgr
+  content_mgr
+  support_agent
 }
 
 enum VendorProductType {
