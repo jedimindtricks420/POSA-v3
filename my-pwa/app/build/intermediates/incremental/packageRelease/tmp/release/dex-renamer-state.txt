@@ -1,4 +1,4 @@
-#Thu Nov 06 13:21:48 UTC 2025
+#Wed Dec 10 05:56:37 UTC 2025
 base.0=/home/admin1/posa/my-pwa/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
 renamed.0=classes.dex
 path.0=classes.dex
