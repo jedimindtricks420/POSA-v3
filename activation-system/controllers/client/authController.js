@@ -20,15 +20,26 @@ function generateOtp() {
 
 // Хелпер: установка OTP в сессию и отправка SMS
 async function setOtpSessionAndSend(req, phone) {
-  const otp = generateOtp();
+  // DEMO ACCOUNT for App Store Review
+  const DEMO_PHONE = '+998003332211';
+  const DEMO_CODE = '777777';
+  const isDemo = phone === DEMO_PHONE;
+
+  const otp = isDemo ? DEMO_CODE : generateOtp();
   req.session.otp = otp;
   req.session.phone = phone;
 
   console.log(`OTP для ${phone}: ${otp}`); // лог для тестирования
-  try {
-    await sendOtpSms(phone, otp);
-  } catch (error) {
-    console.error('Ошибка при отправке SMS:', error);
+
+  // Skip SMS sending for demo account
+  if (!isDemo) {
+    try {
+      await sendOtpSms(phone, otp);
+    } catch (error) {
+      console.error('Ошибка при отправке SMS:', error);
+    }
+  } else {
+    console.log(`[DEMO] Skipping SMS for demo account: ${DEMO_PHONE}, code: ${DEMO_CODE}`);
   }
 }
 
@@ -37,13 +48,13 @@ export const showLogin = (req, res) => {
   console.log('=== SHOW LOGIN CALLED ===');
   console.log('Session in showLogin:', req.session);
   console.log('req.session?.client:', req.session?.client);
-  
+
   // Проверяем есть ли активная сессия клиента
   if (req.session && req.session.client) {
     console.log('Client still in session, redirecting to dashboard');
     return res.redirect('/client/dashboard');
   }
-  
+
   console.log('No client in session, showing login page');
   res.render('pages/client-login', { error: null });
 };
@@ -52,7 +63,7 @@ export const showLogin = (req, res) => {
 export const handleLogin = async (req, res) => {
   console.log('=== HANDLE LOGIN CALLED ===');
   console.log('Request body:', req.body);
-  
+
   const { phoneNumber, phone } = req.body;
   const rememberMe = true;
   const clientPhoneInput = phoneNumber || phone;
@@ -124,7 +135,7 @@ export const verifyOtp = async (req, res) => {
 
   const client = await prisma.client.findUnique({ where: { id: clientId } });
   if (!client) {
-    await revokeRefreshTokens({ subjectType: 'client', subjectId: clientId, role: 'client' }).catch(() => {});
+    await revokeRefreshTokens({ subjectType: 'client', subjectId: clientId, role: 'client' }).catch(() => { });
     clearRememberCookies(res);
     return res.redirect('/wallet');
   }
@@ -151,7 +162,7 @@ export const verifyOtp = async (req, res) => {
     });
     setRememberCookies(res, token);
   } else {
-    await revokeRefreshTokens({ subjectType: 'client', subjectId: client.id, role: 'client' }).catch(() => {});
+    await revokeRefreshTokens({ subjectType: 'client', subjectId: client.id, role: 'client' }).catch(() => { });
     clearRememberCookies(res);
   }
 
@@ -179,7 +190,7 @@ export const showRegister = (req, res) => {
 export const handleRegister = async (req, res) => {
   console.log('=== HANDLE REGISTER CALLED ===');
   console.log('Request body:', req.body);
-  
+
   const { phoneNumber, phone, name } = req.body;
   const clientPhoneInput = phoneNumber || phone;
   const normalizedPhone = normalizePhone(clientPhoneInput);
@@ -222,16 +233,16 @@ export const handleRegister = async (req, res) => {
 export const logout = (req, res) => {
   console.log('=== CLIENT LOGOUT CALLED ===');
   console.log('Session before logout:', req.session);
-  
+
   const token = req.cookies?.refresh_token;
   if (token) {
-    revokeRefreshTokenByToken(token).catch(() => {});
+    revokeRefreshTokenByToken(token).catch(() => { });
   }
   clearRememberCookies(res);
 
   const clientId = req.session?.client?.id;
   if (clientId) {
-    revokeRefreshTokens({ subjectType: 'client', subjectId: clientId, role: 'client' }).catch(() => {});
+    revokeRefreshTokens({ subjectType: 'client', subjectId: clientId, role: 'client' }).catch(() => { });
   }
 
   req.session.destroy((err) => {

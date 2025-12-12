@@ -1,93 +1,98 @@
-<!DOCTYPE html>
-<html lang="ru">
+<% if (user.role==='admin' || user.role==='content_mgr' ) { %>
+    <!DOCTYPE html>
+    <html lang="ru">
 
-<head>
+    <head>
 
-    <meta charset="UTF-8">
-    <title>KPI Контент</title>
-    <link rel="icon" type="image/svg+xml" href="/images/Vector.svg">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+        <meta charset="UTF-8">
+        <title>KPI Контент</title>
+        <link rel="icon" type="image/svg+xml" href="/images/Vector.svg">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
 
-<body class="bg-gray-50">
-    <%- include('../partials/admin-navbar', { user }) %>
+    <body class="bg-gray-50">
+        <%- include('../partials/admin-navbar', { user }) %>
 
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 class="text-2xl font-bold text-gray-900 mb-6">Управление Контентом</h1>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+                <h1 class="text-2xl font-bold text-gray-900 mb-6">Управление Контентом</h1>
 
-            <!-- Stats Row -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white overflow-hidden shadow rounded-lg px-4 py-5 sm:p-6">
-                    <dt class="text-sm font-medium text-gray-500 truncate">Активных товаров</dt>
-                    <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                        <%= stats.productsCount %>
-                    </dd>
+                <!-- Stats Row -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-white overflow-hidden shadow rounded-lg px-4 py-5 sm:p-6">
+                        <dt class="text-sm font-medium text-gray-500 truncate">Активных товаров</dt>
+                        <dd class="mt-1 text-3xl font-semibold text-gray-900">
+                            <%= stats.productsCount %>
+                        </dd>
+                    </div>
+                    <div class="bg-white overflow-hidden shadow rounded-lg px-4 py-5 sm:p-6">
+                        <dt class="text-sm font-medium text-gray-500 truncate">Магазинов</dt>
+                        <dd class="mt-1 text-3xl font-semibold text-gray-900">
+                            <%= stats.storesCount %>
+                        </dd>
+                    </div>
+                    <div class="bg-white overflow-hidden shadow rounded-lg px-4 py-5 sm:p-6">
+                        <dt class="text-sm font-medium text-gray-500 truncate">Критических позиций</dt>
+                        <dd class="mt-1 text-3xl font-semibold text-red-600">
+                            <%= stats.criticalProducts.length %>
+                        </dd>
+                    </div>
                 </div>
-                <div class="bg-white overflow-hidden shadow rounded-lg px-4 py-5 sm:p-6">
-                    <dt class="text-sm font-medium text-gray-500 truncate">Магазинов</dt>
-                    <dd class="mt-1 text-3xl font-semibold text-gray-900">
-                        <%= stats.storesCount %>
-                    </dd>
-                </div>
-                <div class="bg-white overflow-hidden shadow rounded-lg px-4 py-5 sm:p-6">
-                    <dt class="text-sm font-medium text-gray-500 truncate">Критических позиций</dt>
-                    <dd class="mt-1 text-3xl font-semibold text-red-600">
-                        <%= stats.criticalProducts.length %>
-                    </dd>
-                </div>
+
+                <!-- Critical Stock Alert -->
+                <% if (stats.criticalProducts.length> 0) { %>
+                    <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-8">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <!-- Icon -->
+                                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-red-800">Заканчиваются ваучеры (< 10 шт)</h3>
+                                        <div class="mt-2 text-sm text-red-700">
+                                            <ul class="list-disc pl-5 space-y-1">
+                                                <% stats.criticalProducts.forEach(function(product) { %>
+                                                    <li>
+                                                        <%= product.name %> — осталось <strong>
+                                                                <%= product.count %>
+                                                            </strong>
+                                                    </li>
+                                                    <% }); %>
+                                            </ul>
+                                        </div>
+                                        <div class="mt-4">
+                                            <a href="/admin/vouchers/add"
+                                                class="text-sm font-medium text-red-800 hover:text-red-900">Пополнить
+                                                запасы
+                                                &rarr;</a>
+                                        </div>
+                            </div>
+                        </div>
+                    </div>
+                    <% } %>
+
+                        <!-- Actions -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <a href="/admin/products"
+                                class="block p-6 bg-white shadow rounded-lg hover:bg-gray-50 transition">
+                                <h3 class="text-lg font-medium text-gray-900">Товары</h3>
+                                <p class="mt-2 text-gray-500">Управление каталогом, ценами и изображениями.</p>
+                            </a>
+                            <a href="/admin/stores"
+                                class="block p-6 bg-white shadow rounded-lg hover:bg-gray-50 transition">
+                                <h3 class="text-lg font-medium text-gray-900">Магазины</h3>
+                                <p class="mt-2 text-gray-500">Настройка внешнего вида витрин.</p>
+                            </a>
+                        </div>
             </div>
+    </body>
 
-            <!-- Critical Stock Alert -->
-            <% if (stats.criticalProducts.length> 0) { %>
-                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-8">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <!-- Icon -->
-                            <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
-                                fill="currentColor">
-                                <path fill-rule="evenodd"
-                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <h3 class="text-sm font-medium text-red-800">Заканчиваются ваучеры (< 10 шт)</h3>
-                                    <div class="mt-2 text-sm text-red-700">
-                                        <ul class="list-disc pl-5 space-y-1">
-                                            <% stats.criticalProducts.forEach(function(product) { %>
-                                                <li>
-                                                    <%= product.name %> — осталось <strong>
-                                                            <%= product.count %>
-                                                        </strong>
-                                                </li>
-                                                <% }); %>
-                                        </ul>
-                                    </div>
-                                    <div class="mt-4">
-                                        <a href="/admin/vouchers/add"
-                                            class="text-sm font-medium text-red-800 hover:text-red-900">Пополнить запасы
-                                            &rarr;</a>
-                                    </div>
-                        </div>
-                    </div>
-                </div>
-                <% } %>
-
-                    <!-- Actions -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <a href="/admin/products"
-                            class="block p-6 bg-white shadow rounded-lg hover:bg-gray-50 transition">
-                            <h3 class="text-lg font-medium text-gray-900">Товары</h3>
-                            <p class="mt-2 text-gray-500">Управление каталогом, ценами и изображениями.</p>
-                        </a>
-                        <a href="/admin/stores"
-                            class="block p-6 bg-white shadow rounded-lg hover:bg-gray-50 transition">
-                            <h3 class="text-lg font-medium text-gray-900">Магазины</h3>
-                            <p class="mt-2 text-gray-500">Настройка внешнего вида витрин.</p>
-                        </a>
-                    </div>
-        </div>
-</body>
-
-</html>
+    </html>
+    <% } else { %>
+        <p class="text-center text-gray-600 mt-10">У вас нет доступа к этой странице.</p>
+        <% } %>
