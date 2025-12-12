@@ -31,6 +31,14 @@ export const allowSupport = (req, res, next) => {
   res.status(403).send('Access denied. Support role required.');
 };
 
+// Middleware для Вендоров (Админ + Финансист + Контент-менеджер)
+// Финансисту нужен доступ для выплат, контент-менеджеру для привязки товаров
+export const allowFinanceOrContent = (req, res, next) => {
+  const role = req.session.user?.role;
+  if (role === 'admin' || role === 'financial_mgr' || role === 'content_mgr') return next();
+  res.status(403).send('Access denied. Finance or Content role required.');
+};
+
 export const ensureMerchant = (req, res, next) => {
   if (req.session.user && req.session.user.role === 'merchant') return next();
   res.status(403).send('Access denied. Merchants only.');

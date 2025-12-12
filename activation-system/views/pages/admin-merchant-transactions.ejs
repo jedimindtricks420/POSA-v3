@@ -1,86 +1,97 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>Транзакции мерчанта - <%= merchant.legalInfo %></title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="/css/admin.css" rel="stylesheet">
-</head>
-<body class="bg-slate-50 min-h-screen">
-  <%- include('../partials/admin-navbar', { user }) %>
-  
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
-    <div class="md:flex md:items-center md:justify-between mb-6">
-      <div class="min-w-0 flex-1">
-        <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
-          Транзакции мерчанта
-        </h2>
-        <p class="mt-1 text-sm text-slate-500">
-          <%= merchant.legalInfo %>
-        </p>
-      </div>
-      <div class="mt-4 flex md:ml-4 md:mt-0">
-        <a href="/admin/merchants" 
-          class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-colors duration-200">
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
-          </svg>
-          К списку мерчантов
-        </a>
-      </div>
-    </div>
+<% if (user.role==='admin' || user.role==='financial_mgr' ) { %>
+  <!DOCTYPE html>
+  <html lang="ru">
 
-    <div class="mt-8 flow-root">
-      <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-        <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-          <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-            <table class="min-w-full divide-y divide-slate-300">
-              <thead class="bg-slate-50">
-                <tr>
-                  <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">ID</th>
-                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Продукт</th>
-                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Ваучер</th>
-                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Долг мерчанта</th>
-                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Долг админа</th>
-                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Статус</th>
-                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Дата</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-200 bg-white">
-                <% transactions.forEach(t => { %>
-                  <tr class="hover:bg-slate-50">
-                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
-                      <%= t.id %>
-                    </td>
-                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                      <%= t.productName %>
-                    </td>
-                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500 font-mono">
-                      <%= t.voucherValue %>
-                    </td>
-                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                      <%= t.merchantDebt.toLocaleString('ru-RU') %>
-                    </td>
-                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                      <%= t.adminDebt.toLocaleString('ru-RU') %>
-                    </td>
-                    <td class="whitespace-nowrap px-3 py-4 text-sm">
-                      <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                        <%= t.status %>
-                      </span>
-                    </td>
-                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                      <%= new Date(t.createdAt).toLocaleString() %>
-                    </td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
+  <head>
+    <meta charset="UTF-8">
+    <title>Транзакции мерчанта - <%= merchant.legalInfo %>
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+  </head>
+
+  <body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+        <div class="md:flex md:items-center md:justify-between mb-6">
+          <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+              Транзакции мерчанта
+            </h2>
+            <p class="mt-1 text-sm text-slate-500">
+              <%= merchant.legalInfo %>
+            </p>
+          </div>
+          <div class="mt-4 flex md:ml-4 md:mt-0">
+            <a href="/admin/merchants"
+              class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 transition-colors duration-200">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+              </svg>
+              К списку мерчантов
+            </a>
+          </div>
+        </div>
+
+        <div class="mt-8 flow-root">
+          <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+            <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+              <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                <table class="min-w-full divide-y divide-slate-300">
+                  <thead class="bg-slate-50">
+                    <tr>
+                      <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">ID
+                      </th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Продукт</th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Ваучер</th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Долг мерчанта
+                      </th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Долг админа
+                      </th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Статус</th>
+                      <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Дата</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-200 bg-white">
+                    <% transactions.forEach(t=> { %>
+                      <tr class="hover:bg-slate-50">
+                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
+                          <%= t.id %>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                          <%= t.productName %>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500 font-mono">
+                          <%= t.voucherValue %>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                          <%= t.merchantDebt.toLocaleString('ru-RU') %>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                          <%= t.adminDebt.toLocaleString('ru-RU') %>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm">
+                          <span
+                            class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                            <%= t.status %>
+                          </span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                          <%= new Date(t.createdAt).toLocaleString() %>
+                        </td>
+                      </tr>
+                      <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</body>
-</html>
+  </body>
+
+  <% } else { %>
+    <p class="text-center text-gray-600 mt-10">У вас нет доступа к этой странице.</p>
+    <% } %>

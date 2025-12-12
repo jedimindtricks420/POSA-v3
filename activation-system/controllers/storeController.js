@@ -81,7 +81,12 @@ export const sendOtp = async (req, res) => {
         // Basic validation
         if (!phone) return res.status(400).json({ error: 'Phone is required' });
 
-        const otp = generateOtp();
+        // DEMO ACCOUNT for App Store Review
+        const DEMO_PHONE = '+998003332211';
+        const DEMO_CODE = '777777';
+        const isDemo = phone === DEMO_PHONE;
+
+        const otp = isDemo ? DEMO_CODE : generateOtp();
 
         // Save to AuthSmsLog
         const log = await prisma.authSmsLog.create({
@@ -93,21 +98,34 @@ export const sendOtp = async (req, res) => {
             }
         });
 
-        // Send SMS
-        const result = await sendOtpSms(phone, otp);
+        // Send SMS (skip for demo account)
+        if (!isDemo) {
+            const result = await sendOtpSms(phone, otp);
 
-        // Update log
-        await prisma.authSmsLog.update({
-            where: { id: log.id },
-            data: {
-                requestId: result.smsId ? String(result.smsId) : 'error',
-                status: result.success ? 'delivered' : 'failed',
-                response: result.data || {}
+            // Update log
+            await prisma.authSmsLog.update({
+                where: { id: log.id },
+                data: {
+                    requestId: result.smsId ? String(result.smsId) : 'error',
+                    status: result.success ? 'delivered' : 'failed',
+                    response: result.data || {}
+                }
+            });
+
+            if (!result.success) {
+                return res.status(500).json({ error: 'Failed to send SMS' });
             }
-        });
-
-        if (!result.success) {
-            return res.status(500).json({ error: 'Failed to send SMS' });
+        } else {
+            // For demo account, just mark as delivered without sending SMS
+            await prisma.authSmsLog.update({
+                where: { id: log.id },
+                data: {
+                    requestId: 'demo-account-appstore',
+                    status: 'delivered',
+                    response: { demo: true, note: 'Demo account for App Store review' }
+                }
+            });
+            console.log(`[DEMO] OTP request for demo account: ${DEMO_PHONE}, code: ${DEMO_CODE}`);
         }
 
         res.json({ success: true, message: 'OTP sent' });
@@ -122,16 +140,26 @@ export const verifyOtp = async (req, res) => {
     const { phone, code, storeSlug } = req.body;
 
     try {
-        // Find valid OTP
+        // DEMO ACCOUNT for App Store Review
+        const DEMO_PHONE = '+998003332211';
+        const isDemo = phone === DEMO_PHONE;
+
+        // Find valid OTP (skip time check for demo account)
+        const whereCondition = {
+            phoneNumber: phone,
+            code: code,
+            verified: false
+        };
+
+        // Only apply time restriction for non-demo accounts
+        if (!isDemo) {
+            whereCondition.createdAt = {
+                gte: new Date(Date.now() - 5 * 60 * 1000) // 5 minutes TTL
+            };
+        }
+
         const log = await prisma.authSmsLog.findFirst({
-            where: {
-                phoneNumber: phone,
-                code: code,
-                verified: false,
-                createdAt: {
-                    gte: new Date(Date.now() - 5 * 60 * 1000) // 5 minutes TTL
-                }
-            },
+            where: whereCondition,
             orderBy: { createdAt: 'desc' }
         });
 
@@ -149,6 +177,9 @@ export const verifyOtp = async (req, res) => {
         let client = await prisma.client.findUnique({ where: { phoneNumber: phone } });
         if (!client) {
             client = await prisma.client.create({ data: { phoneNumber: phone } });
+            if (isDemo) {
+                console.log(`[DEMO] Created demo client account: ${phone}`);
+            }
         }
 
         // Set session

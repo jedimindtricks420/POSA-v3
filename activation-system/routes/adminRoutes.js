@@ -16,7 +16,7 @@ import * as storeController from '../controllers/admin/storeController.js';
 import * as rokkyController from '../controllers/admin/rokkyController.js';
 import * as telegramBotController from '../controllers/admin/telegramBotController.js';
 import * as manualActivationController from '../controllers/admin/manualActivationController.js';
-import { ensureAdmin, ensureAuthenticated, allowFinance, allowContent, allowSupport } from '../middleware/auth.js';
+import { ensureAdmin, ensureAuthenticated, allowFinance, allowContent, allowSupport, allowFinanceOrContent } from '../middleware/auth.js';
 import { upload } from '../middleware/uploadMiddleware.js';
 import { generationLimiter } from '../middleware/rateLimit.js';
 
@@ -76,10 +76,8 @@ router.get('/stores/edit/:id', allowContent, storeController.showEditStoreForm);
 router.post('/stores/edit/:id', allowContent, upload.single('logo'), storeController.handleEditStore);
 
 // 5. Вендоры: Список (Content + Finance + Admin)
-// Чтобы контент мог привязать, а финансы выплатить.
-// Дадим доступ allowContent (так как там список), но кнопки выплат скрыты во View для контента.
-// Или можно создать отдельный middleware. Проще пока дать обоим, но по логике "Content" управляет сущностями.
-router.get('/vendors', allowContent, vendorController.showVendors);
+// Финансисту нужен доступ для выплат долгов, контент-менеджеру для привязки товаров к вендорам.
+router.get('/vendors', allowFinanceOrContent, vendorController.showVendors);
 router.get('/add-vendor', allowContent, vendorController.showAddVendorForm);
 router.post('/add-vendor', allowContent, vendorController.handleAddVendor);
 router.get('/vendors/edit/:id', allowContent, vendorController.showEditVendorForm);

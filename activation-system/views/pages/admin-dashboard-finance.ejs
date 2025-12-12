@@ -1,64 +1,55 @@
-<!DOCTYPE html>
-<html lang="ru">
+<% if (user.role==='admin' || user.role==='financial_mgr' ) { %>
+    <!DOCTYPE html>
+    <html lang="ru">
 
-<head>
+    <head>
+        <meta charset="UTF-8">
+        <title>KPI Финансы</title>
+        <link rel="icon" type="image/svg+xml" href="/images/Vector.svg">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
 
-    <meta charset="UTF-8">
-    <title>KPI Финансы</title>
-    <link rel="icon" type="image/svg+xml" href="/images/Vector.svg">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+    <body class="bg-gray-50">
+        <%- include('../partials/admin-navbar', { user }) %>
 
-<body class="bg-gray-50">
-    <%- include('../partials/admin-navbar', { user }) %>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 class="text-2xl font-bold text-gray-900 mb-6">Финансовый обзор</h1>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <!-- Нам должны (Debit) -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-                    <h3 class="text-sm font-medium text-gray-500 uppercase">Долг Мерчантов (Нам должны)</h3>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
-                        <%= stats.merchantDebt.toLocaleString() %> сум
-                    </p>
-                    <div class="mt-4">
-                        <a href="/admin/merchants" class="text-sm font-medium text-green-600 hover:text-green-500">
-                            Перейти к сбору долгов &rarr;
-                        </a>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+                <h1 class="text-2xl font-bold text-gray-900 mb-6">Финансовый обзор</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+                        <h3 class="text-sm font-medium text-gray-500 uppercase">Долг Мерчантов (Нам должны)</h3>
+                        <p class="mt-2 text-3xl font-bold text-gray-900">
+                            <%= stats.merchantDebt.toLocaleString() %> сум
+                        </p>
+                        <div class="mt-4"><a href="/admin/merchants"
+                                class="text-sm font-medium text-green-600 hover:text-green-500">Перейти к сбору долгов
+                                &rarr;</a></div>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+                        <h3 class="text-sm font-medium text-gray-500 uppercase">Долг Вендорам (Мы должны)</h3>
+                        <p class="mt-2 text-3xl font-bold text-gray-900">
+                            <%= stats.vendorDebt.toLocaleString() %> сум
+                        </p>
+                        <div class="mt-4"><a href="/admin/vendors"
+                                class="text-sm font-medium text-red-600 hover:text-red-500">Перейти к выплатам
+                                &rarr;</a></div>
                     </div>
                 </div>
-
-                <!-- Мы должны (Credit) -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-                    <h3 class="text-sm font-medium text-gray-500 uppercase">Долг Вендорам (Мы должны)</h3>
-                    <p class="mt-2 text-3xl font-bold text-gray-900">
-                        <%= stats.vendorDebt.toLocaleString() %> сум
-                    </p>
-                    <div class="mt-4">
-                        <a href="/admin/vendors" class="text-sm font-medium text-red-600 hover:text-red-500">
-                            Перейти к выплатам &rarr;
-                        </a>
+                <div class="bg-white shadow rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Быстрые действия</h3>
+                    <div class="flex space-x-4">
+                        <a href="/admin/sales"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">История
+                            продаж</a>
+                        <a href="/admin/rokky/finance"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Финансы
+                            Rokky</a>
                     </div>
                 </div>
             </div>
+    </body>
 
-            <!-- Quick Links -->
-            <div class="bg-white shadow rounded-lg p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Быстрые действия</h3>
-                <div class="flex space-x-4">
-                    <a href="/admin/sales"
-                        class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        История продаж
-                    </a>
-                    <a href="/admin/rokky/finance"
-                        class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                        Финансы Rokky
-                    </a>
-                </div>
-            </div>
-        </div>
-</body>
-
-</html>
+    </html>
+    <% } else { %>
+        <p class="text-center text-gray-600 mt-10">У вас нет доступа к этой странице.</p>
+        <% } %>
