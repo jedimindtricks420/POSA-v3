@@ -1,168 +1,172 @@
-<!DOCTYPE html>
-<html lang="ru">
+<% if (user.role==='admin' || user.role==='content_mgr' ) { %>
+  <!DOCTYPE html>
+  <html lang="ru">
 
-<head>
-  <meta charset="UTF-8">
-  <title>Управление товарами</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="/css/admin.css" rel="stylesheet">
-</head>
+  <head>
+    <meta charset="UTF-8">
+    <title>Управление товарами</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+  </head>
 
-<body class="bg-slate-50 min-h-screen">
-  <%- include('../partials/admin-navbar', { user }) %>
+  <body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
-      <div class="md:flex md:items-center md:justify-between mb-6">
-        <div class="min-w-0 flex-1">
-          <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Управление товарами
-          </h2>
-          <p class="mt-1 text-sm text-slate-500">
-            Просмотр и управление товарами в системе
-          </p>
-        </div>
-        <div class="mt-4 flex md:ml-4 md:mt-0">
-          <a href="/admin/add-product"
-            class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Добавить новый товар
-          </a>
-        </div>
-      </div>
-
-      <% if (locals.error) { %>
-        <div class="rounded-md bg-red-50 p-4 mb-6">
-          <div class="flex">
-            <div class="flex-shrink-0">
-              <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clip-rule="evenodd" />
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+        <div class="md:flex md:items-center md:justify-between mb-6">
+          <div class="min-w-0 flex-1">
+            <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+              Управление товарами
+            </h2>
+            <p class="mt-1 text-sm text-slate-500">
+              Просмотр и управление товарами в системе
+            </p>
+          </div>
+          <div class="mt-4 flex md:ml-4 md:mt-0">
+            <a href="/admin/add-product"
+              class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-            </div>
-            <div class="ml-3">
-              <h3 class="text-sm font-medium text-red-800">Ошибка</h3>
-              <div class="mt-2 text-sm text-red-700">
-                <%= error %>
+              Добавить новый товар
+            </a>
+          </div>
+        </div>
+
+        <% if (locals.error) { %>
+          <div class="rounded-md bg-red-50 p-4 mb-6">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800">Ошибка</h3>
+                <div class="mt-2 text-sm text-red-700">
+                  <%= error %>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <% } %>
+          <% } %>
 
-          <% if (products.length===0) { %>
-            <div class="rounded-md bg-blue-50 p-4">
-              <div class="flex">
-                <div class="flex-shrink-0">
-                  <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clip-rule="evenodd" />
-                  </svg>
-                </div>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-blue-800">Нет данных</h3>
-                  <div class="mt-2 text-sm text-blue-700">
-                    В системе пока нет товаров. Добавьте первый товар, нажав кнопку выше.
+            <% if (products.length===0) { %>
+              <div class="rounded-md bg-blue-50 p-4">
+                <div class="flex">
+                  <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clip-rule="evenodd" />
+                    </svg>
                   </div>
-                </div>
-              </div>
-            </div>
-            <% } else { %>
-              <div class="mt-8 flow-root">
-                <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                  <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-                    <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-                      <table class="min-w-full divide-y divide-slate-300">
-                        <thead class="bg-slate-50">
-                          <tr>
-                            <th scope="col"
-                              class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">
-                              ID</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Название
-                            </th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Цена</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Статус
-                            </th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Активные
-                              ваучеры</th>
-                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Шаблон
-                              чека
-                            </th>
-                            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                              <span class="sr-only">Действия</span>
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-200 bg-white">
-                          <% products.forEach(product=> { %>
-                            <tr class="hover:bg-slate-50">
-                              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
-                                <%= product.id %>
-                              </td>
-                              <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                                <%= product.name %>
-                              </td>
-                              <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                                <%= product.price.toLocaleString('ru-RU', { minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2 }) %>
-                              </td>
-                              <td class="whitespace-nowrap px-3 py-4 text-sm">
-                                <span
-                                  class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
-                                  <%= product.status %>
-                                </span>
-                              </td>
-                              <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                                <%= product.activeVoucherCount %>
-                              </td>
-                              <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
-                                <% if (product.receiptTemplate) { %>
-                                  <span
-                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                                    🧾 Свой шаблон
-                                  </span>
-                                  <% } else { %>
-                                    <span class="text-slate-400">Шаблон вендора</span>
-                                    <% } %>
-                              </td>
-                              <td
-                                class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                                <div class="flex justify-end gap-2">
-                                  <a href="/admin/edit-product/<%= product.id %>"
-                                    class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-sm font-semibold text-yellow-600 ring-1 ring-inset ring-yellow-500/10 hover:bg-yellow-100">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                    Редактировать
-                                  </a>
-                                  <form action="/admin/delete-product/<%= product.id %>" method="POST" class="inline">
-                                    <button type="submit"
-                                      class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-sm font-semibold text-red-600 ring-1 ring-inset ring-red-500/10 hover:bg-red-100"
-                                      onclick="return confirm('Удалить товар?')">
-                                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
-                                      Удалить
-                                    </button>
-                                  </form>
-                                </div>
-                              </td>
-                            </tr>
-                            <% }) %>
-                        </tbody>
-                      </table>
+                  <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">Нет данных</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                      В системе пока нет товаров. Добавьте первый товар, нажав кнопку выше.
                     </div>
                   </div>
                 </div>
               </div>
-              <% } %>
-    </div>
-</body>
+              <% } else { %>
+                <div class="mt-8 flow-root">
+                  <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                    <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                      <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+                        <table class="min-w-full divide-y divide-slate-300">
+                          <thead class="bg-slate-50">
+                            <tr>
+                              <th scope="col"
+                                class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">
+                                ID</th>
+                              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">
+                                Название
+                              </th>
+                              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Цена
+                              </th>
+                              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Статус
+                              </th>
+                              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">
+                                Активные
+                                ваучеры</th>
+                              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Шаблон
+                                чека
+                              </th>
+                              <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                <span class="sr-only">Действия</span>
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody class="divide-y divide-slate-200 bg-white">
+                            <% products.forEach(product=> { %>
+                              <tr class="hover:bg-slate-50">
+                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
+                                  <%= product.id %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                                  <%= product.name %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                                  <%= product.price.toLocaleString('ru-RU', { minimumFractionDigits: 2,
+                                    maximumFractionDigits: 2 }) %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                  <span
+                                    class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                    <%= product.status %>
+                                  </span>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                                  <%= product.activeVoucherCount %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                                  <% if (product.receiptTemplate) { %>
+                                    <span
+                                      class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                                      🧾 Свой шаблон
+                                    </span>
+                                    <% } else { %>
+                                      <span class="text-slate-400">Шаблон вендора</span>
+                                      <% } %>
+                                </td>
+                                <td
+                                  class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                  <div class="flex justify-end gap-2">
+                                    <a href="/admin/edit-product/<%= product.id %>"
+                                      class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-sm font-semibold text-yellow-600 ring-1 ring-inset ring-yellow-500/10 hover:bg-yellow-100">
+                                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                      Редактировать
+                                    </a>
+                                    <form action="/admin/delete-product/<%= product.id %>" method="POST" class="inline">
+                                      <button type="submit"
+                                        class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-sm font-semibold text-red-600 ring-1 ring-inset ring-red-500/10 hover:bg-red-100"
+                                        onclick="return confirm('Удалить товар?')">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        Удалить
+                                      </button>
+                                    </form>
+                                  </div>
+                                </td>
+                              </tr>
+                              <% }) %>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <% } %>
+      </div>
+  </body>
 
-</html>
+  </html>

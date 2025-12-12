@@ -16,7 +16,7 @@
     @apply min-h-full bg-wallet-bg text-slate-900 font-sans antialiased;
     min-height: 100vh;
     min-height: 100dvh;
-    padding-top: env(safe-area-inset-top, 0px);
+    /* Removed padding-top to avoid double safe-area-inset on pages */
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
