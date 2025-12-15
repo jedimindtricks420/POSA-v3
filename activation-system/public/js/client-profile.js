@@ -115,9 +115,62 @@ async function initClearCache() {
   });
 }
 
+async function initDeleteAccount() {
+  const deleteBtn = document.getElementById('deleteAccountBtn');
+  const deleteModal = document.getElementById('deleteModal');
+  const cancelBtn = document.getElementById('cancelDelete');
+  const confirmBtn = document.getElementById('confirmDelete');
+
+  if (!deleteBtn || !deleteModal || !cancelBtn || !confirmBtn) return;
+
+  // Открыть модальное окно
+  deleteBtn.addEventListener('click', () => {
+    deleteModal.classList.remove('hidden');
+    deleteModal.classList.add('flex');
+  });
+
+  // Закрыть модальное окно
+  cancelBtn.addEventListener('click', () => {
+    deleteModal.classList.add('hidden');
+    deleteModal.classList.remove('flex');
+  });
+
+  // Подтвердить удаление
+  confirmBtn.addEventListener('click', async () => {
+    try {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Удаление...';
+
+      const response = await fetch('/client/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.ok) {
+        alert('Ваш аккаунт успешно удален');
+        window.location.href = '/wallet';
+      } else {
+        alert('Ошибка при удалении аккаунта: ' + (result.message || 'Попробуйте позже'));
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = 'Удалить';
+      }
+    } catch (error) {
+      console.error('Delete account error:', error);
+      alert('Ошибка при удалении аккаунта. Попробуйте позже.');
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Удалить';
+    }
+  });
+}
+
 async function bootstrap() {
   await initTheme();
   await initClearCache();
+  await initDeleteAccount();
   const registration = await registerServiceWorker();
   if (registration) {
     await initPush(registration);

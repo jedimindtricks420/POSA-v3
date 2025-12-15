@@ -31,6 +31,7 @@ router.post('/client-verify', authController.verifyOtp);
 router.get('/client/logout', authController.logout);
 router.get('/logout', authController.logout);
 router.post('/refresh', authController.refreshSession);
+router.post('/client/delete-account', isClientAuthenticated, authController.deleteAccount);
 
 // Клиентские страницы
 router.get('/client/dashboard', isClientAuthenticated, showDashboard);
