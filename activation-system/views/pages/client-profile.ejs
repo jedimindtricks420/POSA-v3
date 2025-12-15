@@ -1,91 +1,105 @@
 <!DOCTYPE html>
 <html lang="ru" class="h-full">
 <%- include('../partials/client/head', { title: 'Профиль' }) %>
-<body class="relative min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors dark:bg-wallet-dark dark:text-slate-100 safe-area-bottom">
 
-  <main class="mx-auto flex w-full max-w-md flex-col gap-6 pb-24 pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
-    <section class="glass-panel p-6">
-      <div class="flex items-center gap-4">
-        <div class="wallet-accent-badge flex h-14 w-14 items-center justify-center rounded-full text-lg font-semibold">
-          <%= phone ? phone.slice(-4) : 'CL' %>
+  <body
+    class="relative min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors dark:bg-wallet-dark dark:text-slate-100 safe-area-bottom">
+
+    <main class="mx-auto flex w-full max-w-md flex-col gap-6 pb-24 pt-[calc(env(safe-area-inset-top,0px)+2rem)]">
+      <section class="glass-panel p-6">
+        <div class="flex items-center gap-4">
+          <div
+            class="wallet-accent-badge flex h-14 w-14 items-center justify-center rounded-full text-lg font-semibold">
+            <%= phone ? phone.slice(-4) : 'CL' %>
+          </div>
+          <div>
+            <p class="text-xs uppercase tracking-wider text-slate-500">Телефон</p>
+            <p class="text-lg font-semibold">
+              <%= phone %>
+            </p>
+          </div>
         </div>
-        <div>
-          <p class="text-xs uppercase tracking-wider text-slate-500">Телефон</p>
-          <p class="text-lg font-semibold"><%= phone %></p>
+      </section>
+
+      <section class="glass-panel space-y-4 p-6">
+        <h2 class="text-sm font-semibold uppercase text-slate-500">Настройки</h2>
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="font-medium">Push уведомления</p>
+            <p class="text-sm text-slate-500">Получать новости и статусы ваучеров</p>
+          </div>
+          <label class="relative inline-flex cursor-pointer items-center">
+            <input type="checkbox" id="profilePushToggle" class="peer sr-only" />
+            <div class="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-wallet-green"></div>
+            <span
+              class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5"></span>
+          </label>
+        </div>
+      </section>
+
+      <section class="glass-panel space-y-4 p-6">
+        <h2 class="text-sm font-semibold uppercase text-slate-500">Поддержка</h2>
+        <a href="tel:+998781234567"
+          class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
+          Позвонить в поддержку
+          <span class="text-xs text-slate-500">+998 78 123 45 67</span>
+        </a>
+        <a href="https://t.me/namo_support"
+          class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
+          Telegram support
+          <span class="text-xs text-slate-500">@namo_support</span>
+        </a>
+      </section>
+
+      <section class="glass-panel space-y-4 p-6">
+        <button id="profileClearCache"
+          class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800">
+          Очистить кеш
+        </button>
+        <button id="deleteAccountBtn"
+          class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800">
+          Удалить аккаунт
+        </button>
+        <a href="/client/logout"
+          class="block w-full rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-red-700">
+          Выйти
+        </a>
+      </section>
+
+      <!-- Модальное окно подтверждения удаления -->
+      <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+        <div class="glass-panel w-full max-w-sm space-y-4 p-6">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">Удалить аккаунт?</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            Это действие необратимо. Все ваши данные будут удалены, и вы больше не сможете войти в этот аккаунт.
+          </p>
+          <p class="text-sm font-semibold text-orange-600 dark:text-orange-400">
+            Ваши купленные ваучеры останутся в системе, но доступ к ним будет потерян.
+          </p>
+          <div class="flex gap-3">
+            <button id="cancelDelete"
+              class="flex-1 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
+              Отмена
+            </button>
+            <button id="confirmDelete"
+              class="flex-1 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
+              Удалить
+            </button>
+          </div>
         </div>
       </div>
-    </section>
+    </main>
 
-    <section class="glass-panel space-y-4 p-6">
-      <h2 class="text-sm font-semibold uppercase text-slate-500">Настройки</h2>
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="font-medium">Push уведомления</p>
-          <p class="text-sm text-slate-500">Получать новости и статусы ваучеров</p>
-        </div>
-        <label class="relative inline-flex cursor-pointer items-center">
-          <input type="checkbox" id="profilePushToggle" class="peer sr-only" />
-          <div class="h-6 w-11 rounded-full bg-slate-300 transition peer-checked:bg-wallet-green"></div>
-          <span class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition peer-checked:translate-x-5"></span>
-        </label>
-      </div>
-    </section>
+    <%- include('../partials/client/bottom-nav', { active: 'profile' }) %>
 
-    <section class="glass-panel space-y-4 p-6">
-      <h2 class="text-sm font-semibold uppercase text-slate-500">Поддержка</h2>
-      <a href="tel:+998781234567" class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
-        Позвонить в поддержку
-        <span class="text-xs text-slate-500">+998 78 123 45 67</span>
-      </a>
-      <a href="https://t.me/namo_support" class="flex items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
-        Telegram support
-        <span class="text-xs text-slate-500">@namo_support</span>
-      </a>
-    </section>
-
-    <section class="glass-panel space-y-4 p-6">
-      <button id="profileClearCache" class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800">
-        Очистить кеш PWA
-      </button>
-      <button id="deleteAccountBtn" class="block w-full rounded-2xl bg-orange-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-orange-700">
-        Удалить аккаунт
-      </button>
-      <a href="/client/logout" class="block w-full rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-red-700">
-        Выйти
-      </a>
-    </section>
-
-    <!-- Модальное окно подтверждения удаления -->
-    <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
-      <div class="glass-panel w-full max-w-sm space-y-4 p-6">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Удалить аккаунт?</h3>
-        <p class="text-sm text-slate-600 dark:text-slate-300">
-          Это действие необратимо. Все ваши данные будут удалены, и вы больше не сможете войти в этот аккаунт.
-        </p>
-        <p class="text-sm font-semibold text-orange-600 dark:text-orange-400">
-          Ваши купленные ваучеры останутся в системе, но доступ к ним будет потерян.
-        </p>
-        <div class="flex gap-3">
-          <button id="cancelDelete" class="flex-1 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
-            Отмена
-          </button>
-          <button id="confirmDelete" class="flex-1 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
-            Удалить
-          </button>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <%- include('../partials/client/bottom-nav', { active: 'profile' }) %>
-
-  <script>
-    window.__WALLET_PROFILE__ = {
-      phone: <%- JSON.stringify(phone || null) %>
+      <script>
+        window.__WALLET_PROFILE__ = {
+          phone: <% - JSON.stringify(phone || null) %>
     };
-    window.__WALLET_PUSH_PUBLIC_KEY__ = <%- JSON.stringify(pushPublicKey || null) %>;
-  </script>
-  <script type="module" src="/js/client-session.js"></script>
-  <script type="module" src="/js/client-profile.js"></script>
-</body>
+        window.__WALLET_PUSH_PUBLIC_KEY__ = <% - JSON.stringify(pushPublicKey || null) %>;
+      </script>
+      <script type="module" src="/js/client-session.js"></script>
+      <script type="module" src="/js/client-profile.js"></script>
+  </body>
+
 </html>
