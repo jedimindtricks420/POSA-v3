@@ -1,8 +1,15 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "uz.namo.wallet.twa",
-        "sha256_cert_fingerprints": ["68:EC:81:D3:12:4D:34:E0:FE:B1:44:6D:D3:B5:93:14:C9:6A:D2:65:CB:4F:04:65:56:EE:E9:39:F8:9A:13:78"]
-      }
-    }]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "uz.namo.wallet.twa",
+      "sha256_cert_fingerprints": [
+        "68:EC:81:D3:12:4D:34:E0:FE:B1:44:6D:D3:B5:93:14:C9:6A:D2:65:CB:4F:04:65:56:EE:E9:39:F8:9A:13:78",
+        "D6:74:24:98:85:B7:CB:4A:CE:A0:33:BB:DA:E4:72:24:6A:59:C8:CA:F5:F3:B1:4F:B2:86:1E:E0:85:88:51:C7"
+      ]
+    }
+  }
+]
