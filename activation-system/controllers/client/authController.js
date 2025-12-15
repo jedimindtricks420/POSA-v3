@@ -82,7 +82,7 @@ export const handleLogin = async (req, res) => {
     let client = await prisma.client.findUnique({ where: { phoneNumber: normalizedPhone } });
 
     if (!client) {
-      const fallback = normalizedPhone.replace(/^\+/, '');
+      const fallback = normalizedPhone.replace(/^\\+/, '');
       if (fallback) {
         client = await prisma.client.findUnique({ where: { phoneNumber: fallback } });
         if (client) {
@@ -93,9 +93,11 @@ export const handleLogin = async (req, res) => {
         }
       }
     }
+
+    // Если клиент не найден, показываем ошибку и предлагаем регистрацию
     if (!client) {
-      client = await prisma.client.create({
-        data: { phoneNumber: normalizedPhone },
+      return res.render('pages/client-login', {
+        error: 'Аккаунт не найден. Пожалуйста, пройдите регистрацию.'
       });
     }
 
