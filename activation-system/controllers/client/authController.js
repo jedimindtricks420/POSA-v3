@@ -20,18 +20,23 @@ function generateOtp() {
 
 // Хелпер: установка OTP в сессию и отправка SMS
 async function setOtpSessionAndSend(req, phone) {
-  // DEMO ACCOUNT for App Store Review
-  const DEMO_PHONE = '+998003332211';
-  const DEMO_CODE = '777777';
-  const isDemo = phone === DEMO_PHONE;
+  // DEMO ACCOUNTS for App Store Review
+  const DEMO_ACCOUNTS = {
+    '+998003332211': '777777',  // Primary demo account (persistent)
+    '+998003332222': '888888',  // For testing account deletion
+    '+998003332233': '999999',  // For testing payments/transactions
+    '+998003332244': '111111',  // For testing error handling
+    '+998003332255': '222222'   // Additional/reserve account
+  };
 
-  const otp = isDemo ? DEMO_CODE : generateOtp();
+  const isDemo = phone in DEMO_ACCOUNTS;
+  const otp = isDemo ? DEMO_ACCOUNTS[phone] : generateOtp();
   req.session.otp = otp;
   req.session.phone = phone;
 
   console.log(`OTP для ${phone}: ${otp}`); // лог для тестирования
 
-  // Skip SMS sending for demo account
+  // Skip SMS sending for demo accounts
   if (!isDemo) {
     try {
       await sendOtpSms(phone, otp);
@@ -39,7 +44,7 @@ async function setOtpSessionAndSend(req, phone) {
       console.error('Ошибка при отправке SMS:', error);
     }
   } else {
-    console.log(`[DEMO] Skipping SMS for demo account: ${DEMO_PHONE}, code: ${DEMO_CODE}`);
+    console.log(`[DEMO] Skipping SMS for demo account: ${phone}, code: ${DEMO_ACCOUNTS[phone]}`);
   }
 }
 

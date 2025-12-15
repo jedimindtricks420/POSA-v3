@@ -65,6 +65,24 @@ app.get('/wallet/icons/vec-icon.png', (req, res) => {
   res.sendFile(path.join(pwaIconsPath, 'vec-icon.png'));
 });
 
+// Digital Asset Links для Android TWA
+// КРИТИЧНО: Content-Type должен быть application/json БЕЗ charset=utf-8
+// Google строго проверяет это для верификации TWA приложений
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  try {
+    const filePath = path.join(__dirname, 'public', '.well-known', 'assetlinks.json');
+    const content = fs.readFileSync(filePath, 'utf8');
+
+    // Используем res.end вместо res.send, чтобы Express не добавил charset=utf-8
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.end(content);
+  } catch (error) {
+    console.error('[assetlinks] Error:', error);
+    res.status(500).send('Internal server error');
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public'), {
   dotfiles: 'allow',
 }));

@@ -1,36 +1,63 @@
 ╔══════════════════════════════════════════════════════════════╗
-║          DEMO ACCOUNT - QUICK REFERENCE                      ║
+║          DEMO ACCOUNTS - QUICK REFERENCE                     ║
 ║          For App Store Review Testing                        ║
 ╠══════════════════════════════════════════════════════════════╣
 ║                                                              ║
+║  🔷 ACCOUNT 1: PRIMARY (MAIN)                                ║
 ║  📱 PHONE:    +998003332211                                  ║
 ║  🔐 CODE:     777777                                         ║
+║  🎯 PURPOSE:  General testing, keep persistent               ║
+║                                                              ║
+║  🔶 ACCOUNT 2: DELETABLE                                     ║
+║  📱 PHONE:    +998003332222                                  ║
+║  🔐 CODE:     888888                                         ║
+║  🎯 PURPOSE:  Test account deletion                          ║
+║                                                              ║
+║  🔷 ACCOUNT 3: TRANSACTIONS                                  ║
+║  📱 PHONE:    +998003332233                                  ║
+║  🔐 CODE:     999999                                         ║
+║  🎯 PURPOSE:  Test payments & voucher purchases              ║
+║                                                              ║
+║  🔶 ACCOUNT 4: ERROR HANDLING                                ║
+║  📱 PHONE:    +998003332244                                  ║
+║  🔐 CODE:     111111                                         ║
+║  🎯 PURPOSE:  Test validation & edge cases                   ║
+║                                                              ║
+║  🔷 ACCOUNT 5: RESERVE                                       ║
+║  📱 PHONE:    +998003332255                                  ║
+║  🔐 CODE:     222222                                         ║
+║  🎯 PURPOSE:  Additional/backup testing                      ║
 ║                                                              ║
 ╠══════════════════════════════════════════════════════════════╣
-║  ✅ FEATURES AVAILABLE:                                      ║
+║  ✅ FEATURES AVAILABLE (ALL ACCOUNTS):                       ║
 ║                                                              ║
 ║  • Login to any store                                        ║
 ║  • Activate vouchers                                         ║
 ║  • View activation history                                   ║
 ║  • Add to Apple/Google Wallet                                ║
-║  • Receive sales on this phone number                        ║
+║  • Receive sales on these phone numbers                      ║
 ║  • Full client functionality                                 ║
+║  • Test deletion (Account 2)                                 ║
+║  • Test multiple sessions                                    ║
 ║                                                              ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  🔧 TECHNICAL DETAILS:                                       ║
 ║                                                              ║
 ║  • No SMS is sent (saves costs)                              ║
-║  • Code never expires                                        ║
+║  • Codes never expire                                        ║
 ║  • Can be used unlimited times                               ║
-║  • Creates real Client record in DB                          ║
+║  • Creates real Client records in DB                         ║
 ║  • Logged as "demo-account-appstore"                         ║
 ║                                                              ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  📋 FILES MODIFIED:                                          ║
 ║                                                              ║
+║  controllers/client/authController.js                        ║
+║    • setOtpSessionAndSend function                           ║
+║                                                              ║
 ║  controllers/storeController.js                              ║
-║    • sendOtp function (lines 84-129)                         ║
-║    • verifyOtp function (lines 143-175)                      ║
+║    • sendOtp function                                        ║
+║    • verifyOtp function                                      ║
 ║                                                              ║
 ║  docs/DEMO_ACCOUNT_APPSTORE.md (English)                     ║
 ║  docs/DEMO_ACCOUNT_IMPLEMENTATION_RU.md (Russian)            ║
@@ -38,22 +65,40 @@
 ╠══════════════════════════════════════════════════════════════╣
 ║  🧪 HOW TO TEST:                                             ║
 ║                                                              ║
+║  BASIC LOGIN:                                                ║
 ║  1. Start your application                                   ║
-║  2. Navigate to any store                                    ║
-║  3. Enter phone: +998003332211                               ║
-║  4. Enter code: 777777                                       ║
+║  2. Navigate to any store or /wallet                         ║
+║  3. Enter any demo phone number                              ║
+║  4. Enter corresponding code                                 ║
 ║  5. ✅ Logged in!                                            ║
 ║                                                              ║
-║  Optional:                                                   ║
-║  6. Create a test voucher                                    ║
-║  7. Sell it to +998003332211                                 ║
-║  8. Activate the voucher in app                              ║
+║  TEST DELETION (Account 2):                                  ║
+║  1. Login with +998003332222 / 888888                        ║
+║  2. Activate some vouchers                                   ║
+║  3. Go to Profile → Delete Account                           ║
+║  4. Confirm deletion                                         ║
+║  5. ✅ Account deleted                                       ║
+║  6. Login again - new account created                        ║
+║                                                              ║
+║  TEST MULTIPLE SESSIONS:                                     ║
+║  1. Open browser 1: Login as Account 1                       ║
+║  2. Open browser 2: Login as Account 3                       ║
+║  3. ✅ Both sessions work independently                      ║
 ║                                                              ║
 ╠══════════════════════════════════════════════════════════════╣
 ║  🗑️ AFTER APP STORE APPROVAL:                               ║
 ║                                                              ║
-║  Option 1: Remove demo code from storeController.js          ║
-║  Option 2: Disable via .env ENABLE_DEMO_ACCOUNT=false        ║
+║  Option 1: Remove demo code from controllers                 ║
+║  Option 2: Disable via .env ENABLE_DEMO_ACCOUNTS=false       ║
 ║  Option 3: Keep it for future testing (safe)                 ║
+║                                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║  📊 ACCOUNT PURPOSES:                                        ║
+║                                                              ║
+║  Account 1 (777777): Main demo, DO NOT DELETE                ║
+║  Account 2 (888888): Can delete & recreate                   ║
+║  Account 3 (999999): Payment testing                         ║
+║  Account 4 (111111): Error scenarios                         ║
+║  Account 5 (222222): General purpose                         ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝

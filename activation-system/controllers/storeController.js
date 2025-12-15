@@ -81,12 +81,17 @@ export const sendOtp = async (req, res) => {
         // Basic validation
         if (!phone) return res.status(400).json({ error: 'Phone is required' });
 
-        // DEMO ACCOUNT for App Store Review
-        const DEMO_PHONE = '+998003332211';
-        const DEMO_CODE = '777777';
-        const isDemo = phone === DEMO_PHONE;
+        // DEMO ACCOUNTS for App Store Review
+        const DEMO_ACCOUNTS = {
+            '+998003332211': '777777',  // Primary demo account (persistent)
+            '+998003332222': '888888',  // For testing account deletion
+            '+998003332233': '999999',  // For testing payments/transactions
+            '+998003332244': '111111',  // For testing error handling
+            '+998003332255': '222222'   // Additional/reserve account
+        };
 
-        const otp = isDemo ? DEMO_CODE : generateOtp();
+        const isDemo = phone in DEMO_ACCOUNTS;
+        const otp = isDemo ? DEMO_ACCOUNTS[phone] : generateOtp();
 
         // Save to AuthSmsLog
         const log = await prisma.authSmsLog.create({
@@ -98,7 +103,7 @@ export const sendOtp = async (req, res) => {
             }
         });
 
-        // Send SMS (skip for demo account)
+        // Send SMS (skip for demo accounts)
         if (!isDemo) {
             const result = await sendOtpSms(phone, otp);
 
@@ -116,16 +121,16 @@ export const sendOtp = async (req, res) => {
                 return res.status(500).json({ error: 'Failed to send SMS' });
             }
         } else {
-            // For demo account, just mark as delivered without sending SMS
+            // For demo accounts, just mark as delivered without sending SMS
             await prisma.authSmsLog.update({
                 where: { id: log.id },
                 data: {
                     requestId: 'demo-account-appstore',
                     status: 'delivered',
-                    response: { demo: true, note: 'Demo account for App Store review' }
+                    response: { demo: true, note: 'Demo account for App Store review', phone }
                 }
             });
-            console.log(`[DEMO] OTP request for demo account: ${DEMO_PHONE}, code: ${DEMO_CODE}`);
+            console.log(`[DEMO] OTP request for demo account: ${phone}, code: ${DEMO_ACCOUNTS[phone]}`);
         }
 
         res.json({ success: true, message: 'OTP sent' });
@@ -140,11 +145,18 @@ export const verifyOtp = async (req, res) => {
     const { phone, code, storeSlug } = req.body;
 
     try {
-        // DEMO ACCOUNT for App Store Review
-        const DEMO_PHONE = '+998003332211';
-        const isDemo = phone === DEMO_PHONE;
+        // DEMO ACCOUNTS for App Store Review
+        const DEMO_ACCOUNTS = {
+            '+998003332211': '777777',  // Primary demo account (persistent)
+            '+998003332222': '888888',  // For testing account deletion
+            '+998003332233': '999999',  // For testing payments/transactions
+            '+998003332244': '111111',  // For testing error handling
+            '+998003332255': '222222'   // Additional/reserve account
+        };
 
-        // Find valid OTP (skip time check for demo account)
+        const isDemo = phone in DEMO_ACCOUNTS;
+
+        // Find valid OTP (skip time check for demo accounts)
         const whereCondition = {
             phoneNumber: phone,
             code: code,
