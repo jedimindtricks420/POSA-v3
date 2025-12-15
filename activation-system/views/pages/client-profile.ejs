@@ -47,10 +47,34 @@
       <button id="profileClearCache" class="block w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-white dark:hover:bg-slate-800">
         Очистить кеш PWA
       </button>
+      <button id="deleteAccountBtn" class="block w-full rounded-2xl bg-orange-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-orange-700">
+        Удалить аккаунт
+      </button>
       <a href="/client/logout" class="block w-full rounded-2xl bg-red-600 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-red-700">
         Выйти
       </a>
     </section>
+
+    <!-- Модальное окно подтверждения удаления -->
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4">
+      <div class="glass-panel w-full max-w-sm space-y-4 p-6">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white">Удалить аккаунт?</h3>
+        <p class="text-sm text-slate-600 dark:text-slate-300">
+          Это действие необратимо. Все ваши данные будут удалены, и вы больше не сможете войти в этот аккаунт.
+        </p>
+        <p class="text-sm font-semibold text-orange-600 dark:text-orange-400">
+          Ваши купленные ваучеры останутся в системе, но доступ к ним будет потерян.
+        </p>
+        <div class="flex gap-3">
+          <button id="cancelDelete" class="flex-1 rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
+            Отмена
+          </button>
+          <button id="confirmDelete" class="flex-1 rounded-2xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700">
+            Удалить
+          </button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <%- include('../partials/client/bottom-nav', { active: 'profile' }) %>

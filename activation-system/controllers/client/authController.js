@@ -260,6 +260,76 @@ export const logout = (req, res) => {
   });
 };
 
+// === Удаление аккаунта (анонимизация) ===
+export const deleteAccount = async (req, res) => {
+  console.log('=== DELETE ACCOUNT CALLED ===');
+
+  const clientId = req.session?.client?.id;
+  if (!clientId) {
+    return res.status(401).json({ ok: false, message: 'Not authenticated' });
+  }
+
+  try {
+    const client = await prisma.client.findUnique({ where: { id: clientId } });
+    if (!client) {
+      return res.status(404).json({ ok: false, message: 'Client not found' });
+    }
+
+    // Генерируем уникальный идентификатор для анонимизации
+    const timestamp = Date.now();
+    const randomId = Math.random().toString(36).substring(2, 8);
+    const anonymizedPhone = `deleted_${timestamp}_${randomId}`;
+
+    console.log(`Anonymizing client ${clientId}: ${client.phoneNumber} -> ${anonymizedPhone}`);
+
+    // Анонимизируем данные клиента
+    await prisma.client.update({
+      where: { id: clientId },
+      data: {
+        phoneNumber: anonymizedPhone,
+        name: null,
+      },
+    });
+
+    // Удаляем все refresh токены для этого клиента
+    await revokeRefreshTokens({ subjectType: 'client', subjectId: clientId, role: 'client' });
+
+    // Очищаем cookies
+    clearRememberCookies(res);
+
+    // Логируем действие в AuditLog
+    await prisma.auditLog.create({
+      data: {
+        actorUserId: null,
+        role: 'client',
+        action: 'CLIENT_ACCOUNT_DELETED',
+        entityType: 'Client',
+        details: {
+          clientId,
+          originalPhone: client.phoneNumber,
+          anonymizedPhone,
+          timestamp: new Date().toISOString(),
+        },
+        ip: req.ip || req.connection.remoteAddress,
+      },
+    });
+
+    console.log(`Client account ${clientId} successfully anonymized and logged out`);
+
+    // Разрушаем сессию
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error destroying session after account deletion:', err);
+        return res.status(500).json({ ok: false, message: 'Session destruction failed' });
+      }
+      res.json({ ok: true, message: 'Account deleted successfully' });
+    });
+  } catch (error) {
+    console.error('Error deleting client account:', error);
+    res.status(500).json({ ok: false, message: 'Failed to delete account' });
+  }
+};
+
 export const refreshSession = async (req, res) => {
   try {
     const token = req.cookies?.refresh_token;
