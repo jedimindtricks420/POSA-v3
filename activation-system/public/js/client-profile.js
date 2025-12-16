@@ -116,27 +116,45 @@ async function initClearCache() {
 }
 
 async function initDeleteAccount() {
+  console.log('[Delete Account] Initializing...');
+
   const deleteBtn = document.getElementById('deleteAccountBtn');
   const deleteModal = document.getElementById('deleteModal');
   const cancelBtn = document.getElementById('cancelDelete');
   const confirmBtn = document.getElementById('confirmDelete');
 
-  if (!deleteBtn || !deleteModal || !cancelBtn || !confirmBtn) return;
+  console.log('[Delete Account] Elements check:', {
+    deleteBtn: !!deleteBtn,
+    deleteModal: !!deleteModal,
+    cancelBtn: !!cancelBtn,
+    confirmBtn: !!confirmBtn
+  });
+
+  if (!deleteBtn || !deleteModal || !cancelBtn || !confirmBtn) {
+    console.error('[Delete Account] Missing elements, aborting initialization');
+    return;
+  }
+
+  console.log('[Delete Account] All elements found, adding event listeners');
 
   // Открыть модальное окно
   deleteBtn.addEventListener('click', () => {
+    console.log('[Delete Account] Delete button clicked, opening modal');
     deleteModal.classList.remove('hidden');
     deleteModal.classList.add('flex');
+    console.log('[Delete Account] Modal classes:', deleteModal.className);
   });
 
   // Закрыть модальное окно
   cancelBtn.addEventListener('click', () => {
+    console.log('[Delete Account] Cancel button clicked, closing modal');
     deleteModal.classList.add('hidden');
     deleteModal.classList.remove('flex');
   });
 
   // Подтвердить удаление
   confirmBtn.addEventListener('click', async () => {
+    console.log('[Delete Account] Confirm button clicked, starting deletion');
     try {
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Удаление...';
@@ -149,6 +167,7 @@ async function initDeleteAccount() {
       });
 
       const result = await response.json();
+      console.log('[Delete Account] Server response:', result);
 
       if (result.ok) {
         alert('Ваш аккаунт успешно удален');
@@ -159,12 +178,14 @@ async function initDeleteAccount() {
         confirmBtn.textContent = 'Удалить';
       }
     } catch (error) {
-      console.error('Delete account error:', error);
+      console.error('[Delete Account] Error:', error);
       alert('Ошибка при удалении аккаунта. Попробуйте позже.');
       confirmBtn.disabled = false;
       confirmBtn.textContent = 'Удалить';
     }
   });
+
+  console.log('[Delete Account] Initialization complete');
 }
 
 async function bootstrap() {
