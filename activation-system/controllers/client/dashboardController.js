@@ -73,6 +73,7 @@ export async function showDashboard(req, res) {
       phone,
       vouchers,
       pushPublicKey: process.env.WALLET_VAPID_PUBLIC_KEY || null,
+      isClient: true,
     });
   } catch (error) {
     console.error('Client dashboard error:', error);
@@ -81,6 +82,7 @@ export async function showDashboard(req, res) {
       phone,
       vouchers: [],
       pushPublicKey: process.env.WALLET_VAPID_PUBLIC_KEY || null,
+      isClient: true,
     });
   }
 }
