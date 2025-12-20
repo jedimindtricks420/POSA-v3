@@ -1,0 +1,992 @@
+BUSINESS_LOGIC.md
+
+# BUSINESS_LOGIC.md
+> Версия: 2.1 (Исправленная по коду)
+> Проект: activation-system
+
+---
+
+## 1. Назначение
+Платформа для продажи цифровых ваучеров через сеть мерчантов и их последующей активации клиентами. Поддерживает два основных типа поставок:
+1.  **Rokky API:** Мгновенная выдача ключей от внешнего поставщика.
+2.  **Manual (Ручной):** Обработка заявок оператором (для товаров без API).
+
+---
+
+## 2. Сущности и Модели Данных (Actual Schema)
+
+### 2.1. Ключевые модели
+*   **Voucher:** Единица товара. Имеет `code` (в базе `value`), `status` и `type` (`Vendor` - основной тип).
+*   **Product:** Товар. Привязан к `Store` и `Vendor`. Поля `rokkySku` (для интеграции) и `vendorCommissionPercent`.
+*   **Store:** "Витрина" магазина (`slug`, `name`). Определяет, какие продукты доступны для активации на конкретной странице.
+*   **RokkyOrder:** (1:1 к Voucher) Запись о заказе ключа в системе Rokky. Хранит `status`, `key`, `rokkyOrderId`.
+*   **ManualActivationRequest:** (1:1 к Voucher) Заявка на ручную выдачу товара. Статусы: `PENDING`, `COMPLETED`, `REJECTED`.
+*   **Client:** Конечный пользователь. Идентификация по номеру телефона.
+*   **Sale:** Факт продажи ваучера мерчантом.
+
+### 2.2. Иерархия
+Vendor -> Product -> Voucher
+Store -> Product (Many-to-Many logic via `storeId` in Product)
+
+---
+
+## 3. Источники Ваучеров
+
+### 3.1. Rokky Integration (Тип продукта: ROKKY)
+*   Ваучеры создаются заранее (или генерируются).
+*   Ключ (`key`) **отсутствует** до момента активации.
+*   При активации клиентом система делает запрос `createOrder` к Rokky API.
+*   Полученный ключ сохраняется в `RokkyOrder` и выдается клиенту.
+
+### 3.2. Manual Processing (Тип продукта: MANUAL)
+*   Для товаров, которые оператор выдает вручную (пополнение игр по ID, специфичные услуги).
+*   При активации клиентом создается `ManualActivationRequest`.
+*   Ключ/результат услуги вводится оператором в админке.
+
+### 3.3. Pre-loaded Vouchers (Тип продукта: VOUCHER)
+*   Классические ваучеры, где ключ уже загружен в базу админом.
+*   При активации статус просто меняется на `activated`.
+
+---
+
+## 4. Жизненный цикл Ваучера
+
+Стандартный путь: `active` -> `sold` -> `pending` -> `activated`.
+
+1.  **active:** Ваучер создан и доступен для продажи мерчантом.
+2.  **sold:** Продан мерчантом. Клиент получил чек/SMS с кодом.
+3.  **pending:** Клиент начал проверку/активацию.
+    *   Для **Rokky:** Ваучер переходит в `activated` почти мгновенно, если API ответил успехом. Если API ответил "Pending" (асинхронно), ваучер висит в `pending` до завершения.
+    *   Для **Manual:** Ваучер переходит в `pending`. Создается заявка. Ждет действий оператора.
+4.  **activated:** Услуга оказана, ключ выдан.
+
+---
+
+## 5. Сценарии (Flows)
+
+### 5.1. Активация Rokky
+1.  Клиент вводит код ваучера на сайте.
+2.  Сервер проверяет `balance/limit` (защита от брутфорса: 10 ошибок/сутки).
+3.  Проверка: Ваучер `sold`? Привязан к этому магазину?
+4.  **Call Rokky API:** `createOrder(sku, referenceId)`.
+5.  Ответ API:
+    *   **Success:** Записываем ключ в `RokkyOrder`. Статус ваучера -> `activated`.
+    *   **Error:** Логируем ошибку в `RokkyApiLog`. Клиенту показываем "Ошибка, обратитесь в поддержку".
+
+### 5.2. Активация Manual
+1.  Клиент вводит код.
+2.  Создается запись `ManualActivationRequest` (status: `PENDING`).
+3.  **Уведомление:** Сервис `telegramService` отправляет сообщение в привязанный Telegram-канал/чат магазина.
+    *   *Содержание:* Магазин, Товар, Код ваучера, Телефон клиента, ID заявки.
+4.  Клиенту: "Заявка принята. Ожидайте SMS".
+5.  **Действия Оператора:**
+    *   Получает уведомление.
+    *   Выполняет услугу (например, закидывает валюту на аккаунт).
+    *   В Админ-панели находит заявку, ставит `COMPLETED`, вводит текст/ключ.
+6.  Система (будущая реализация): Должна отправить SMS клиенту с результатом (сейчас это ручной процесс или уведомление).
+
+---
+
+## 6. Финансы и Биллинг
+
+### 6.1. Расчет Долгов (при продаже)
+Каждая продажа (`Sale`) порождает транзакцию (`VoucherTransaction`) с расчетом долгов.
+*   `Merchant.balance` увеличивается на `merchantDebt` (сумма, которую мерчант должен нам).
+*   `Vendor.balance` увеличивается на `accessPrice` (сумма, которую мы должны заплатить поставщику/Rokky/Вендору).
+
+### 6.2. Платежи
+*   **MerchantPayment:** Мерчант переводит деньги нам -> Баланс мерчанта уменьшается.
+*   **VendorPayment:** Мы переводим деньги вендору -> Баланс вендора уменьшается.
+
+---
+
+## 7. Безопасность и Ограничения
+1.  **Привязка к клиенту:** При первой попытке ввода кода ваучер "линкуется" (`OnlineVoucher`) к текущему `clientId`. Другой номер телефона не сможет его активировать.
+2.  **Магазины:** Ваучер, созданный для магазина `Roblox`, нельзя активировать на странице магазина `PUBG` (проверка `storeId`).
+3.  **Изоляция ролей:** Мерчант не видит полные коды ваучеров.
+
+---
+
+## 8. Исключения и Ошибки
+*   **Stuck Pending:** Если ваучер завис в `pending` (сбой сети, таймаут), повторный ввод кода:
+    *   Для **Rokky:** Проверяет наличие успешного `RokkyOrder`. Если есть - отдает ключ. Если нет/ошибка - пробует снова.
+    *   Для **Manual:** Проверяет статус заявки. Если `PENDING` - сообщает "В ожидании".
+
+
+__________________
+
+system_flow_documentation.md
+
+# Документация по системе активации ваучеров (POSA)
+
+Данный документ описывает текущий функционал и логику работы системы активации ваучеров, включая интеграцию с Rokky и ручную обработку (Manual).
+
+## 1. Обзор архитектуры
+
+Система предназначена для продажи (Мерчанты) и активации (Клиенты) цифровых товаров.
+
+**Основные компоненты:**
+*   **Admin Panel**: Управление товарами, магазинами, Rokky SKU, обработка ручных заявок.
+*   **Storefront (Клиентская часть)**: Брендированные страницы для активации ваучеров конечными пользователями (например `/roblox`, `/pubg`).
+*   **Backend API**: Node.js (Express), Prisma ORM, PostgreSQL.
+
+**Интеграции:**
+*   **Eskiz**: SMS-шлюз для OTP авторизации.
+*   **Rokky**: Поставщик цифровых ключей (API).
+*   **Telegram**: Канал уведомлений для операторов (о ручных заявках).
+
+---
+
+## 2. Роли и Функционал
+
+### 2.1. Администратор / Оператор
+*   **Управление Продуктами**: Создание товаров, привязка к Магазинам и SKU.
+*   **Управление Rokky SKU**: Ручное управление справочником SKU Rokky. *Автоматическое обновление цен не реализовано.*
+*   **Обработка "Manual" заявок**: Получение уведомлений в Telegram и закрытие заявок в админке.
+*   **Финансы**: Контроль балансов мерчантов и вендоров.
+
+### 2.2. Клиент (Пользователь)
+*   Вход на страницу активации по номеру телефона (SMS OTP).
+*   Активация ваучера ("Manual" или "Rokky").
+*   Просмотр истории.
+
+---
+
+## 3. Пошаговое описание процессов (Flows)
+
+### 3.1. Активация ваучера (Клиент)
+
+Процесс реализован в `storeController.js` -> `activateVoucher`.
+
+**Шаг 1: Вход и Проверки**
+1.  Клиент авторизуется по SMS.
+2.  Вводит код ваучера.
+3.  Система проверяет:
+    *   Лимит попыток (Brute-force protection).
+    *   Существование ваучера.
+    *   Соответствие магазина (`Store mismatch`).
+    *   Статус (`sold` или `pending`).
+    *   Привязку к клиенту (если ваучер уже пытались активировать, он "занят" этим номером).
+
+**Шаг 2: Обработка (Ветвление по типу продукта)**
+
+**Вариант А: ROKKY (Автоматический)**
+1.  Система отправляет запрос `createOrder` в Rokky API.
+2.  **Успех:** Rokky возвращает ключ.
+3.  Создается запись `RokkyOrder` (status: `COMPLETED`).
+4.  Ваучер переходит в статус `activated`.
+5.  Ключ мгновенно отображается клиенту.
+
+**Вариант Б: MANUAL (Ручной)**
+1.  Система создает `ManualActivationRequest` (status: `PENDING`).
+2.  **Уведомление:** Система отправляет сообщение в Telegram (через `telegramService`) с деталями заявки.
+3.  Клиенту возвращается сообщение: "Заявка принята. Ожидайте SMS".
+4.  Оператор видит заявку в Telegram -> Выполняет услугу -> В админке ставит статус `COMPLETED` и вводит результат.
+5.  Ваучер переходит в `activated`.
+
+---
+
+## 4. Технические детали
+
+### 4.1. Обработка статуса 'Pending'
+Статус `pending` означает "В процессе активации".
+*   Для **Rokky**: Если запрос к API упал (или тайм-аут), повторная попытка клиента снова инициирует проверку API/повтор запроса. Если в базе Rokky заказ уже есть, ключ просто возвращается.
+*   Для **Manual**: Если заявка уже создана (`ManualActivationRequest`), повторный ввод кода сообщит пользователю, что заявка в работе.
+
+### 4.2. Безопасность
+*   **SMS OTP**: Вход только по подтвержденному номеру.
+*   **Привязка к клиенту (`OnlineVoucher`)**: Ваучер "прилипает" к первому клиенту, который ввел код.
+*   **Rate Limiting**: Блокировка после 10 неудачных попыток.
+
+---
+
+## 5. Структура Базы Данных (Ключевые модели)
+
+*   **Store**: Магазин (`slug`, `name`).
+*   **Product**: Товар, связь с `Vendor` и `RokkySku`.
+*   **Voucher**: Товарная единица.
+*   **Vendor**: Поставщик (тип `ROKKY` или `MANUAL`).
+*   **RokkyOrder**: Запись о транзакции в API Rokky.
+*   **ManualActivationRequest**: Заявка на ручную активацию оператором.
+*   **Client**: Пользователь Storefront.
+
+
+
+__________________
+
+
+SRS.md
+# SRS.md — Software Requirements Specification
+> Проект: **activation-system**  
+> Версия: **1.0 (MVP/GA план)**  
+> Дата: 2025-09-16 (TZ: Asia/Tashkent)  
+> Контакты владельца продукта: Ахмад Буранов
+
+---
+
+## 1. Введение
+
+### 1.1. Назначение документа
+Этот документ формализует требования к системе **activation-system**: функциональные, нефункциональные, интерфейсные и данные. Он служит базой для разработки, тестирования, релиз-менеджмента и дальнейшей эволюции продукта.
+
+### 1.2. Область применения (Scope)
+Система — B2B веб-платформа для **выпуска, продажи, доставки и активации** цифровых ваучеров/лицензионных ключей с учётом комиссий и балансов сторон. Поддерживается **Apple Wallet (.pkpass)**, офлайн/онлайн доставка, интеграция с **одним Telegram-вендором** (через отдельный Python-модуль) и отправка OTP/SMS через **Eskiz**.
+
+### 1.3. Определения, термины и сокращения
+- **Voucher (ваучер)** — единица товара, соответствующая **ровно одному** активационному ключу.
+- **Sale** — оформленная и подтверждённая продажа набора ваучеров.
+- **Merchant** — партнёр-продавец на платформе.
+- **Vendor** — поставщик продукции (вендор).
+- **VendorUser** — пользователь со стороны вендора, который активирует ваучеры.
+- **Client** — конечный покупатель ваучера.
+- **Apple Wallet / .pkpass** — кошелёк iOS для хранения пропусков/карт.
+- **Eskiz** — SMS-провайдер (Узбекистан); используется для OTP/SMS-доставки.
+- **Pyrogram** — Python-библиотека для Telegram-клиента (userbot).
+- **ACL** — контроль доступа (access control list).
+- **TTL** — время жизни резерва (time-to-live).
+
+### 1.4. Ссылки
+- `BUSINESS_LOGIC.md` v2 (актуально на 2025-09-16).  
+- `PRD.md` v1.0 (MVP/GA).  
+- Внутренние схемы/диаграммы ERD/API (прилагаются отдельно).
+
+### 1.5. Обзор
+SRS структурирован на: контекст системы, функциональные требования (с идентификаторами), требования к данным и интерфейсам, нефункциональные требования, окружение и деплой, тестирование и трассируемость.
+
+---
+
+## 2. Обзор системы и контекст
+
+### 2.1. Техконтекст
+- Backend: **Node.js + Express**  
+- ORM/DB: **Prisma + PostgreSQL**  
+- Frontend: **EJS + Bootstrap** (без Vite)  
+- Отдельный модуль: **Python (Pyrogram)** — **только** для одного Telegram-вендора  
+- Порт по умолчанию: **4000**  
+- Рабочая директория: `/home/admin1/posa/activation-system`  
+- PDF-чеки: **PDFKit**, директория `/receipts` (путь хранится в `Sale.receiptPath`)  
+- TZ: **Asia/Tashkent**
+
+### 2.2. Внешние участники и интеграции
+- **Eskiz SMS API** — отправка сообщений/OTP и приём callback-статусов (`request_id`, `status`, `status_date` и др.).
+- **Apple Wallet** — генерация и подпись `.pkpass` для iOS.
+- **Telegram (Pyrogram userbot)** — получение ключей **только** для одного конкретного вендора.
+
+### 2.3. Ограничения и границы
+- Только **один** Telegram-вендор через Python.
+- **1 ваучер = 1 ключ**; одноразовая продажа и активация.
+- Роли: Admin, Merchant, Vendor, VendorUser, Client.
+- Мерчант **не видит** полный код ваучера (маскирование).
+
+---
+
+## 3. Функциональные требования
+> Формулировка в формате **«Система должна… (shall)»**. Идентификаторы пригодны для тест-кейсов.
+
+### 3.1. Аутентификация и авторизация
+- **SRS-AUTH-01**: Система **должна** поддерживать вход по логину/паролю для ролей Admin, Merchant, VendorUser.  
+- **SRS-AUTH-02**: Пароли **должны** храниться с безопасным хешированием (например, Argon2/Bcrypt).  
+- **SRS-AUTH-03**: Авторизация **должна** ограничивать доступ к действиям согласно роли (ACL).  
+- **SRS-AUTH-04**: VendorUser **должен** иметь доступ к активации **только** ваучеров своего `vendorId`.  
+- **SRS-AUTH-05**: Доступ к эндпоинту `/activate?token=...` **должен** проверять валидность токена (подпись, `exp`, `scope`).  
+- **SRS-AUTH-06**: Сессии и JWT **должны** иметь сроки жизни и механизмы инвалидации.
+
+### 3.2. Управление справочниками (Admin)
+- **SRS-ADM-01**: Админ **должен** управлять вендорами (`Vendor`), их пользователями (`VendorUser`), мерчантами (`Merchant`), продуктами (`Product`) и ваучерами (`Voucher`).  
+- **SRS-ADM-02**: Для `Product` система **должна** хранить `price`, `status`, `vendorId`, `vendorCommissionPercent`, `merchantCommissionPercent`, шаблоны SMS/Email/чека.  
+- **SRS-ADM-03**: Админ **должен** иметь интерфейс массовой загрузки **Voucher** (построчно) с присвоением `productId`, `vendorId`, `type=Manual`, `status=active`.  
+- **SRS-ADM-04**: Система **должна** предотвращать дубликаты кодов ваучеров (уникальность).  
+- **SRS-ADM-05**: Система **должна** отображать в админке текущие **балансы** `Merchant.balance` и `Vendor.balance`.
+
+### 3.3. Каталог и ваучеры
+- **SRS-VCH-01**: Ваучер **должен** иметь статусы: `active`, `reserved`, `sold`, `pending`, `activated`, `archived/deleted`.  
+- **SRS-VCH-02**: Переходы статусов **должны** соответствовать модели в `BUSINESS_LOGIC.md` (см. 5.1).  
+- **SRS-VCH-03**: При показе в UI мерчанта код ваучера **должен** быть замаскирован (первые 3 символа + `******`).  
+- **SRS-VCH-04**: Для одного конкретного вендора тип `Voucher.type = Telegram`: система **должна** уметь получить ключ через модуль Python (Pyrogram), вычленив **только строку ключа** из ответа бота.  
+- **SRS-VCH-05**: Система **должна** логировать все переходы статусов ваучера в `AuditLog`.
+
+### 3.4. Корзина и подтверждение продажи (Merchant)
+- **SRS-CART-01**: Система **должна** позволять мерчанту собирать корзину (session-based / Redis).  
+- **SRS-CART-02**: Резерв `reserved` **должен** иметь TTL (по умолчанию 15 минут). По истечении — возврат в `active`.  
+- **SRS-CART-03**: Подтверждение продажи **должно** быть идемпотентным (по `idempotencyKey`) и атомарным.  
+- **SRS-CART-04**: При подтверждении продажи система **должна**:  
+  a) перевести ваучеры `active/reserved → sold`;  
+  b) создать `Sale` с `deliveryType` = `offline`/`online`;  
+  c) на каждый ваучер создать `VoucherTransaction` с расчётом `merchantDebt`, `vendorDebt` (выплата вендору) и `adminDebt` (маржа платформы);  
+  d) обновить `Merchant.balance += Σ merchantDebt`;  
+  e) обновить `Vendor.balance += Σ vendorDebt`;  
+  f) сгенерировать **PDF-чек** (PDFKit), сохранить `receiptPath`;  
+  g) редиректить на `/merchant/sales`.
+- **SRS-CART-05**: При сбое подтверждения система **должна** откатить незавершённые резервы и гарантировать отсутствие дублирующих `Sale`.
+
+### 3.5. Доставка: офлайн и онлайн
+- **SRS-DLV-01**: Для `deliveryType=offline` чек **должен** содержать QR-код, ведущий на `/activate?token=...`.  
+- **SRS-DLV-02**: Токен в ссылке **должен** быть подписан, иметь `exp`, `voucherId`, `vendorId`, `scope`; по умолчанию токен **не** одноразовый.  
+- **SRS-DLV-03**: Для `deliveryType=online` система **должна**:  
+  a) создать/найти `Clients` по номеру телефона;  
+  b) создать `OnlineVouchers` (связь clientId ↔ voucherId);  
+  c) отправить SMS через **Eskiz** по шаблону продукта;  
+  d) записать `VoucherSmsLog` с `requestId`;  
+  e) обработать callback Eskiz (`request_id`, `status`, `status_date`) и обновить лог.
+- **SRS-DLV-04**: При открытии ссылки с iOS система **должна** предложить `.pkpass` и записать `VoucherWalletLog`; статус ваучера может перейти в `pending`.  
+- **SRS-DLV-05**: При открытии ссылки с Android система **должна** вести в веб-кабинет/OTP (Eskiz), записать `VoucherWalletLog`; статус — `pending`.
+
+### 3.6. Активация у вендора
+- **SRS-VEND-01**: Вендор/VendorUser **должны** иметь экран активации с вводом/сканом кода ваучера.  
+- **SRS-VEND-02**: Система **должна** проверять, что `vendorId` ваучера совпадает с `vendorId` пользователя.  
+- **SRS-VEND-03**: Разрешены переходы `sold|pending → activated`; при иных — отказ.  
+- **SRS-VEND-04**: Для `Voucher.type=Telegram`, если ключ ещё не присвоен — система **должна** запросить Python-модуль (Pyrogram), получить ответ бота, извлечь **строку ключа**, присвоить ваучеру и залогировать операцию.  
+- **SRS-VEND-05**: Все активации **должны** писаться в `AuditLog`.
+- **SRS-VEND-06**: Кабинет вендора **должен** предоставлять разделы `/vendor/dashboard`, `/vendor/activate`, `/vendor/vouchers`, `/vendor/transactions`, `/vendor/settings` с единым navbar и фильтрами по статусам/продуктам; все запросы обязаны проходить ACL (`role=vendor_user`, совпадение `vendorId`).
+
+### 3.7. Финансы и балансы (фактическая реализация)
+- **SRS-FIN-01**: Для каждой позиции продажи система **должна** рассчитывать:  
+  `adminDebt = price * vendorCommissionPercent / 100` — маржа платформы;  
+  `vendorDebt = price * (1 - vendorCommissionPercent / 100)` — выплата вендору;  
+  `merchantReward = price * merchantCommissionPercent / 100`;  
+  `merchantDebt = price - merchantReward`.
+- **SRS-FIN-02**: `Merchant.balance` **должен** увеличиваться на `Σ merchantDebt` при продажах и уменьшаться на суммы `MerchantPayment`.  
+- **SRS-FIN-03**: `Vendor.balance` **должен** увеличиваться на `Σ vendorDebt` при продажах и уменьшаться на суммы `VendorPayment`.  
+- **SRS-FIN-04**: Система **должна** обеспечивать формы ввода `MerchantPayment` и `VendorPayment` с фиксацией `balanceBefore/After`.  
+- **SRS-FIN-05**: Отчётные страницы `/admin/merchants` и `/admin/vendors` **должны** показывать актуальные балансы и историю транзакций/платежей.
+
+### 3.8. Отчётность и журналы
+- **SRS-REP-01**: Система **должна** предоставлять фильтры по статусам ваучеров, вендорам, продуктам, периодам.  
+- **SRS-REP-02**: Система **должна** позволять выгружать CSV для продаж/транзакций/платежей.  
+- **SRS-REP-03**: Должны вестись логи: `VoucherSmsLog`, `VoucherWalletLog`, `AuditLog`.
+
+### 3.9. Локализация и представление
+- **SRS-UX-01**: Интерфейс и шаблоны **должны** поддерживать RU/EN.  
+- **SRS-UX-02**: Формат цен в UZS **должен** отображаться как `9.99 сум`.  
+- **SRS-UX-03**: После подтверждения продажи система **должна** перенаправлять мерчанта на `/merchant/sales`.
+- **SRS-UX-04**: Кабинеты мерчанта и вендора **должны** использовать единый Tailwind-макет с фиксированным navbar, адаптивными таблицами и мобильной навигацией, соответствующей админским страницам.
+
+---
+
+## 4. Данные и модель (ERD — обзор)
+
+### 4.1. Основные сущности (ключевые поля)
+- **User**: id, username, passwordHash, role.  
+- **Merchant**: id, name/username, legalInfo, status, **balance** (задолженность мерчанта).  
+- **Vendor**: id, name, status, legalInfo, vendorType, **balance** (задолженность платформы перед вендором).  
+- **VendorUser**: id, vendorId, username, passwordHash, status.  
+- **Product**: id, name, price, status, vendorId, vendorCommissionPercent, merchantCommissionPercent, templates (sms/email/receipt).  
+- **Voucher**: id, code/value, status, productId, vendorId, type (`Telegram|Manual|API`), (опц.) keyStoreRef, createdAt, updatedAt.  
+- **Sale**: id, merchantId, total, deliveryType (`offline|online`), receiptPath, createdAt.  
+- **VoucherTransaction**: id, saleId, voucherId, productId, merchantId, vendorId, merchantDebt, adminDebt, platformGross, createdAt.  
+- **MerchantPayment**: id, merchantId, amount, balanceBefore, balanceAfter, createdAt.  
+- **VendorPayment**: id, vendorId, amount, balanceBefore, balanceAfter, createdAt.  
+- **Clients**: id, phoneNumber (уник.), createdAt.  
+- **OnlineVouchers**: id, voucherId, clientId, assignedAt.  
+- **VoucherWalletLog**: id, voucherId, clientId, isAddedToWallet, addedAt, pkpassId, deviceInfo.  
+- **VoucherSmsLog**: id, voucherId, phoneNumber, message, requestId, status, statusDate, response JSON, createdAt.  
+- **AuditLog**: id, actorUserId, role, action, entityType, entityId, details JSON, ip/ua, createdAt.
+
+### 4.2. Инварианты и ограничения
+- **1 ваучер = 1 ключ**; уникальность `Voucher.code/value`.  
+- Переиспользование активированного ваучера **запрещено**.  
+- Маскирование кода ваучера для ролей, не имеющих права на полный просмотр.  
+- Денормализованные поля балансов (`Merchant.balance`, `Vendor.balance`) **истинны** и обновляются только через транзакции/платежи.
+
+### 4.3. Индексы и производительность
+- Уникальный индекс на `Voucher.code/value`.  
+- Индексы по `Voucher.status`, `Voucher.vendorId`, `Voucher.productId`.  
+- Индексы по внешним ключам в `VoucherTransaction`, `OnlineVouchers`, логах.
+
+### 4.4. Ретенция и приватность
+- Логи SMS/Wallet/Audit — хранение согласно политике (минимум 1 год, если не указано иное).  
+- PII: телефон в `Clients`, должен храниться и передаваться согласно политике приватности.
+
+---
+
+## 5. Внешние интерфейсы и протоколы
+
+### 5.1. Eskiz SMS
+- **Отправка**: `POST https://notify.eskiz.uz/api/message/sms/send`  
+  Параметры: `to` (phone), `text` (шаблон с ссылкой), … (см. Eskiz docs).  
+  Ответ: содержит `id` → сохраняем в `VoucherSmsLog.requestId`.  
+- **Callback** (входящий): содержит `request_id`, `status`, `status_date`, др. поля. Система обновляет запись `VoucherSmsLog` и помечает итоговый статус доставки/OTP.
+
+### 5.2. Telegram (Pyrogram)
+- Запрос к боту-магазину (команда типа `/402`) → ответ-сообщение.  
+- Парсер **обязан** извлечь **только строку ключа** и вернуть её Node-приложению.  
+- Ошибки и неоднозначные ответы — в `AuditLog`, без сохранения мусорных данных.
+
+### 5.3. Apple Wallet (.pkpass)
+- Генерация `.pkpass` с подписью сертификатами (хранятся в окружении).  
+- iOS на ссылке `/activate?token=...` получает `.pkpass`; создаётся `VoucherWalletLog`.
+
+### 5.4. Email SMTP (после GA, опц.)
+- Канал доставки ключа/инструкций на email клиента.
+
+---
+
+## 6. Нефункциональные требования
+
+### 6.1. Производительность
+- **SRS-NFR-PERF-01**: Подтверждение продажи (1–10 ваучеров) **≤ 2 сек** при номинальной нагрузке.  
+- **SRS-NFR-PERF-02**: Отправка SMS — асинхронная, UI не блокируется ожиданием ответа Eskiz.  
+- **SRS-NFR-PERF-03**: Страницы списков (1000 записей) — TTFB ≤ 500 мс при пагинации.
+
+### 6.2. Надёжность и доступность
+- **SRS-NFR-REL-01**: Идемпотентность подтверждения продажи по `idempotencyKey`.  
+- **SRS-NFR-REL-02**: TTL резерва — 15 минут; по истечении — авто-rollback.  
+- **SRS-NFR-REL-03**: Бэкапы БД — ежедневные инкрементальные + еженедельные полные; проверка восстановления ежемесячно.  
+- **SRS-NFR-REL-04**: RPO ≤ 24 часа; RTO ≤ 4 часа (для MVP).
+
+### 6.3. Безопасность
+- **SRS-NFR-SEC-01**: Секреты (JWT, Eskiz, Apple Wallet) — **только** в переменных окружения; не коммитятся.  
+- **SRS-NFR-SEC-02**: Шифрование в транспорте (HTTPS).  
+- **SRS-NFR-SEC-03**: Рекомендуется шифрование/сегрегация хранения самих ключей ваучеров; минимум — ограничение чтения и аудит.  
+- **SRS-NFR-SEC-04**: Ограничение частоты запросов (rate limiting) к критичным эндпоинтам.  
+- **SRS-NFR-SEC-05**: CSRF-защита для форм, XSS-санитизация для полей ввода.  
+- **SRS-NFR-SEC-06**: Токен `/activate` — подписан, содержит `exp`, `scope`, `voucherId`, `vendorId`; утечка токена не должна позволять активацию без кабинета вендора.
+
+### 6.4. Масштабирование и поддерживаемость
+- **SRS-NFR-SCL-01**: Веб-слой stateless; сессии/корзины — в Redis/БД.  
+- **SRS-NFR-SCL-02**: Разделение очередей задач (SMS, PDF, pkpass) от HTTP-слоя.  
+- **SRS-NFR-MNT-01**: Миграции Prisma обязательны; схемы версионируются.
+
+### 6.5. Локализация, юзабилити
+- **SRS-NFR-I18N-01**: RU/EN; легко расширяемо.  
+- **SRS-NFR-UX-01**: Форматы дат/валют локализованы (UZS: `9.99 сум`).
+
+### 6.6. Логирование и мониторинг
+- **SRS-NFR-OBS-01**: Структурные логи: продажи, Eskiz, Telegram, активации, платежи.  
+- **SRS-NFR-OBS-02**: Бизнес-метрики KPI (см. PRD §3.2) — в метриках/дашбордах.  
+- **SRS-NFR-OBS-03**: Алерты при: падении доли успешных SMS, ошибках Telegram-модуля, расхождении балансов.
+
+---
+
+## 7. Окружение и деплой
+
+### 7.1. Среды
+- **DEV**, **STAGE**, **PROD** (рекомендуется).  
+- Порт по умолчанию: **4000** (конфигурируемый).  
+- База: PostgreSQL; миграции через Prisma.
+
+### 7.2. Конфигурация и переменные окружения (примеры)
+- `DATABASE_URL` (PostgreSQL URI)  
+- `JWT_SECRET`, `WALLET_CERT_*` (Apple Wallet), `ESKIZ_API_*`  
+- `TZ=Asia/Tashkent`  
+> **Примечание:** значения секретов в репозитории **не** храним.
+
+### 7.3. Файловое хранилище
+- `/receipts` — PDF-чеки.  
+- Хранилище для `.pkpass` (если кэшируем/логируем).  
+- Ротация и очистка согласно политике.
+
+---
+
+## 8. Миграции и начальные данные
+- Прогон миграций Prisma при деплое.  
+- Админ-учётка (seed).  
+- Начальные справочники (по необходимости): Vendors, Products, шаблоны.
+
+---
+
+## 9. Верификация и тестирование
+
+### 9.1. Стратегия тестов
+- **Unit**: расчёты комиссий, утилиты токенов, парсинг Telegram-ответов.  
+- **Integration**: подтверждение продажи (атомарность, идемпотентность), Eskiz (моки), Apple Wallet генерация (моки).  
+- **E2E**: офлайн/онлайн флоу, активация у вендора, отчёты/балансы.  
+- **Security**: маскирование кодов, ACL для VendorUser, rate limiting.
+
+### 9.2. Критические тест-кейсы (примерно)
+- **TC-SALE-01**: подтверждение продажи с 3 ваучерами → `sold`, `Sale`, `VoucherTransaction`, обновление балансов, PDF, редирект.  
+- **TC-DLV-ONLINE-01**: онлайн-доставка → SMS `requestId`, callback обновляет `VoucherSmsLog`.  
+- **TC-WALLET-01**: iOS открывает ссылку → `.pkpass`, `VoucherWalletLog`, статус `pending`.  
+- **TC-VENDOR-ACL-01**: VendorUser пытается активировать чужой ваучер → отказ.  
+- **TC-FIN-01**: сверка `Merchant/Vendor.balance` против суммы транзакций и платежей.
+
+### 9.3. Критерии приёмки (соответствуют PRD §9)
+См. AC-Sale-01, AC-Delivery-01/02, AC-Wallet-01, AC-Activate-01, AC-Finance-01 из PRD — должны быть покрыты автотестами.
+
+---
+
+## 10. Трассируемость требований (фрагмент)
+| PRD эпик/AC | SRS ID(ы) |
+|---|---|
+| Продажа оффлайн/онлайн (AC-Sale-01) | SRS-CART-03/04/05, SRS-DLV-01/02 |
+| Eskiz SMS + callback (AC-Delivery-02) | SRS-DLV-03 |
+| Apple Wallet (AC-Wallet-01) | SRS-DLV-04 |
+| Активация у вендора (AC-Activate-01) | SRS-VEND-01/02/03/05 |
+| Балансы/комиссии (AC-Finance-01) | SRS-FIN-01/02/03/04/05 |
+| Маскирование ваучеров | SRS-VCH-03, SRS-NFR-SEC-03 |
+
+---
+
+## 11. Риски и допущения
+- **Telegram-вендор нестабилен** → ретраи, уведомления, фолбэк (ручная выдача).  
+- **Недоставка SMS** → мониторинг статусов, повторная отправка, альтернативные каналы.  
+- **Ошибки комиссий/балансов** → авто-тесты расчётов, сверки отчётов.  
+- **Утечки ключей** → ограничение доступа, маскирование, опциональное шифрование.
+
+---
+
+## 12. Открытые вопросы
+1. Время жизни токена `/activate` по умолчанию (предложение: **48 часов**).  
+2. Где хранить коды ключей: шифрование на уровне БД/приложения?  
+3. Требования к экспортам (форматы, поля, локаль) для отчётов GA.  
+4. Нужен ли email-канал в MVP или перенести в GA.
+
+---
+
+## 13. Приложения
+
+### 13.1. Состояния ваучера (state machine, текст)
+`active → reserved → sold → (optional) pending → activated → archived/deleted`  
+Возвраты: `reserved → active` (отмена/TTL). Активация возможна **только** из `sold|pending`.
+
+### 13.2. Примеры формул (1 ваучер)
+adminDebt = price * vendorCommissionPercent / 100
+merchantReward = price * merchantCommissionPercent / 100
+platformGross = price - adminDebt - merchantReward
+merchantDebt = price - merchantReward
+
+### 13.3. Эндпоинты верхнего уровня (контуры)
+- `POST /merchant/cart` — управление корзиной  
+- `POST /merchant/checkout/confirm` — подтверждение продажи  
+- `POST /delivery/online/assign` — online-привязка и SMS Eskiz  
+- `POST /vendor/activate` — активация ваучера  
+- `POST /payments/merchant` / `POST /payments/vendor` — платежи  
+- `GET /admin/merchants` / `GET /admin/vendors` — отчёты/балансы
+
+---
+
+
+__________________
+
+ERD.md
+# ERD.md — Entity–Relationship Specification
+> Проект: **activation-system**  
+> Версия: **1.0** (синхронизировано со schema.prisma на 2025-09-16, TZ: Asia/Tashkent)  
+> Источник: `/home/admin1/posa/activation-system/prisma/schema.prisma`
+
+Документ описывает сущности, ключи, связи и ограничения модели данных. Ниже есть обзорная ER-диаграмма (Mermaid), детальная спецификация таблиц, список связей с кардинальностями, перечисления (enum), а также примечания к консистентности схемы и рекомендации.
+
+---
+
+## 1) Обзорная ER-диаграмма
+
+> Обозначения Mermaid ER:  
+> `||` — ровно один; `o|` — ноль или один; `|{` — один или много; `o{` — ноль или много.
+
+```mermaid
+erDiagram
+  USER ||--o{ VOUCHERACTIVATION : "activatedBy (optional)"
+  USER }o--|| VENDOR : "belongs to (vendor_user only)"
+
+  VENDOR ||--o{ PRODUCT : "has"
+  PRODUCT ||--o{ VOUCHER : "issues"
+
+  MERCHANT ||--o{ VOUCHERTRANSACTION : "has"
+  VENDOR   ||--o{ VOUCHERTRANSACTION : "has"
+  PRODUCT  }o--o{ VOUCHERTRANSACTION : "denorm productId (no FK)"
+
+  MERCHANT ||--o{ MERCHANTPAYMENT : "payments"
+  VENDOR   ||--o{ VENDORPAYMENT   : "payouts"
+
+  VOUCHER  ||--o{ VOUCHERACTIVATION : "activated records"
+  VENDOR   ||--o{ VOUCHERACTIVATION : "activation context"
+  CLIENT   ||--o{ VOUCHERACTIVATION : "activated by (optional)"
+
+  VOUCHER  ||--o| ONLINEVOUCHER     : "assigned to (0..1)"
+  CLIENT   ||--o{ ONLINEVOUCHER     : "has"
+
+  VOUCHER  ||--o{ VOUCHERWALLETLOG  : "wallet add logs"
+  CLIENT   ||--o{ VOUCHERWALLETLOG  : "wallet events"
+
+  VOUCHER  ||--o{ VOUCHERSMSLOG     : "sms logs"
+
+  %% SALE — денормализованная запись без явных FK
+  SALE     }o--o{ VOUCHER : "by value (denorm)"
+  SALE     }o--o{ PRODUCT : "by productId (denorm)"
+  SALE     }o--o{ MERCHANT: "by merchantUsername (denorm)"
+````
+
+> **Примечание:** `SALE` и `VOUCHERTRANSACTION` хранят ряд ссылок **денормализованно** (по `voucherValue`, `productId`, `productName`, `merchantUsername`) без явных внешних ключей. Это отражено пунктирными/комментарными связями.
+
+---
+
+## 2) Спецификация сущностей (таблиц)
+
+Ниже — поля, типы, ключи, ограничения и умолчания. Типы указаны по Prisma/PG.
+
+### 2.1. `User`
+
+| Колонка  | Тип     | Ограничения                            | По умолчанию |
+| -------- | ------- | -------------------------------------- | ------------ |
+| id       | Int     | PK, autoincrement                      | yes          |
+| username | String  | UNIQUE                                 | —            |
+| password | String  | —                                      | —            |
+| role     | Role    | ENUM(`admin`,`merchant`,`vendor_user`) | —            |
+| vendorId | Int?    | FK → `Vendor.id` (nullable)            | —            |
+| note     | String? | —                                      | —            |
+
+Связи:
+
+* `vendor?` (многие пользователи → один `Vendor`), только для роли `vendor_user`.
+* `activations` (`VoucherActivation[]`, по связи `"UserActivations"`).
+
+---
+
+### 2.2. `Merchant`
+
+| Колонка   | Тип            | Ограничения                   | По умолчанию |
+| --------- | -------------- | ----------------------------- | ------------ |
+| id        | Int            | PK, autoincrement             | yes          |
+| username  | String         | UNIQUE                        | —            |
+| status    | MerchantStatus | ENUM(`active`,`off`)          | `active`     |
+| legalInfo | String         | —                             | —            |
+| balance   | Float          | Денорм. текущая задолженность | `0`          |
+
+Связи:
+
+* `transactions` (`VoucherTransaction[]` по `"MerchantToTransactions"`),
+* `payments` (`MerchantPayment[]` по `"MerchantToPayments"`).
+
+---
+
+### 2.3. `Vendor`
+
+| Колонка                  | Тип     | Ограничения            | По умолчанию |
+| ------------------------ | ------- | ---------------------- | ------------ |
+| id                       | Int     | PK, autoincrement      | yes          |
+| name                     | String  | —                      | —            |
+| category                 | String  | —                      | —            |
+| productType              | String  | —                      | —            |
+| description              | String? | —                      | —            |
+| receiptTemplate          | String? | —                      | —            |
+| balance                  | Float   | Денорм. долг платформы | `0`          |
+| defaultCommissionPercent | Float   | —                      | `80`         |
+
+Связи:
+
+* `products` (`Product[]`),
+* `transactions` (`VoucherTransaction[]` по `"VendorToTransactions"`),
+* `users` (`User[]`),
+* `voucherActivations` (`VoucherActivation[]`),
+* `payments` (`VendorPayment[]` по `"VendorToPayments"`).
+
+---
+
+### 2.4. `Product`
+
+| Колонка                   | Тип    | Ограничения             | По умолчанию |
+| ------------------------- | ------ | ----------------------- | ------------ |
+| id                        | Int    | PK, autoincrement       | yes          |
+| name                      | String | —                       | —            |
+| price                     | Float  | —                       | —            |
+| status                    | String | *(см. примечание ниже)* | —            |
+| vendorId                  | Int    | FK → `Vendor.id`        | —            |
+| merchantCommissionPercent | Float  | —                       | —            |
+| vendorCommissionPercent   | Float  | —                       | —            |
+
+Связи:
+
+* `vendor` (многие → один `Vendor`),
+* `vouchers` (`Voucher[]` по `"ProductVouchers"`).
+
+> **Примечание по консистентности:** в схеме объявлен `enum ProductStatus { on off }`, но поле `Product.status` имеет тип `String`. Если хотите строгую валидацию на уровне БД/Prisma — стоит заменить на `ProductStatus`.
+
+---
+
+### 2.5. `Voucher`
+
+| Колонка     | Тип           | Ограничения                                           | По умолчанию |
+| ----------- | ------------- | ----------------------------------------------------- | ------------ |
+| id          | Int           | PK, autoincrement                                     | yes          |
+| value       | String        | UNIQUE                                                | —            |
+| status      | VoucherStatus | ENUM(`activated`,`sold`,`deleted`,`active`,`pending`) | `active`     |
+| productId   | Int           | FK → `Product.id`                                     | —            |
+| productName | String        | Денорм. название продукта                             | —            |
+| type        | VoucherType   | ENUM(`Telegram`,`Vendor`)                             | —            |
+
+Связи:
+
+* `product` (`Product` по `"ProductVouchers"`),
+* `voucherActivations` (`VoucherActivation[]`),
+* `onlineVouchers` (`OnlineVoucher[]`),
+* `smsLogs` (`VoucherSmsLog[]`),
+* `walletLogs` (`VoucherWalletLog[]`).
+
+---
+
+### 2.6. `Sale` *(денорм. “факт” без явных FK)*
+
+| Колонка          | Тип        | Ограничения                               | По умолчанию |
+| ---------------- | ---------- | ----------------------------------------- | ------------ |
+| id               | Int        | PK, autoincrement                         | yes          |
+| voucherValue     | String     | — (ссылка по значению на `Voucher.value`) | —            |
+| price            | Float      | —                                         | —            |
+| status           | SaleStatus | ENUM(`COMPLETED`,`CANCELLED`,`PENDING`)   | `COMPLETED`  |
+| productId        | Int        | — (логическая ссылка на Product)          | —            |
+| productName      | String     | Денорм.                                   | —            |
+| merchantUsername | String     | — (логическая ссылка на Merchant)         | —            |
+| date             | DateTime   | —                                         | `now()`      |
+| receiptPath      | String?    | —                                         | —            |
+| saleType         | SaleType   | ENUM(`ONLINE`,`OFFLINE`)                  | `OFFLINE`    |
+| customerPhone    | String?    | —                                         | —            |
+
+---
+
+### 2.7. `VoucherTransaction`
+
+| Колонка      | Тип               | Ограничения                                   | По умолчанию |
+| ------------ | ----------------- | --------------------------------------------- | ------------ |
+| id           | Int               | PK, autoincrement                             | yes          |
+| voucherValue | String            | Денорм. ссылка на ваучер                      | —            |
+| merchantId   | Int               | FK → `Merchant.id` (`MerchantToTransactions`) | —            |
+| vendorId     | Int               | FK → `Vendor.id` (`VendorToTransactions`)     | —            |
+| productId    | Int               | Денорм. ссылка на продукт                     | —            |
+| productName  | String            | Денорм.                                       | —            |
+| price        | Float             | —                                             | —            |
+| merchantDebt | Float             | —                                             | —            |
+| adminDebt    | Float             | —                                             | —            |
+| vendorDebt   | Float             | —                                             | —            |
+| status       | TransactionStatus | ENUM(`PENDING`,`COMPLETED`,`CANCELLED`)       | `PENDING`    |
+| createdAt    | DateTime          | —                                             | `now()`      |
+
+---
+
+### 2.8. `MerchantPayment`
+
+| Колонка       | Тип      | Ограничения                               | По умолчанию |
+| ------------- | -------- | ----------------------------------------- | ------------ |
+| id            | Int      | PK, autoincrement                         | yes          |
+| merchantId    | Int      | FK → `Merchant.id` (`MerchantToPayments`) | —            |
+| amount        | Float    | —                                         | —            |
+| comment       | String?  | —                                         | —            |
+| createdAt     | DateTime | —                                         | `now()`      |
+| balanceBefore | Float    | —                                         | —            |
+| balanceAfter  | Float    | —                                         | —            |
+
+---
+
+### 2.9. `VendorPayment`
+
+| Колонка       | Тип      | Ограничения                           | По умолчанию |
+| ------------- | -------- | ------------------------------------- | ------------ |
+| id            | Int      | PK, autoincrement                     | yes          |
+| vendorId      | Int      | FK → `Vendor.id` (`VendorToPayments`) | —            |
+| amount        | Float    | —                                     | —            |
+| comment       | String?  | —                                     | —            |
+| createdAt     | DateTime | —                                     | `now()`      |
+| balanceBefore | Float    | —                                     | —            |
+| balanceAfter  | Float    | —                                     | —            |
+
+---
+
+### 2.10. `VoucherActivation`
+
+| Колонка     | Тип      | Ограничения                                      | По умолчанию |
+| ----------- | -------- | ------------------------------------------------ | ------------ |
+| id          | Int      | PK, autoincrement                                | yes          |
+| voucherId   | Int      | FK → `Voucher.id`                                | —            |
+| activatedBy | Int?     | FK → `User.id` (`UserActivations`, nullable)     | —            |
+| vendorId    | Int      | FK → `Vendor.id`                                 | —            |
+| activatedAt | DateTime | —                                                | `now()`      |
+| clientId    | Int?     | FK → `Client.id` (`ClientActivations`, nullable) | —            |
+
+> **Бизнес-инвариант:** фактически ожидается не более одной успешной “финальной” активации на ваучер, однако модель допускает несколько записей (для истории/попыток). Логику уникальности конечной активации контролирует прикладной код.
+
+---
+
+### 2.11. `Client`
+
+| Колонка     | Тип      | Ограничения       | По умолчанию |
+| ----------- | -------- | ----------------- | ------------ |
+| id          | Int      | PK, autoincrement | yes          |
+| phoneNumber | String   | UNIQUE            | —            |
+| name        | String?  | —                 | —            |
+| createdAt   | DateTime | —                 | `now()`      |
+| updatedAt   | DateTime | @updatedAt        | —            |
+
+Связи:
+
+* `activations` (`VoucherActivation[]`, `"ClientActivations"`),
+* `onlineVouchers` (`OnlineVoucher[]`),
+* `walletLogs` (`VoucherWalletLog[]`).
+
+---
+
+### 2.12. `OnlineVoucher`
+
+| Колонка    | Тип      | Ограничения                   | По умолчанию |
+| ---------- | -------- | ----------------------------- | ------------ |
+| id         | Int      | PK, autoincrement             | yes          |
+| clientId   | Int      | FK → `Client.id`              | —            |
+| voucherId  | Int      | FK → `Voucher.id`, **UNIQUE** | —            |
+| assignedAt | DateTime | —                             | `now()`      |
+
+> **Кардинальность:** каждый ваучер может быть назначен **не более чем одному** клиенту (`voucherId` — UNIQ). Один клиент может иметь много `OnlineVoucher`.
+
+---
+
+### 2.13. `VoucherWalletLog`
+
+| Колонка         | Тип         | Ограничения           | По умолчанию |
+| --------------- | ----------- | --------------------- | ------------ |
+| id              | Int         | PK, autoincrement     | yes          |
+| voucherId       | Int         | FK → `Voucher.id`     | —            |
+| clientId        | Int         | FK → `Client.id`      | —            |
+| isAddedToWallet | Boolean     | —                     | `false`      |
+| addedAt         | DateTime    | —                     | `now()`      |
+| pkpassId        | String?     | —                     | —            |
+| deviceInfo      | DeviceType? | ENUM(`ios`,`android`) | —            |
+
+---
+
+### 2.14. `VoucherSmsLog`
+
+| Колонка     | Тип       | Ограничения                      | По умолчанию |
+| ----------- | --------- | -------------------------------- | ------------ |
+| id          | Int       | PK, autoincrement                | yes          |
+| voucherId   | Int       | FK → `Voucher.id`                | —            |
+| phoneNumber | String    | —                                | —            |
+| message     | String    | —                                | —            |
+| requestId   | String    | — (Eskiz message id)             | —            |
+| status      | String    | — (`waiting/delivered/rejected`) | —            |
+| statusDate  | DateTime? | —                                | —            |
+| createdAt   | DateTime  | —                                | `now()`      |
+| response    | Json?     | — (полный ответ Eskiz)           | —            |
+
+---
+
+### 2.15. `AuthSmsLog` *(OTP Eskiz, автономная таблица)*
+
+| Колонка     | Тип       | Ограничения       | По умолчанию |
+| ----------- | --------- | ----------------- | ------------ |
+| id          | Int       | PK, autoincrement | yes          |
+| phoneNumber | String    | —                 | —            |
+| code        | String    | —                 | —            |
+| requestId   | String    | —                 | —            |
+| status      | String    | —                 | —            |
+| statusDate  | DateTime? | —                 | —            |
+| createdAt   | DateTime  | —                 | `now()`      |
+| response    | Json?     | —                 | —            |
+| verified    | Boolean   | —                 | `false`      |
+| verifiedAt  | DateTime? | —                 | —            |
+
+---
+
+## 3) Связи и кардинальности (сводно)
+
+1. **Vendor 1 — N Product** (`Product.vendorId → Vendor.id`).
+2. **Product 1 — N Voucher** (`Voucher.productId → Product.id`).
+3. **Vendor 1 — N User** (опционально для `vendor_user`; `User.vendorId → Vendor.id`).
+4. **Voucher 1 — N VoucherActivation** (`VoucherActivation.voucherId → Voucher.id`).
+5. **Vendor 1 — N VoucherActivation** (`VoucherActivation.vendorId → Vendor.id`).
+6. **User 1 — N VoucherActivation** (опционально; `VoucherActivation.activatedBy → User.id`).
+7. **Client 1 — N VoucherActivation** (опционально; `VoucherActivation.clientId → Client.id`).
+8. **Voucher 1 — 0..1 OnlineVoucher** (`OnlineVoucher.voucherId` — UNIQUE).
+9. **Client 1 — N OnlineVoucher** (`OnlineVoucher.clientId → Client.id`).
+10. **Voucher 1 — N VoucherWalletLog** (`VoucherWalletLog.voucherId → Voucher.id`).
+11. **Client 1 — N VoucherWalletLog** (`VoucherWalletLog.clientId → Client.id`).
+12. **Voucher 1 — N VoucherSmsLog** (`VoucherSmsLog.voucherId → Voucher.id`).
+13. **Merchant 1 — N VoucherTransaction** (`VoucherTransaction.merchantId → Merchant.id`).
+14. **Vendor 1 — N VoucherTransaction** (`VoucherTransaction.vendorId → Vendor.id`).
+15. **Merchant 1 — N MerchantPayment** (`MerchantPayment.merchantId → Merchant.id`).
+16. **Vendor 1 — N VendorPayment** (`VendorPayment.vendorId → Vendor.id`).
+17. **Sale** — денормализованные связи по значениям (`voucherValue`, `productId`, `merchantUsername`) — **FK отсутствуют**.
+
+---
+
+## 4) Перечисления (ENUM)
+
+* `Role` — `admin`, `merchant`, `vendor_user`
+* `MerchantStatus` — `active`, `off`
+* `ProductStatus` — `on`, `off` *(не используется в `Product.status` — см. примечания)*
+* `VoucherStatus` — `activated`, `sold`, `deleted`, `active`, `pending`
+* `VoucherType` — `Telegram`, `Vendor`
+* `SaleStatus` — `COMPLETED`, `CANCELLED`, `PENDING`
+* `SaleType` — `ONLINE`, `OFFLINE`
+* `TransactionStatus` — `PENDING`, `COMPLETED`, `CANCELLED`
+* `DeviceType` — `ios`, `android`
+
+---
+
+## 5) Бизнес-инварианты данных (важно)
+
+* **1 ваучер = 1 ключ** (`Voucher.value` — UNIQUE).
+* Ваучер продаётся и активируется **ровно один раз** (прикладной контроль; модель допускает множественные записи активаций, но финальная — одна).
+* Мерчант **не видит** полный код ваучера (маскирование на уровне приложения).
+* **OnlineVoucher**: один ваучер может быть назначен **макс. 1** клиенту (`voucherId` UNIQUE).
+* Денормализованные **балансы**:
+
+  * `Merchant.balance` — долг мерчанта перед платформой (актуализируется транзакциями/платежами),
+  * `Vendor.balance` — долг платформы перед вендором.
+* **Sale** и **VoucherTransaction** содержат денормализованные поля (`voucherValue`, `productName`, `merchantUsername`) — это осознанный дизайн для устойчивости к изменениям каталогов и ускорения отчётности.
+
+---
+
+## 6) Индексы и ограничения (рекомендуется дополнить)
+
+> Большинство FK индексов Prisma создаёт автоматически. Ниже — полезные явные индексы/уточнения:
+
+* `Voucher(value)` — **UNIQUE** *(уже есть)*.
+* `Client(phoneNumber)` — **UNIQUE** *(уже есть)*.
+* Часто используемые фильтры:
+
+  * `Voucher(status, vendorId, productId)` — композитный индекс для списков/поиска.
+  * `VoucherTransaction(createdAt)` + (`merchantId`), (`vendorId`) — отчёты по периодам/контрагентам.
+  * `Merchant(username)`, `Sale(date)`, `VoucherSmsLog(requestId)`.
+* Если планируете enforce-ссылки:
+
+  * FK от `Sale.productId` → `Product.id` *(сейчас нет)*,
+  * FK от `Sale.voucherValue` → `Voucher.value` *(возможен через surrogate key, иначе строковый FK)*,
+  * FK от `Sale.merchantUsername` → `Merchant.username` *(не типично, лучше `merchantId`)*,
+  * FK от `VoucherTransaction.productId` → `Product.id` *(сейчас это денорм поле)*.
+
+---
+
+## 7) Несоответствия/заметки по схеме
+
+1. **`Product.status` как `String` vs `ProductStatus` enum**: если требуется строгий контроль значений — заменить тип поля на `ProductStatus`.
+2. **Денормализация `Sale`/`VoucherTransaction`**:
+
+   * Плюсы: простые отчёты «в моменте», устойчивость к изменению каталога и имен.
+   * Минусы: нет референциальной целостности, нужен аккуратный прикладной контроль.
+   * Вариант развития: добавить суррогатные FK (например, `voucherId` в `Sale`) или материализованные представления для отчётности.
+3. **Денежные поля как `Float`**: для финансов лучше `Decimal`/`numeric(18,2)` или хранение в минимальных единицах (типы `BigInt`/`Int`). Сейчас — `Float`, возможны проблемы округления в суммах/балансах.
+4. **Множественные активации одного ваучера**: схема допускает >1 записи, что полезно для логов. Бизнес-правило «ровно одна успешная активация» надо обеспечить уникальным частичным индексом или прикладной валидацией (например, один `VoucherActivation` со статусом `final=true` — если такое поле добавите).
+
+---
+
+## 8) Типовые запросы (ориентир)
+
+* **Баланс мерчанта:** `SELECT balance FROM Merchant WHERE id = :id;`
+  (обновляется логикой при продажах и `MerchantPayment`)
+
+* **Список активных ваучеров по продукту/вендору:**
+  `SELECT * FROM Voucher WHERE status='active' AND productId=:pid AND EXISTS(SELECT 1 FROM Product p WHERE p.id=:pid AND p.vendorId=:vid);`
+
+* **История транзакций мерчанта за период:**
+  `SELECT * FROM VoucherTransaction WHERE merchantId=:mid AND createdAt BETWEEN :from AND :to ORDER BY createdAt DESC;`
+
+* **Логи SMS по ваучеру:**
+  `SELECT * FROM VoucherSmsLog WHERE voucherId=:vid ORDER BY createdAt DESC;`
+
+* **Привязка онлайн-ваучера к клиенту:** наличие `OnlineVoucher` c `voucherId=:vid` (UNIQUE) гарантирует 0..1.
+
+---
+
+## 9) Жизненный цикл ключевых сущностей (данные & статусы)
+
+* **Voucher.status:** `active → reserved → sold → (optional) pending → activated → archived/deleted`
+  Возврат: `reserved → active` по TTL/отмене. `activated` — терминальное.
+* **Sale.status:** `PENDING/COMPLETED/CANCELLED` — отражает жизненный цикл документа продажи; связи денорм.
+* **VoucherTransaction.status:** `PENDING/COMPLETED/CANCELLED` — для процессов сверки/проводок.
+
+---
+
+## 10) Приложение: карты соответствия «ключ → сущности»
+
+* **Клиентская доставка (online):** `Client` ↔ `OnlineVoucher` ↔ `Voucher` + `VoucherSmsLog` + `VoucherWalletLog`.
+* **Активация у вендора:** `VoucherActivation` связывает `Voucher` + `Vendor` (+ `User`/`Client` по ситуации).
+* **Финансы:** `VoucherTransaction` (начисления) → `Merchant.balance`/`Vendor.balance`; движения — `MerchantPayment`/`VendorPayment`.
+* **Каталог:** `Vendor` → `Product` → `Voucher`.
+
+---
