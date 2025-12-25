@@ -18,6 +18,7 @@ import apiV1Routes from './routes/apiV1Routes.js';
 import walletRoutes from './routes/wallet.js';
 import storeRoutes from './routes/storeRoutes.js';
 import qrPaymentRoutes from './routes/qrPaymentRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 import { checkSubdomain } from './middleware/checkSubdomain.js';
 import { SESSION_MAX_AGE, REMEMBER_ME_MAX_AGE } from './utils/authTokens.js';
 
@@ -178,6 +179,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// 2.5) Payment callbacks (Click/Payme) - BEFORE QR payment routes
+app.use('/', paymentRoutes);
 
 // 3) QR Payment Routes (Public, no auth required)
 app.use('/', qrPaymentRoutes);
