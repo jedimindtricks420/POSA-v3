@@ -3,7 +3,18 @@ import prisma from '../../prisma/client.js';
 // Показать все продажи (для администратора)
 export const showSales = async (req, res) => {
   const [sales, totalSalesCount, salesAmountAgg, onlineSalesCount, transactionTotals, vendorBalanceAgg] = await Promise.all([
-    prisma.sale.findMany({ orderBy: { date: 'desc' } }),
+    prisma.sale.findMany({
+      orderBy: { date: 'desc' },
+      include: {
+        qrPaymentAttempt: {
+          select: {
+            receiptPath: true,
+            phoneNumber: true,
+            paymentMethod: true
+          }
+        }
+      }
+    }),
     prisma.sale.count(),
     prisma.sale.aggregate({ _sum: { price: true } }),
     prisma.sale.count({ where: { saleType: 'ONLINE' } }),

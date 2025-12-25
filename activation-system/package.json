@@ -41,7 +41,8 @@
     "postcss": "^8.5.6",
     "prisma": "^6.5.0",
     "qrcode": "^1.5.4",
-    "tailwindcss": "^3.4.4"
+    "tailwindcss": "^3.4.4",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0"

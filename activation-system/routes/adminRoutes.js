@@ -16,6 +16,7 @@ import * as storeController from '../controllers/admin/storeController.js';
 import * as rokkyController from '../controllers/admin/rokkyController.js';
 import * as telegramBotController from '../controllers/admin/telegramBotController.js';
 import * as manualActivationController from '../controllers/admin/manualActivationController.js';
+import * as qrLinkController from '../controllers/admin/qrLinkController.js';
 import { ensureAdmin, ensureAuthenticated, allowFinance, allowContent, allowSupport, allowFinanceOrContent } from '../middleware/auth.js';
 import { upload } from '../middleware/uploadMiddleware.js';
 import { generationLimiter } from '../middleware/rateLimit.js';
@@ -132,6 +133,12 @@ router.get('/manual-activations', allowSupport, manualActivationController.listR
 router.get('/manual-activations/:id', allowSupport, manualActivationController.showRequestDetails);
 router.post('/manual-activations/:id/complete', allowSupport, manualActivationController.completeRequest);
 router.post('/manual-activations/:id/reject', allowSupport, manualActivationController.rejectRequest);
+
+// 10. QR Payment Links (Admin only)
+// ----------------------------------------------------
+router.get('/qr-links', ensureAdmin, qrLinkController.showQrLinksPage);
+router.post('/qr-links/generate', ensureAdmin, qrLinkController.generateLink);
+router.get('/qr-links/:id/download', ensureAdmin, qrLinkController.downloadQr);
 
 
 export default router;
