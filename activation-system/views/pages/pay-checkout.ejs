@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Оплата - <%= product.name %>
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <div class="max-w-md mx-auto p-4">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+            <!-- Назад -->
+            <a href="/pay/<%= token %>" class="text-blue-600 mb-4 inline-block">← Назад</a>
+
+            <hr class="my-4">
+
+            <!-- Товар -->
+            <div class="text-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <%= product.name %>
+                </h2>
+                <p class="text-2xl font-bold text-green-600">
+                    <%= product.price.toLocaleString() %> сум
+                </p>
+            </div>
+
+            <hr class="my-4">
+
+            <!-- Форма -->
+            <form id="checkoutForm">
+                <!-- Телефон -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Номер телефона</label>
+                    <div class="flex border rounded-lg overflow-hidden">
+                        <span class="bg-gray-100 px-4 py-3 text-gray-600">+998</span>
+                        <input type="tel" id="phone" placeholder="90 123 45 67" class="flex-1 px-4 py-3 outline-none"
+                            pattern="[0-9]{9}" maxlength="9" required>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">На этот номер будет отправлен ваучер</p>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Способ оплаты -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Способ оплаты</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
+                            <input type="radio" name="paymentMethod" value="click" class="sr-only" checked>
+                            <div class="text-2xl mb-1">💳</div>
+                            <div class="font-bold">Click</div>
+                        </label>
+                        <label class="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
+                            <input type="radio" name="paymentMethod" value="payme" class="sr-only">
+                            <div class="text-2xl mb-1">💳</div>
+                            <div class="font-bold">Payme</div>
+                        </label>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Итого -->
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-gray-600">Итого к оплате:</span>
+                    <span class="text-xl font-bold">
+                        <%= product.price.toLocaleString() %> сум
+                    </span>
+                </div>
+
+                <!-- Кнопка -->
+                <button type="submit" id="submitBtn"
+                    class="w-full bg-green-600 text-white py-4 rounded-xl text-xl font-bold hover:bg-green-700">
+                    ОПЛАТИТЬ <%= product.price.toLocaleString() %> сум
+                </button>
+
+                <p class="text-xs text-gray-500 text-center mt-4">
+                    Нажимая "Оплатить", вы соглашаетесь с условиями оферты
+                </p>
+            </form>
+
+            <!-- Загрузка -->
+            <div id="loading" class="hidden text-center py-8">
+                <div class="text-4xl mb-4">⏳</div>
+                <p class="text-xl">Обработка платежа...</p>
+                <p class="text-gray-500">Пожалуйста, не закрывайте страницу</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('checkoutForm');
+        const loading = document.getElementById('loading');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Подсветка выбранного способа оплаты
+        document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                document.querySelectorAll('input[name="paymentMethod"]').forEach(r => {
+                    r.closest('label').classList.remove('border-blue-500', 'bg-blue-50');
+                });
+                radio.closest('label').classList.add('border-blue-500', 'bg-blue-50');
+            });
+        });
+        // Активировать первый по умолчанию
+        document.querySelector('input[name="paymentMethod"]:checked')
+            .closest('label').classList.add('border-blue-500', 'bg-blue-50');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const phone = document.getElementById('phone').value.replace(/\s/g, '');
+            if (phone.length !== 9) {
+                alert('Введите 9 цифр номера телефона');
+                return;
+            }
+
+            form.classList.add('hidden');
+            loading.classList.remove('hidden');
+
+            try {
+                const res = await fetch('/pay/<%= token %>/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phoneNumber: '+998' + phone,
+                        paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.success && data.redirectUrl) {
+                    window.location.href = data.redirectUrl;
+                } else {
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    form.classList.remove('hidden');
+                    loading.classList.add('hidden');
+                }
+            } catch (e) {
+                alert('Ошибка соединения');
+                form.classList.remove('hidden');
+                loading.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+
+</html>

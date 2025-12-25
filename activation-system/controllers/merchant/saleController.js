@@ -9,7 +9,7 @@ import { parseReceiptSchema, resolveReceiptTemplate } from '../../utils/receiptR
 import { buildVoucherTokenUrl, buildVoucherQrUrl } from '../../utils/qr.js';
 
 
-function buildReceiptQrUrl(serial, origin) {
+export function buildReceiptQrUrl(serial, origin) {
   const trimmed = typeof serial === 'string' ? serial.trim() : '';
   if (!trimmed) {
     return 'https://wallet.namo.uz/activate/demo';
@@ -197,11 +197,11 @@ export const confirmCheckout = async (req, res) => {
         data: { balance: { increment: vendorDebt } },
       });
 
-        // Increase merchant balance by the payable part of the sale (price minus commission)
-        await tx.merchant.update({
-          where: { id: merchant.id },
-          data: { balance: { increment: merchantPayable } },
-        });
+      // Increase merchant balance by the payable part of the sale (price minus commission)
+      await tx.merchant.update({
+        where: { id: merchant.id },
+        data: { balance: { increment: merchantPayable } },
+      });
 
       return { updatedVoucher: updated, saleId: sale.id };
     });
@@ -391,7 +391,7 @@ function resolveReceiptPlaceholders(text = '', context = {}) {
   });
 }
 
-function formatCurrencyUz(amount = 0) {
+export function formatCurrencyUz(amount = 0) {
   if (Number.isNaN(amount)) amount = 0;
   return new Intl.NumberFormat('ru-RU', {
     style: 'currency',
@@ -412,7 +412,7 @@ function maskVoucherCode(value = '') {
   return maskedCore;
 }
 
-async function drawReceiptElement(doc, element, context, layout) {
+export async function drawReceiptElement(doc, element, context, layout) {
   const align = element.align || 'left';
   switch (element.type) {
     case 'heading': {
@@ -527,7 +527,7 @@ async function drawReceiptElement(doc, element, context, layout) {
   }
 }
 
-async function generatePDFReceipt({ absolutePath, merchant, segments = [], schema, context, fallbackSchema = null }) {
+export async function generatePDFReceipt({ absolutePath, merchant, segments = [], schema, context, fallbackSchema = null }) {
   const doc = new PDFDocument({
     size: [226.8, 1200],
     margin: 20,
@@ -612,7 +612,7 @@ async function generatePDFReceipt({ absolutePath, merchant, segments = [], schem
 }
 
 // Функция отправки SMS
-async function sendVoucherSMS(client, vouchers) {
+export async function sendVoucherSMS(client, vouchers) {
   try {
     for (const item of vouchers) {
       const messageLines = ["Dobavlen noviy vaucher | Yangi vaucher qo'shildi https://wallet.namo.uz"];

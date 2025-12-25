@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        <%= product.name %>
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <div class="max-w-md mx-auto p-4">
+        <div class="bg-white rounded-2xl shadow-lg p-8 text-center">
+            <!-- Логотип вендора -->
+            <div class="w-24 h-24 mx-auto mb-6 bg-gray-200 rounded-full flex items-center justify-center">
+                <span class="text-4xl">🎵</span>
+            </div>
+
+            <!-- Название товара -->
+            <h1 class="text-2xl font-bold mb-2">
+                <%= product.name %>
+            </h1>
+
+            <hr class="my-4">
+
+            <!-- Цена -->
+            <p class="text-3xl font-bold text-green-600 mb-4">
+                <%= product.price.toLocaleString() %> сум
+            </p>
+
+            <hr class="my-4">
+
+            <!-- Кнопка -->
+            <% if (hasVouchers) { %>
+                <a href="/pay/<%= link.token %>/checkout"
+                    class="block w-full bg-blue-600 text-white py-4 rounded-xl text-xl font-bold hover:bg-blue-700">
+                    КУПИТЬ
+                </a>
+                <% } else { %>
+                    <button disabled
+                        class="block w-full bg-gray-400 text-white py-4 rounded-xl text-xl font-bold cursor-not-allowed">
+                        Товар временно недоступен
+                    </button>
+                    <% } %>
+
+                        <hr class="my-4">
+
+                        <!-- Продавец -->
+                        <p class="text-gray-500">
+                            Продавец: <strong>
+                                <%= merchant.username %>
+                            </strong>
+                        </p>
+        </div>
+    </div>
+</body>
+
+</html>
