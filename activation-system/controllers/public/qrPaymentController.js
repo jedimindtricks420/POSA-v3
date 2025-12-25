@@ -8,6 +8,8 @@ import {
     buildReceiptQrUrl,
     formatCurrencyUz
 } from '../merchant/saleController.js';
+import { generateClickUrl } from '../../utils/payment/clickSignature.js';
+import { generatePaymeUrl } from '../../utils/payment/paymeHelpers.js';
 
 // Страница товара
 export const showProductPage = async (req, res) => {
@@ -92,7 +94,7 @@ export const showCheckoutPage = async (req, res) => {
     }
 };
 
-// Обработка оплаты (Фаза 1 - эмуляция)
+// Обработка оплаты (Фаза 2 - реальные платёжные системы)
 export const processCheckout = async (req, res) => {
     try {
         const { token } = req.params;
@@ -104,6 +106,14 @@ export const processCheckout = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 error: 'Некорректный номер телефона'
+            });
+        }
+
+        // Валидация метода оплаты
+        if (!paymentMethod || !['click', 'payme'].includes(paymentMethod)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Выберите способ оплаты'
             });
         }
 
@@ -125,34 +135,42 @@ export const processCheckout = async (req, res) => {
                 linkId: link.id,
                 phoneNumber,
                 amount: link.product.price,
-                paymentMethod: paymentMethod || null,
+                paymentMethod: paymentMethod,
                 status: 'PENDING',
-                expiresAt: new Date(Date.now() + 2 * 60 * 1000) // +2 минуты
+                expiresAt: new Date(Date.now() + 15 * 60 * 1000) // +15 минут
             }
         });
 
-        // ФАЗА 1: Эмуляция оплаты - сразу обрабатываем
-        const result = await processPayment(attempt.id, link);
+        const baseUrl = process.env.PAYMENT_BASE_URL || 'https://wallet.namo.uz';
+        const returnUrl = `${baseUrl}/pay/${token}/result/${attempt.id}`;
 
-        if (result.success) {
-            res.json({
-                success: true,
-                redirectUrl: `/pay/${token}/result/${attempt.id}`
-            });
-        } else {
-            res.status(400).json({
-                success: false,
-                error: result.error
-            });
+        let redirectUrl;
+
+        if (paymentMethod === 'click') {
+            // Click - сумма в сумах
+            redirectUrl = generateClickUrl(attempt.id.toString(), link.product.price, returnUrl);
+        } else if (paymentMethod === 'payme') {
+            // Payme - сумма в тийинах
+            const amountInTiyin = Math.round(link.product.price * 100);
+            redirectUrl = generatePaymeUrl(attempt.id.toString(), amountInTiyin, returnUrl);
         }
+
+        console.log(`[Payment] Redirecting to ${paymentMethod}:`, redirectUrl);
+
+        res.json({
+            success: true,
+            redirectUrl: redirectUrl
+        });
+
     } catch (error) {
         console.error('Error processing checkout:', error);
         res.status(500).json({ success: false, error: 'Ошибка обработки' });
     }
 };
 
-// Обработка платежа (внутренняя функция)
-async function processPayment(attemptId, link) {
+// Обработка платежа (внутренняя функция) - ЭКСПОРТИРУЕТСЯ для Click/Payme контроллеров
+export async function processPaymentInternal(attemptId, link) {
+
     try {
         const attempt = await prisma.qrPaymentAttempt.findUnique({
             where: { id: attemptId }
