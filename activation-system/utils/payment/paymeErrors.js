@@ -17,26 +17,112 @@ export const CLICK_ERRORS = {
 
 /**
  * Коды ошибок Payme
+ * Сообщения должны быть мультиязычными (uz, ru, en) согласно документации
  */
 export const PAYME_ERRORS = {
     // Transport errors
-    TRANSPORT_ERROR: { code: -32300, message: 'Transport error' },
+    TRANSPORT_ERROR: {
+        code: -32300,
+        message: {
+            uz: "Transport xatosi",
+            ru: "Ошибка транспорта",
+            en: "Transport error"
+        }
+    },
 
     // System errors
-    SYSTEM_ERROR: { code: -32400, message: 'System error' },
-    METHOD_NOT_FOUND: { code: -32601, message: 'Method not found' },
-    AUTH_ERROR: { code: -32504, message: 'Insufficient privilege to perform this method' },
+    SYSTEM_ERROR: {
+        code: -32400,
+        message: {
+            uz: "Tizim xatosi",
+            ru: "Системная ошибка",
+            en: "System error"
+        }
+    },
+    METHOD_NOT_FOUND: {
+        code: -32601,
+        message: {
+            uz: "Metod topilmadi",
+            ru: "Метод не найден",
+            en: "Method not found"
+        }
+    },
+    AUTH_ERROR: {
+        code: -32504,
+        message: {
+            uz: "Ushbu usulni bajarishga ruxsat yo'q",
+            ru: "Недостаточно прав для выполнения метода",
+            en: "Insufficient privilege to perform this method"
+        }
+    },
 
     // Business logic errors
-    WRONG_AMOUNT: { code: -31001, message: 'Incorrect amount' },
-    TRANSACTION_NOT_FOUND: { code: -31003, message: 'Transaction not found' },
-    CANNOT_PERFORM: { code: -31008, message: 'Unable to perform operation' },
-    CANNOT_CANCEL: { code: -31007, message: 'Unable to cancel transaction' },
+    WRONG_AMOUNT: {
+        code: -31001,
+        message: {
+            uz: "Noto'g'ri summa",
+            ru: "Недопустимая сумма",
+            en: "Invalid amount"
+        }
+    },
+    TRANSACTION_NOT_FOUND: {
+        code: -31003,
+        message: {
+            uz: "Tranzaksiya topilmadi",
+            ru: "Транзакция не найдена",
+            en: "Transaction not found"
+        }
+    },
+    CANNOT_PERFORM: {
+        code: -31008,
+        message: {
+            uz: "Operatsiyani bajarib bo'lmadi",
+            ru: "Невозможно выполнить операцию",
+            en: "Unable to perform operation"
+        }
+    },
+    CANNOT_CANCEL: {
+        code: -31007,
+        message: {
+            uz: "Tranzaksiyani bekor qilib bo'lmaydi",
+            ru: "Невозможно отменить транзакцию",
+            en: "Unable to cancel transaction"
+        }
+    },
 
     // Account errors (order)
-    ORDER_NOT_FOUND: { code: -31050, message: 'Order not found' },
-    ORDER_CANCELLED: { code: -31051, message: 'Order cancelled' },
-    ORDER_ALREADY_PAID: { code: -31052, message: 'Order already paid' }
+    ORDER_NOT_FOUND: {
+        code: -31050,
+        message: {
+            uz: "Biz sizning hisobingizni topolmadik",
+            ru: "Мы не нашли вашу учетную запись",
+            en: "We couldn't find your account"
+        }
+    },
+    ORDER_CANCELLED: {
+        code: -31051,
+        message: {
+            uz: "Buyurtma bekor qilindi",
+            ru: "Заказ отменен",
+            en: "Order cancelled"
+        }
+    },
+    ORDER_ALREADY_PAID: {
+        code: -31052,
+        message: {
+            uz: "Buyurtma allaqachon to'langan",
+            ru: "Заказ уже оплачен",
+            en: "Order already paid"
+        }
+    },
+    ORDER_HAS_TRANSACTION: {
+        code: -31053,
+        message: {
+            uz: "Buyurtmada boshqa tranzaksiya mavjud",
+            ru: "По заказу уже есть другая транзакция",
+            en: "Order already has another transaction"
+        }
+    }
 };
 
 /**
@@ -44,8 +130,10 @@ export const PAYME_ERRORS = {
  */
 export class PaymeError extends Error {
     constructor(error, data = null) {
-        super(error.message);
+        const msg = typeof error.message === 'object' ? error.message.en : error.message;
+        super(msg);
         this.code = error.code;
+        this.messageObj = error.message;
         this.data = data;
         this.name = 'PaymeError';
     }
