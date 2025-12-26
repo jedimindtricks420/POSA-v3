@@ -69,7 +69,17 @@ export async function handlePayme(req, res) {
  */
 async function CheckPerformTransaction(params) {
     const { amount, account } = params;
+
+    // Валидация account
+    if (!account || !account.order_id) {
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+    }
+
     const orderId = parseInt(account.order_id);
+
+    if (isNaN(orderId)) {
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+    }
 
     // Найти попытку оплаты
     const attempt = await prisma.qrPaymentAttempt.findUnique({
@@ -103,7 +113,17 @@ async function CheckPerformTransaction(params) {
  */
 async function CreateTransaction(params) {
     const { id, time, amount, account } = params;
+
+    // Валидация account
+    if (!account || !account.order_id) {
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+    }
+
     const orderId = parseInt(account.order_id);
+
+    if (isNaN(orderId)) {
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+    }
 
     // Проверить существующую транзакцию с таким же Payme ID (идемпотентность)
     const existing = await prisma.qrPaymentAttempt.findFirst({
