@@ -71,14 +71,14 @@ async function CheckPerformTransaction(params) {
     const { amount, account } = params;
 
     // Валидация account
-    if (!account || !account.order_id) {
-        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+    if (!account || !account.Namo) {
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
     }
 
-    const orderId = parseInt(account.order_id);
+    const orderId = parseInt(account.Namo);
 
     if (isNaN(orderId)) {
-        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
     }
 
     // Найти попытку оплаты
@@ -87,13 +87,13 @@ async function CheckPerformTransaction(params) {
     });
 
     if (!attempt) {
-        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
     }
 
     // Проверить сумму (Payme присылает в тийинах, у нас в QrPaymentAttempt amount в сумах)
     const expectedAmountInTiyin = Math.round(attempt.amount * 100);
     if (amount !== expectedAmountInTiyin) {
-        throw new PaymeError(PAYME_ERRORS.WRONG_AMOUNT, 'amount');
+        throw new PaymeError(PAYME_ERRORS.WRONG_AMOUNT);
     }
 
     // Проверить статус
@@ -115,14 +115,14 @@ async function CreateTransaction(params) {
     const { id, time, amount, account } = params;
 
     // Валидация account
-    if (!account || !account.order_id) {
-        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+    if (!account || !account.Namo) {
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
     }
 
-    const orderId = parseInt(account.order_id);
+    const orderId = parseInt(account.Namo);
 
     if (isNaN(orderId)) {
-        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
     }
 
     // Проверка таймаута (12 часов)
@@ -150,7 +150,7 @@ async function CreateTransaction(params) {
     });
 
     if (!attempt) {
-        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
     }
 
     // Проверить, есть ли уже транзакция с ДРУГИМ Payme ID
@@ -162,7 +162,7 @@ async function CreateTransaction(params) {
     // Проверить сумму
     const expectedAmountInTiyin = Math.round(attempt.amount * 100);
     if (amount !== expectedAmountInTiyin) {
-        throw new PaymeError(PAYME_ERRORS.WRONG_AMOUNT, 'amount');
+        throw new PaymeError(PAYME_ERRORS.WRONG_AMOUNT);
     }
 
     // Проверить статус
