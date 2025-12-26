@@ -8,8 +8,10 @@
           <img src="/images/Vector.svg" class="h-8 w-8" alt="Logo">
         </a>
       </div>
+
       <!-- Desktop Menu -->
       <div class="hidden md:flex items-center space-x-1">
+        <!-- Дашборд -->
         <a href="/admin/dashboard"
           class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,107 +21,194 @@
           <span>Дашборд</span>
         </a>
 
-        <% if (user.role==='admin' ) { %>
-          <a href="/admin/users"
-            class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <span>Пользователи</span>
-          </a>
+        <!-- Финансы Dropdown (admin, financial_mgr) -->
+        <% if (user.role==='admin' || user.role==='financial_mgr' ) { %>
+          <div class="desktop-dropdown relative">
+            <button type="button"
+              class="desktop-dropdown-btn inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Финансы</span>
+              <svg class="dropdown-arrow w-4 h-4 ml-1 transition-transform duration-200" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            <div
+              class="desktop-dropdown-menu hidden absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+              <a href="/admin/sales"
+                class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Продажи
+              </a>
+              <a href="/admin/merchants"
+                class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Мерчанты
+              </a>
+            </div>
+          </div>
           <% } %>
 
-            <% if (user.role==='admin' || user.role==='financial_mgr' || user.role==='content_mgr' ) { %>
-              <a href="/admin/vendors"
-                class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span>Вендоры</span>
-              </a>
-              <% } %>
-
-                <% if (user.role==='admin' || user.role==='content_mgr' ) { %>
+            <!-- Контент Dropdown (admin, content_mgr) -->
+            <% if (user.role==='admin' || user.role==='content_mgr' ) { %>
+              <div class="desktop-dropdown relative">
+                <button type="button"
+                  class="desktop-dropdown-btn inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <span>Контент</span>
+                  <svg class="dropdown-arrow w-4 h-4 ml-1 transition-transform duration-200" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div
+                  class="desktop-dropdown-menu hidden absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
                   <a href="/admin/products"
-                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                    <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
-                    <span>Товары</span>
+                    Товары
                   </a>
                   <a href="/admin/vouchers"
-                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                    <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                     </svg>
-                    <span>Ваучеры</span>
+                    Ваучеры
                   </a>
+                  <a href="/admin/vendors"
+                    class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                    <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    Вендоры
+                  </a>
+                  <a href="/admin/stores"
+                    class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                    <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Магазины
+                  </a>
+                  <a href="/admin/qr-links"
+                    class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                    <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
+                    QR-ссылки
+                  </a>
+                </div>
+              </div>
+              <% } %>
+
+                <!-- Интеграции Dropdown (admin only) -->
+                <% if (user.role==='admin' ) { %>
+                  <div class="desktop-dropdown relative">
+                    <button type="button"
+                      class="desktop-dropdown-btn inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
+                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                      </svg>
+                      <span>Интеграции</span>
+                      <svg class="dropdown-arrow w-4 h-4 ml-1 transition-transform duration-200" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    <div
+                      class="desktop-dropdown-menu hidden absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                      <a href="/admin/rokky"
+                        class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                        <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        Rokky API
+                      </a>
+                      <a href="/admin/telegram-bots"
+                        class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                        <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        Telegram боты
+                      </a>
+                    </div>
+                  </div>
                   <% } %>
 
-                    <% if (user.role==='admin' || user.role==='financial_mgr' ) { %>
-                      <a href="/admin/sales"
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                        <span>Продажи</span>
-                      </a>
-                      <a href="/admin/merchants"
-                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        <span>Мерчанты</span>
-                      </a>
+                    <!-- Управление Dropdown (admin, support_agent) -->
+                    <% if (user.role==='admin' || user.role==='support_agent' ) { %>
+                      <div class="desktop-dropdown relative">
+                        <button type="button"
+                          class="desktop-dropdown-btn inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
+                          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          <span>Управление</span>
+                          <svg class="dropdown-arrow w-4 h-4 ml-1 transition-transform duration-200" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </button>
+                        <div
+                          class="desktop-dropdown-menu hidden absolute left-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-2 z-50">
+                          <% if (user.role==='admin' ) { %>
+                            <a href="/admin/users"
+                              class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                              <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                              </svg>
+                              Пользователи
+                            </a>
+                            <% } %>
+                              <a href="/admin/clients"
+                                class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor"
+                                  viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                Клиенты
+                              </a>
+                              <a href="/admin/manual-activations"
+                                class="flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-600">
+                                <svg class="w-4 h-4 mr-3 text-slate-400" fill="none" stroke="currentColor"
+                                  viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                </svg>
+                                Ручная активация
+                              </a>
+                        </div>
+                      </div>
                       <% } %>
-
-                        <% if (user.role==='admin' || user.role==='content_mgr' ) { %>
-                          <a href="/admin/stores"
-                            class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            <span>Магазины</span>
-                          </a>
-                          <% } %>
-
-                            <% if (user.role==='admin' ) { %>
-                              <a href="/admin/rokky"
-                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                </svg>
-                                <span>Rokky</span>
-                              </a>
-                              <a href="/admin/telegram-bots"
-                                class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                </svg>
-                                <span>Telegram</span>
-                              </a>
-                              <% } %>
-
-                                <% if (user.role==='admin' || user.role==='support_agent' ) { %>
-                                  <a href="/admin/manual-activations"
-                                    class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 rounded-md transition-colors duration-200">
-                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                                    </svg>
-                                    <span>Активация</span>
-                                  </a>
-                                  <% } %>
       </div>
+
       <!-- User & Logout -->
       <div class="flex items-center space-x-4">
         <% if (user) { %>
@@ -130,6 +219,10 @@
             </svg>
             <span class="text-sm font-medium text-slate-600">
               <%= user.username %>
+            </span>
+            <span class="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">
+              <%= user.role==='admin' ? 'Админ' : user.role==='financial_mgr' ? 'Финансы' : user.role==='content_mgr'
+                ? 'Контент' : user.role==='support_agent' ? 'Поддержка' : user.role %>
             </span>
           </div>
           <% } %>
@@ -144,6 +237,7 @@
               </button>
             </form>
       </div>
+
       <!-- Mobile Menu Button -->
       <div class="md:hidden flex items-center">
         <button id="adminMobileMenuBtn"
@@ -155,9 +249,12 @@
       </div>
     </div>
   </div>
+
   <!-- Mobile Menu Dropdown -->
-  <div id="adminMobileMenu" class="md:hidden hidden bg-white border-b border-slate-200 shadow-lg">
+  <div id="adminMobileMenu"
+    class="md:hidden hidden bg-white border-b border-slate-200 shadow-lg max-h-[80vh] overflow-y-auto">
     <div class="px-2 pt-2 pb-3 space-y-1">
+      <!-- Дашборд -->
       <a href="/admin/dashboard"
         class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,131 +263,231 @@
         </svg>
         Дашборд
       </a>
-      <a href="/admin/users"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-        </svg>
-        Пользователи
-      </a>
-      <a href="/admin/vendors"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-        </svg>
-        Вендоры
-      </a>
-      <a href="/admin/products"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-        </svg>
-        Товары
-      </a>
-      <a href="/admin/vouchers"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-        </svg>
-        Ваучеры
-      </a>
-      <a href="/admin/sales"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-        Продажи
-      </a>
-      <a href="/admin/merchants"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-        Мерчанты
-      </a>
-      <a href="/admin/stores"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-        </svg>
-        Магазины
-      </a>
-      <a href="/admin/rokky"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-        </svg>
-        Rokky
-      </a>
-      <a href="/admin/telegram-bots"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-        Telegram
-      </a>
-      <a href="/admin/manual-activations"
-        class="flex items-center px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
-        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-        </svg>
-        Активация
-      </a>
 
-      <div class="border-t border-slate-200 pt-4 pb-3">
-        <% if (user) { %>
-          <div class="flex items-center px-3 py-2">
-            <div class="flex-shrink-0">
-              <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <!-- Финансы Group (Mobile) -->
+      <% if (user.role==='admin' || user.role==='financial_mgr' ) { %>
+        <div class="mobile-accordion">
+          <button type="button"
+            class="mobile-accordion-btn w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
+            <span class="flex items-center">
+              <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-            </div>
-            <div class="ml-3">
-              <div class="text-base font-medium text-slate-800">
-                <%= user.username %>
+              Финансы
+            </span>
+            <svg class="accordion-icon w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          <div class="mobile-accordion-content hidden pl-8 space-y-1 mt-1">
+            <a href="/admin/sales"
+              class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Продажи</a>
+            <a href="/admin/merchants"
+              class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Мерчанты</a>
+          </div>
+        </div>
+        <% } %>
+
+          <!-- Контент Group (Mobile) -->
+          <% if (user.role==='admin' || user.role==='content_mgr' ) { %>
+            <div class="mobile-accordion">
+              <button type="button"
+                class="mobile-accordion-btn w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
+                <span class="flex items-center">
+                  <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  Контент
+                </span>
+                <svg class="accordion-icon w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div class="mobile-accordion-content hidden pl-8 space-y-1 mt-1">
+                <a href="/admin/products"
+                  class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Товары</a>
+                <a href="/admin/vouchers"
+                  class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Ваучеры</a>
+                <a href="/admin/vendors"
+                  class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Вендоры</a>
+                <a href="/admin/stores"
+                  class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Магазины</a>
+                <a href="/admin/qr-links"
+                  class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">QR-ссылки</a>
               </div>
             </div>
-          </div>
-          <% } %>
-            <div class="mt-3 px-2">
-              <form action="/auth/logout" method="POST" class="m-0">
-                <button type="submit"
-                  class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200">
-                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Выйти
-                </button>
-              </form>
-            </div>
-      </div>
+            <% } %>
+
+              <!-- Интеграции Group (Mobile) -->
+              <% if (user.role==='admin' ) { %>
+                <div class="mobile-accordion">
+                  <button type="button"
+                    class="mobile-accordion-btn w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
+                    <span class="flex items-center">
+                      <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                      </svg>
+                      Интеграции
+                    </span>
+                    <svg class="accordion-icon w-5 h-5 transition-transform duration-200" fill="none"
+                      stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  <div class="mobile-accordion-content hidden pl-8 space-y-1 mt-1">
+                    <a href="/admin/rokky"
+                      class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Rokky
+                      API</a>
+                    <a href="/admin/telegram-bots"
+                      class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Telegram
+                      боты</a>
+                  </div>
+                </div>
+                <% } %>
+
+                  <!-- Управление Group (Mobile) -->
+                  <% if (user.role==='admin' || user.role==='support_agent' ) { %>
+                    <div class="mobile-accordion">
+                      <button type="button"
+                        class="mobile-accordion-btn w-full flex items-center justify-between px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
+                        <span class="flex items-center">
+                          <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          Управление
+                        </span>
+                        <svg class="accordion-icon w-5 h-5 transition-transform duration-200" fill="none"
+                          stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      <div class="mobile-accordion-content hidden pl-8 space-y-1 mt-1">
+                        <% if (user.role==='admin' ) { %>
+                          <a href="/admin/users"
+                            class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Пользователи</a>
+                          <% } %>
+                            <a href="/admin/clients"
+                              class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Клиенты</a>
+                            <a href="/admin/manual-activations"
+                              class="flex items-center px-3 py-2 rounded-md text-sm text-slate-600 hover:text-indigo-600 hover:bg-slate-50">Ручная
+                              активация</a>
+                      </div>
+                    </div>
+                    <% } %>
+
+                      <!-- User Info & Logout (Mobile) -->
+                      <div class="border-t border-slate-200 pt-4 pb-3 mt-2">
+                        <% if (user) { %>
+                          <div class="flex items-center px-3 py-2">
+                            <svg class="h-8 w-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <div class="ml-3">
+                              <div class="text-base font-medium text-slate-800">
+                                <%= user.username %>
+                              </div>
+                              <div class="text-sm text-slate-500">
+                                <%= user.role==='admin' ? 'Администратор' : user.role==='financial_mgr'
+                                  ? 'Финансовый менеджер' : user.role==='content_mgr' ? 'Контент-менеджер' :
+                                  user.role==='support_agent' ? 'Агент поддержки' : user.role %>
+                              </div>
+                            </div>
+                          </div>
+                          <% } %>
+                            <div class="mt-3 px-2">
+                              <form action="/auth/logout" method="POST" class="m-0">
+                                <button type="submit"
+                                  class="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200">
+                                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                  </svg>
+                                  Выйти
+                                </button>
+                              </form>
+                            </div>
+                      </div>
     </div>
   </div>
 </nav>
+
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    const btn = document.getElementById('adminMobileMenuBtn');
-    const menu = document.getElementById('adminMobileMenu');
-    btn?.addEventListener('click', () => {
-      menu.classList.toggle('hidden');
-    });
-    // Close menu on outside click
-    document.addEventListener('click', function (e) {
-      if (!btn.contains(e.target) && !menu.contains(e.target)) {
-        menu.classList.add('hidden');
+  (function () {
+    document.addEventListener('DOMContentLoaded', function () {
+      // ========== DESKTOP DROPDOWNS (Hover-based) ==========
+      const desktopDropdowns = document.querySelectorAll('.desktop-dropdown');
+      let hideTimeout = null;
+
+      desktopDropdowns.forEach(function (dropdown) {
+        dropdown.addEventListener('mouseenter', function () {
+          if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+          }
+          // Close all other menus first
+          desktopDropdowns.forEach(function (other) {
+            if (other !== dropdown) {
+              const otherMenu = other.querySelector('.desktop-dropdown-menu');
+              const otherArrow = other.querySelector('.dropdown-arrow');
+              if (otherMenu) otherMenu.classList.add('hidden');
+              if (otherArrow) otherArrow.classList.remove('rotate-180');
+            }
+          });
+          // Show this menu
+          const menu = dropdown.querySelector('.desktop-dropdown-menu');
+          const arrow = dropdown.querySelector('.dropdown-arrow');
+          if (menu) menu.classList.remove('hidden');
+          if (arrow) arrow.classList.add('rotate-180');
+        });
+
+        dropdown.addEventListener('mouseleave', function () {
+          const menu = dropdown.querySelector('.desktop-dropdown-menu');
+          const arrow = dropdown.querySelector('.dropdown-arrow');
+          hideTimeout = setTimeout(function () {
+            if (menu) menu.classList.add('hidden');
+            if (arrow) arrow.classList.remove('rotate-180');
+          }, 150);
+        });
+      });
+
+      // ========== MOBILE MENU ==========
+      const mobileBtn = document.getElementById('adminMobileMenuBtn');
+      const mobileMenu = document.getElementById('adminMobileMenu');
+
+      if (mobileBtn && mobileMenu) {
+        mobileBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          mobileMenu.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', function (e) {
+          if (!mobileBtn.contains(e.target) && !mobileMenu.contains(e.target)) {
+            mobileMenu.classList.add('hidden');
+          }
+        });
       }
+
+      // ========== MOBILE ACCORDIONS ==========
+      document.querySelectorAll('.mobile-accordion-btn').forEach(function (button) {
+        button.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const accordion = this.closest('.mobile-accordion');
+          const content = accordion.querySelector('.mobile-accordion-content');
+          const icon = accordion.querySelector('.accordion-icon');
+          if (content) content.classList.toggle('hidden');
+          if (icon) icon.classList.toggle('rotate-180');
+        });
+      });
     });
-  });
+  })();
 </script>

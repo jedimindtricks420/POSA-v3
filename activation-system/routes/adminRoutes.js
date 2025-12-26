@@ -134,11 +134,11 @@ router.get('/manual-activations/:id', allowSupport, manualActivationController.s
 router.post('/manual-activations/:id/complete', allowSupport, manualActivationController.completeRequest);
 router.post('/manual-activations/:id/reject', allowSupport, manualActivationController.rejectRequest);
 
-// 10. QR Payment Links (Admin only)
+// 10. QR Payment Links (Admin + Content)
 // ----------------------------------------------------
-router.get('/qr-links', ensureAdmin, qrLinkController.showQrLinksPage);
-router.post('/qr-links/generate', ensureAdmin, qrLinkController.generateLink);
-router.get('/qr-links/:id/download', ensureAdmin, qrLinkController.downloadQr);
+router.get('/qr-links', allowContent, qrLinkController.showQrLinksPage);
+router.post('/qr-links/generate', allowContent, qrLinkController.generateLink);
+router.get('/qr-links/:id/download', allowContent, qrLinkController.downloadQr);
 
 
 export default router;
