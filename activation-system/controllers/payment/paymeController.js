@@ -47,7 +47,7 @@ export async function handlePayme(req, res) {
             return res.json({
                 error: {
                     code: error.code,
-                    message: error.message,
+                    message: error.messageObj,
                     data: error.data
                 },
                 id
@@ -57,7 +57,7 @@ export async function handlePayme(req, res) {
         return res.json({
             error: {
                 code: PAYME_ERRORS.SYSTEM_ERROR.code,
-                message: error.message || 'System error'
+                message: PAYME_ERRORS.SYSTEM_ERROR.message
             },
             id
         });
@@ -146,6 +146,12 @@ async function CreateTransaction(params) {
 
     if (!attempt) {
         throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND);
+    }
+
+    // Проверить, есть ли уже транзакция с ДРУГИМ Payme ID
+    if (attempt.externalPaymentId && attempt.externalPaymentId !== id) {
+        console.log('[Payme] CreateTransaction: Order already has different transaction:', attempt.externalPaymentId);
+        throw new PaymeError(PAYME_ERRORS.ORDER_HAS_TRANSACTION);
     }
 
     // Проверить сумму
