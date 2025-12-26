@@ -311,6 +311,54 @@ erDiagram
 
 ---
 
+### 2.16. `MerchantProductLink` *(QR Payment Feature)*
+
+| Колонка    | Тип      | Ограничения                        | По умолчанию |
+| ---------- | -------- | ---------------------------------- | ------------ |
+| id         | Int      | PK, autoincrement                  | yes          |
+| merchantId | Int      | FK → `Merchant.id`                 | —            |
+| productId  | Int      | FK → `Product.id`                  | —            |
+| token      | String   | UNIQUE (UUID)                      | —            |
+| isActive   | Boolean  | —                                  | `true`       |
+| createdAt  | DateTime | —                                  | `now()`      |
+
+Связи:
+
+* `merchant` → `Merchant`,
+* `product` → `Product`,
+* `paymentAttempts` (`QrPaymentAttempt[]`).
+
+> **Ограничение:** `@@unique([merchantId, productId])` — только одна ссылка на пару мерчант+товар.
+
+---
+
+### 2.17. `QrPaymentAttempt` *(QR Payment Feature)*
+
+| Колонка           | Тип             | Ограничения                                          | По умолчанию |
+| ----------------- | --------------- | ---------------------------------------------------- | ------------ |
+| id                | Int             | PK, autoincrement                                    | yes          |
+| linkId            | Int             | FK → `MerchantProductLink.id`                        | —            |
+| phoneNumber       | String          | —                                                    | —            |
+| amount            | Float           | —                                                    | —            |
+| paymentMethod     | String?         | — (`click`, `payme`)                                 | —            |
+| status            | QrPaymentStatus | ENUM(`PENDING`,`PROCESSING`,`PAID`,`EXPIRED`,`FAILED`) | `PENDING`    |
+| externalPaymentId | String?         | — (ID транзакции от Click/Payme)                     | —            |
+| createdAt         | DateTime        | —                                                    | `now()`      |
+| expiresAt         | DateTime        | — (время истечения попытки)                          | —            |
+| paidAt            | DateTime?       | — (время успешной оплаты)                            | —            |
+| saleId            | Int?            | FK → `Sale.id`, **UNIQUE**                           | —            |
+| voucherValue      | String?         | — (код выданного ваучера)                            | —            |
+| receiptPath       | String?         | — (путь к PDF-чеку)                                  | —            |
+
+Связи:
+
+* `link` → `MerchantProductLink`,
+* `sale?` → `Sale` (1:1).
+
+> **Кардинальность:** каждая попытка может быть связана **макс. с одной** продажей (`saleId` — UNIQUE).
+
+---
+
 ## 3) Связи и кардинальности (сводно)
 
 1. **Vendor 1 — N Product** (`Product.vendorId → Vendor.id`).
