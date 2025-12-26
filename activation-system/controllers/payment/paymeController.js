@@ -87,13 +87,13 @@ async function CheckPerformTransaction(params) {
     });
 
     if (!attempt) {
-        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND);
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
     }
 
     // Проверить сумму (Payme присылает в тийинах, у нас в QrPaymentAttempt amount в сумах)
     const expectedAmountInTiyin = Math.round(attempt.amount * 100);
     if (amount !== expectedAmountInTiyin) {
-        throw new PaymeError(PAYME_ERRORS.WRONG_AMOUNT);
+        throw new PaymeError(PAYME_ERRORS.WRONG_AMOUNT, 'amount');
     }
 
     // Проверить статус
@@ -125,6 +125,11 @@ async function CreateTransaction(params) {
         throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
     }
 
+    // Проверка таймаута (12 часов)
+    if (Date.now() - time > 43200000) {
+        throw new PaymeError(PAYME_ERRORS.CANNOT_PERFORM, 'timeout');
+    }
+
     // Проверить существующую транзакцию с таким же Payme ID (идемпотентность)
     const existing = await prisma.qrPaymentAttempt.findFirst({
         where: { externalPaymentId: id }
@@ -145,7 +150,7 @@ async function CreateTransaction(params) {
     });
 
     if (!attempt) {
-        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND);
+        throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'order_id');
     }
 
     // Проверить, есть ли уже транзакция с ДРУГИМ Payme ID
@@ -157,12 +162,18 @@ async function CreateTransaction(params) {
     // Проверить сумму
     const expectedAmountInTiyin = Math.round(attempt.amount * 100);
     if (amount !== expectedAmountInTiyin) {
-        throw new PaymeError(PAYME_ERRORS.WRONG_AMOUNT);
+        throw new PaymeError(PAYME_ERRORS.WRONG_AMOUNT, 'amount');
     }
 
     // Проверить статус
     if (attempt.status === 'PAID') {
         throw new PaymeError(PAYME_ERRORS.ORDER_ALREADY_PAID);
+    }
+
+    // Если транзакция была отменена или просрочена
+    if (attempt.status === 'FAILED' || attempt.status === 'EXPIRED') {
+        // Если была отменена - возвращаем ошибку
+        throw new PaymeError(PAYME_ERRORS.ORDER_CANCELLED);
     }
 
     // Обновить статус и сохранить Payme transaction ID
@@ -216,7 +227,16 @@ async function PerformTransaction(params) {
         };
     }
 
-    // Выполнить оплату - используем СУЩЕСТВУЮЩУЮ функцию
+    // Если транзакция отменена
+    if (attempt.status === 'FAILED' || attempt.status === 'EXPIRED') {
+        throw new PaymeError(PAYME_ERRORS.CANNOT_PERFORM, 'Transaction cancelled');
+    }
+
+    // Проверка таймаута для выполнения (тоже 12 часов с момента создания транзакции Payme)
+    // Но у нас нет времени создания транзакции Payme в базе (кроме createdAt, но это наше время)
+    // Payme не присылает время в PerformTransaction
+
+    // Выполнить оплату
     const { processPaymentInternal } = await import('../public/qrPaymentController.js');
     const result = await processPaymentInternal(attempt.id, attempt.link);
 
@@ -253,23 +273,36 @@ async function CancelTransaction(params) {
         throw new PaymeError(PAYME_ERRORS.TRANSACTION_NOT_FOUND);
     }
 
+    // Если транзакция уже оплачена — возврат денег невозможен через API в данном случае (или возможен с state -2)
+    // Payme разрешает отмену выполненной транзакции (reversal)
+
     const now = new Date();
 
+    // Если уже отменена, возвращаем текущее состояние (идемпотентность)
+    if (attempt.status === 'FAILED') {
+        return {
+            transaction: attempt.id.toString(),
+            cancel_time: attempt.cancelTime ? attempt.cancelTime.getTime() : now.getTime(),
+            state: attempt.paidAt ? -2 : -1
+        };
+    }
+
     // Обновить статус
-    await prisma.qrPaymentAttempt.update({
+    const updated = await prisma.qrPaymentAttempt.update({
         where: { id: attempt.id },
         data: {
-            status: 'FAILED'
-            // Можно добавить поле cancelReason если нужно
+            status: 'FAILED',
+            cancelTime: now,
+            cancelReason: reason
         }
     });
 
     console.log('[Payme] CancelTransaction: Cancelled attempt', attempt.id, 'reason:', reason);
 
     return {
-        transaction: attempt.id.toString(),
+        transaction: updated.id.toString(),
         cancel_time: now.getTime(),
-        state: attempt.status === 'PAID' ? -2 : -1
+        state: attempt.paidAt ? -2 : -1
     };
 }
 
@@ -293,17 +326,18 @@ async function CheckTransaction(params) {
     } else if (attempt.status === 'PROCESSING') {
         state = 1;
     } else if (attempt.status === 'FAILED' || attempt.status === 'EXPIRED') {
-        state = -1;
+        state = attempt.paidAt ? -2 : -1;
     } else {
+        // PENDING и без externalPaymentId сюда не попадут, т.к. ищем по ID
         state = 0;
     }
 
     return {
         create_time: attempt.createdAt.getTime(),
         perform_time: attempt.paidAt ? attempt.paidAt.getTime() : 0,
-        cancel_time: 0,
+        cancel_time: attempt.cancelTime ? attempt.cancelTime.getTime() : 0,
         transaction: attempt.id.toString(),
         state,
-        reason: null
+        reason: attempt.cancelReason || null
     };
 }
