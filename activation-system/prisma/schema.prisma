@@ -443,6 +443,8 @@ model QrPaymentAttempt {
   createdAt         DateTime        @default(now())
   expiresAt         DateTime
   paidAt            DateTime?
+  cancelTime        DateTime?
+  cancelReason      Int?
   saleId            Int?            @unique
   voucherValue      String?
   receiptPath       String?
