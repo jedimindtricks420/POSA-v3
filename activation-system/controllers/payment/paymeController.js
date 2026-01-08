@@ -34,6 +34,9 @@ export async function handlePayme(req, res) {
             case 'CheckTransaction':
                 result = await CheckTransaction(params);
                 break;
+            case 'GetStatement':
+                result = await GetStatement(params);
+                break;
             default:
                 throw new PaymeError(PAYME_ERRORS.METHOD_NOT_FOUND);
         }
@@ -340,4 +343,57 @@ async function CheckTransaction(params) {
         state,
         reason: attempt.cancelReason || null
     };
+}
+
+/**
+ * GetStatement - получение списка транзакций за период
+ */
+async function GetStatement(params) {
+    const { from, to } = params;
+
+    // Найти все транзакции за указанный период
+    // Ищем только те, у которых есть externalPaymentId (успешно созданные через CreateTransaction)
+    const attempts = await prisma.qrPaymentAttempt.findMany({
+        where: {
+            externalPaymentId: { not: null },
+            createdAt: {
+                gte: new Date(from),
+                lte: new Date(to)
+            }
+        },
+        orderBy: {
+            createdAt: 'asc'
+        }
+    });
+
+    // Формируем список транзакций
+    const transactions = attempts.map(attempt => {
+        let state;
+        if (attempt.status === 'PAID') {
+            state = 2;
+        } else if (attempt.status === 'PROCESSING') {
+            state = 1;
+        } else if (attempt.status === 'FAILED' || attempt.status === 'EXPIRED') {
+            state = attempt.paidAt ? -2 : -1;
+        } else {
+            state = 0;
+        }
+
+        return {
+            id: attempt.externalPaymentId,
+            time: attempt.createdAt.getTime(),
+            amount: Math.round(attempt.amount * 100), // Конвертируем в тийины
+            account: {
+                Namo: attempt.id.toString()
+            },
+            create_time: attempt.createdAt.getTime(),
+            perform_time: attempt.paidAt ? attempt.paidAt.getTime() : 0,
+            cancel_time: attempt.cancelTime ? attempt.cancelTime.getTime() : 0,
+            transaction: attempt.id.toString(),
+            state,
+            reason: attempt.cancelReason || null
+        };
+    });
+
+    return { transactions };
 }
