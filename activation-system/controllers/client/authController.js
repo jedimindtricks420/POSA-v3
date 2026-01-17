@@ -48,19 +48,82 @@ async function setOtpSessionAndSend(req, phone) {
   }
 }
 
-// === Страница логина ===
-export const showLogin = (req, res) => {
-  console.log('=== SHOW LOGIN CALLED ===');
-  console.log('Session in showLogin:', req.session);
-  console.log('req.session?.client:', req.session?.client);
+// === Helper: Восстановление сессии из refresh token ===
+async function tryRestoreSessionFromRefreshToken(req, res) {
+  const refreshToken = req.cookies?.refresh_token;
+  const rememberMe = req.cookies?.remember_me === '1';
 
-  // Проверяем есть ли активная сессия клиента
-  if (req.session && req.session.client) {
-    console.log('Client still in session, redirecting to dashboard');
+  if (!refreshToken || !rememberMe) {
+    return null;
+  }
+
+  try {
+    const record = await findRefreshToken(refreshToken);
+
+    if (!record || record.expiresAt < new Date() || !record.clientId) {
+      if (record) await revokeRefreshTokenByToken(refreshToken);
+      clearRememberCookies(res);
+      return null;
+    }
+
+    const client = await prisma.client.findUnique({
+      where: { id: record.clientId }
+    });
+
+    if (!client) {
+      await revokeRefreshTokenByToken(refreshToken);
+      clearRememberCookies(res);
+      return null;
+    }
+
+    console.log(`[tryRestore] Success for client ${client.id}`);
+    return { client, tokenRecord: record };
+
+  } catch (error) {
+    console.error('[tryRestore] Error:', error);
+    return null;
+  }
+}
+
+// === Страница логина ===
+export const showLogin = async (req, res) => {
+  console.log('=== SHOW LOGIN CALLED ===');
+
+  // 1. Проверяем активную сессию
+  if (req.session?.client) {
     return res.redirect('/client/dashboard');
   }
 
-  console.log('No client in session, showing login page');
+  // 2. Пытаемся восстановить из refresh token
+  const restoreResult = await tryRestoreSessionFromRefreshToken(req, res);
+
+  if (restoreResult) {
+    const { client, tokenRecord } = restoreResult;
+
+    return req.session.regenerate(async (err) => {
+      if (err) {
+        console.error('[showLogin] Regenerate error:', err);
+        return res.render('pages/client-login', { error: null });
+      }
+
+      req.session.client = { id: client.id, phone: client.phoneNumber };
+      req.session.rememberMe = true;
+      req.session.cookie.maxAge = REMEMBER_ME_MAX_AGE;
+
+      const rotated = await rotateRefreshToken(tokenRecord);
+      if (rotated) setRememberCookies(res, rotated.token);
+
+      req.session.save((saveErr) => {
+        if (saveErr) {
+          console.error('[showLogin] Save error:', saveErr);
+          return res.render('pages/client-login', { error: null });
+        }
+        return res.redirect('/client/dashboard');
+      });
+    });
+  }
+
+  // 3. Показываем форму логина
   res.render('pages/client-login', { error: null });
 };
 
