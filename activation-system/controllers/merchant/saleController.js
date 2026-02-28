@@ -204,6 +204,18 @@ export const confirmCheckout = async (req, res) => {
         data: { balance: { increment: merchantPayable } },
       });
 
+      // P0-1 fix: обновить баланс кассы (оффлайн-продажа)
+      const kassaId = product.vendor?.kassaId || null;
+      if (kassaId) {
+        await tx.kassa.update({
+          where: { id: kassaId },
+          data: {
+            totalReceived: { increment: product.price },
+            balance: { increment: product.price * (product.vendorCommissionPercent / 100) },
+          },
+        });
+      }
+
       return { updatedVoucher: updated, saleId: sale.id };
     });
 
