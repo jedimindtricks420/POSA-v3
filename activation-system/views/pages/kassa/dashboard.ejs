@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Дашборд кассы — POSA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../../partials/kassa-navbar', { user, activeNav: 'dashboard' }) %>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h1 class="text-2xl font-bold text-slate-900 mb-6">Дашборд — <%= kassa.name %>
+            </h1>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-5">
+                    <div class="text-sm font-medium text-slate-500">Баланс</div>
+                    <div class="mt-1 text-2xl font-bold text-indigo-600">
+                        <%= kassa.balance.toLocaleString('ru-RU') %> сум
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-5">
+                    <div class="text-sm font-medium text-slate-500">Всего получено</div>
+                    <div class="mt-1 text-2xl font-bold text-emerald-600">
+                        <%= kassa.totalReceived.toLocaleString('ru-RU') %> сум
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-5">
+                    <div class="text-sm font-medium text-slate-500">Всего выплачено</div>
+                    <div class="mt-1 text-2xl font-bold text-amber-600">
+                        <%= kassa.totalPaid.toLocaleString('ru-RU') %> сум
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-5">
+                    <div class="text-sm font-medium text-slate-500">Продажи за 7 дней</div>
+                    <div class="mt-1 text-2xl font-bold text-slate-900">
+                        <%= weekSales.count %>
+                    </div>
+                    <div class="text-sm text-slate-500">
+                        <%= weekSales.total.toLocaleString('ru-RU') %> сум
+                    </div>
+                </div>
+            </div>
+
+            <!-- Привязанные вендоры -->
+            <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 mb-8">
+                <div class="px-6 py-4 border-b border-slate-200">
+                    <h2 class="text-lg font-semibold text-slate-900">Привязанные вендоры (<%= kassa.vendors.length %>)
+                    </h2>
+                </div>
+                <div class="px-6 py-4">
+                    <div class="flex flex-wrap gap-2">
+                        <% kassa.vendors.forEach(v=> { %>
+                            <span
+                                class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                                <%= v.name %>
+                            </span>
+                            <% }) %>
+                                <% if (kassa.vendors.length===0) { %>
+                                    <span class="text-sm text-slate-400">Нет привязанных вендоров</span>
+                                    <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Последние транзакции -->
+            <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200">
+                <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-slate-900">Последние транзакции</h2>
+                    <a href="/kassa/transactions" class="text-sm text-indigo-600 hover:text-indigo-500">Все транзакции
+                        →</a>
+                </div>
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Товар</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Вендор</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Сумма</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Комиссия</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-200">
+                        <% recentTransactions.forEach(t=> { %>
+                            <tr>
+                                <td class="px-6 py-4 text-sm text-slate-900">
+                                    <%= t.id %>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-600">
+                                    <%= t.productName %>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-600">
+                                    <%= t.vendor?.name || '-' %>
+                                </td>
+                                <td class="px-6 py-4 text-sm font-medium text-slate-900">
+                                    <%= t.price.toLocaleString('ru-RU') %>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-indigo-600">
+                                    <%= t.kassaDebt.toLocaleString('ru-RU') %>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-slate-500">
+                                    <%= t.createdAt.toLocaleDateString('ru-RU') %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                                <% if (recentTransactions.length===0) { %>
+                                    <tr>
+                                        <td colspan="6" class="px-6 py-8 text-center text-sm text-slate-400">Нет
+                                            транзакций</td>
+                                    </tr>
+                                    <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+</body>
+
+</html>

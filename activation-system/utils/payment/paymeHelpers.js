@@ -5,8 +5,8 @@
  * @param {String} callbackUrl - URL для возврата после оплаты
  * @returns {String} - URL для редиректа
  */
-export function generatePaymeUrl(orderId, amount, callbackUrl) {
-    const merchantId = process.env.PAYME_MERCHANT_ID;
+export function generatePaymeUrl(orderId, amount, callbackUrl, kassaCredentials = null) {
+    const merchantId = kassaCredentials?.paymeMerchantId || process.env.PAYME_MERCHANT_ID;
     const env = process.env.PAYME_ENV || 'test';
 
     const baseUrl = env === 'test'
@@ -25,7 +25,7 @@ export function generatePaymeUrl(orderId, amount, callbackUrl) {
  * @param {Object} req - Express request
  * @returns {Boolean}
  */
-export function checkPaymeAuth(req) {
+export function checkPaymeAuth(req, kassaCredentials = null) {
     const auth = req.headers.authorization;
     if (!auth) return false;
 
@@ -37,8 +37,8 @@ export function checkPaymeAuth(req) {
 
     const env = process.env.PAYME_ENV || 'test';
     const expectedKey = env === 'test'
-        ? process.env.PAYME_TEST_KEY
-        : process.env.PAYME_KEY;
+        ? (kassaCredentials?.paymeTestKey || process.env.PAYME_TEST_KEY)
+        : (kassaCredentials?.paymeKey || process.env.PAYME_KEY);
 
     return login === 'Paycom' && key === expectedKey;
 }

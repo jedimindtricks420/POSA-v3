@@ -1,0 +1,53 @@
+<!-- Навбар кабинета кассы -->
+<nav class="bg-slate-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <!-- Лого -->
+            <div class="flex items-center">
+                <span class="text-lg font-bold text-indigo-400">POSA</span>
+                <span class="ml-2 text-sm text-slate-400">Кабинет кассы</span>
+            </div>
+
+            <!-- Навигация -->
+            <div class="hidden md:flex items-center space-x-4">
+                <a href="/kassa/dashboard"
+                    class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-700 transition
+          <%= typeof activeNav !== 'undefined' && activeNav === 'dashboard' ? 'bg-slate-700 text-white' : 'text-slate-300' %>">
+                    Дашборд
+                </a>
+                <a href="/kassa/transactions"
+                    class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-700 transition
+          <%= typeof activeNav !== 'undefined' && activeNav === 'transactions' ? 'bg-slate-700 text-white' : 'text-slate-300' %>">
+                    Транзакции
+                </a>
+                <a href="/kassa/obligations"
+                    class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-700 transition
+          <%= typeof activeNav !== 'undefined' && activeNav === 'obligations' ? 'bg-slate-700 text-white' : 'text-slate-300' %>">
+                    Обязательства
+                </a>
+                <a href="/kassa/payouts"
+                    class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-700 transition
+          <%= typeof activeNav !== 'undefined' && activeNav === 'payouts' ? 'bg-slate-700 text-white' : 'text-slate-300' %>">
+                    Выплаты
+                </a>
+                <a href="/kassa/settings"
+                    class="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-700 transition
+          <%= typeof activeNav !== 'undefined' && activeNav === 'settings' ? 'bg-slate-700 text-white' : 'text-slate-300' %>">
+                    Настройки
+                </a>
+            </div>
+
+            <!-- Пользователь -->
+            <div class="flex items-center space-x-3">
+                <span class="text-sm text-slate-400">
+                    <%= user.username %>
+                </span>
+                <span
+                    class="inline-flex items-center rounded-full bg-indigo-900 px-2 py-0.5 text-xs font-medium text-indigo-200">
+                    <%= user.role==='kassa_admin' ? 'Админ' : 'Просмотр' %>
+                </span>
+                <a href="/auth/logout" class="text-sm text-red-400 hover:text-red-300">Выход</a>
+            </div>
+        </div>
+    </div>
+</nav>

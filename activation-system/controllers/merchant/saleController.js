@@ -187,7 +187,8 @@ export const confirmCheckout = async (req, res) => {
           price: product.price,
           // Store how much merchant owes the platform for the sale
           merchantDebt: merchantPayable,
-          adminDebt: product.price * (product.vendorCommissionPercent / 100),
+          kassaDebt: product.price * (product.vendorCommissionPercent / 100),
+          kassaId: product.vendor?.kassaId || null,
           vendorDebt,
         },
       });

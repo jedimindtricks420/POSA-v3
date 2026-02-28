@@ -16,7 +16,7 @@ export const showVendors = async (req, res) => {
     prisma.voucherTransaction.aggregate({
       _sum: {
         vendorDebt: true,
-        adminDebt: true,
+        kassaDebt: true,
         price: true,
       },
       _count: { id: true },
@@ -37,7 +37,7 @@ export const showVendors = async (req, res) => {
   const totalSalesVolume = Number(transactionAgg._sum?.price ?? 0);
   const vendorPayoutAccrued = Number(transactionAgg._sum?.vendorDebt ?? 0);
   const vendorPayoutPaid = Number(vendorPaymentsAgg._sum?.amount ?? 0);
-  const platformRevenueShare = Number(transactionAgg._sum?.adminDebt ?? 0);
+  const platformRevenueShare = Number(transactionAgg._sum?.kassaDebt ?? 0);
   const vendorPaymentsCount = Number(vendorPaymentsAgg._count?._all ?? 0);
 
   const stats = {
@@ -60,37 +60,37 @@ export const showVendors = async (req, res) => {
   });
 };
 
-  
-  // Показать форму добавления
-  export const showAddVendorForm = (req, res) => {
-    res.render('pages/admin-add-vendor', { error: null, user: req.session.user });
-  };
-  
-  // Обработка создания
-  export const handleAddVendor = async (req, res) => {
-    const { name, category, productType, description, defaultCommissionPercent } = req.body;
-    try {
-      const schema = buildDefaultReceiptSchema(name);
-      await prisma.vendor.create({
-        data: {
-          name,
-          category,
-          productType,
-          description,
-          defaultCommissionPercent: Number(defaultCommissionPercent),
-          receiptTemplate: JSON.stringify(schema)
-        },
-      });
-      res.redirect('/admin/vendors');
-    } catch (error) {
-      res.render('pages/admin-add-vendor', {
-        error: 'Ошибка при добавлении вендора',
-        user: req.session.user
-      });
-    }
-  };
-  
-  // Показать форму редактирования
+
+// Показать форму добавления
+export const showAddVendorForm = (req, res) => {
+  res.render('pages/admin-add-vendor', { error: null, user: req.session.user });
+};
+
+// Обработка создания
+export const handleAddVendor = async (req, res) => {
+  const { name, category, productType, description, defaultCommissionPercent } = req.body;
+  try {
+    const schema = buildDefaultReceiptSchema(name);
+    await prisma.vendor.create({
+      data: {
+        name,
+        category,
+        productType,
+        description,
+        defaultCommissionPercent: Number(defaultCommissionPercent),
+        receiptTemplate: JSON.stringify(schema)
+      },
+    });
+    res.redirect('/admin/vendors');
+  } catch (error) {
+    res.render('pages/admin-add-vendor', {
+      error: 'Ошибка при добавлении вендора',
+      user: req.session.user
+    });
+  }
+};
+
+// Показать форму редактирования
 export const showEditVendorForm = async (req, res) => {
   const vendor = await prisma.vendor.findUnique({
     where: { id: Number(req.params.id) },
@@ -115,8 +115,8 @@ export const showEditVendorForm = async (req, res) => {
     sampleProduct: vendor.products?.[0] || null,
   });
 };
-  
-  // Обработка редактирования
+
+// Обработка редактирования
 export const handleEditVendor = async (req, res) => {
   const {
     name,
@@ -178,9 +178,9 @@ export const handleEditVendor = async (req, res) => {
     });
   }
 };
-  
 
-  // GET: страница с формой
+
+// GET: страница с формой
 export const showAddVendorUserForm = async (req, res) => {
   const vendors = await prisma.vendor.findMany();
   res.render('pages/admin-add-vendor-user', { vendors });
@@ -268,7 +268,7 @@ export const handleVendorPayment = async (req, res) => {
 
     for (const row of pendingTx) {
       if (remaining <= 0) break;
-      const payout = Number(row.vendorDebt ?? row.adminDebt ?? 0);
+      const payout = Number(row.vendorDebt ?? row.kassaDebt ?? 0);
       if (payout <= 0) {
         await tx.voucherTransaction.update({
           where: { id: row.id },

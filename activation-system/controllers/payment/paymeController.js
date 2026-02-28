@@ -11,8 +11,18 @@ export async function handlePayme(req, res) {
     console.log(`[Payme] ${method}:`, JSON.stringify(params));
 
     try {
-        // Проверка авторизации
-        if (!checkPaymeAuth(req)) {
+        // 0. Определяем кассу из URL
+        const kassaId = parseInt(req.params.kassaId);
+        if (!kassaId) {
+            throw new PaymeError(PAYME_ERRORS.SYSTEM_ERROR);
+        }
+        const kassa = await prisma.kassa.findUnique({ where: { id: kassaId } });
+        if (!kassa) {
+            throw new PaymeError(PAYME_ERRORS.SYSTEM_ERROR);
+        }
+
+        // Проверка авторизации с credentials кассы
+        if (!checkPaymeAuth(req, kassa)) {
             throw new PaymeError(PAYME_ERRORS.AUTH_ERROR);
         }
 
@@ -26,7 +36,7 @@ export async function handlePayme(req, res) {
                 result = await CreateTransaction(params);
                 break;
             case 'PerformTransaction':
-                result = await PerformTransaction(params);
+                result = await PerformTransaction(params, kassa);
                 break;
             case 'CancelTransaction':
                 result = await CancelTransaction(params);
@@ -200,7 +210,7 @@ async function CreateTransaction(params) {
 /**
  * PerformTransaction - проведение платежа
  */
-async function PerformTransaction(params) {
+async function PerformTransaction(params, kassa = null) {
     const { id } = params;
 
     // Найти транзакцию по Payme ID
@@ -241,7 +251,7 @@ async function PerformTransaction(params) {
 
     // Выполнить оплату
     const { processPaymentInternal } = await import('../public/qrPaymentController.js');
-    const result = await processPaymentInternal(attempt.id, attempt.link);
+    const result = await processPaymentInternal(attempt.id, attempt.link, kassa);
 
     if (!result.success) {
         console.error('[Payme] PerformTransaction: Payment failed:', result.error);
