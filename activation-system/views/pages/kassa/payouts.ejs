@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Выплаты — POSA</title>
+    <title>Переводы — POSA</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -13,16 +13,16 @@
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold text-slate-900">Выплаты</h1>
+                <h1 class="text-2xl font-bold text-slate-900">Переводы</h1>
                 <div class="flex gap-4 text-sm">
                     <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 px-4 py-2">
-                        <span class="text-slate-500">Баланс:</span>
+                        <span class="text-slate-500">Остаток комиссий:</span>
                         <span class="font-bold text-indigo-600 ml-1">
                             <%= kassaBalance.toLocaleString('ru-RU') %> сум
                         </span>
                     </div>
                     <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 px-4 py-2">
-                        <span class="text-slate-500">Всего выплачено:</span>
+                        <span class="text-slate-500">Всего переведено:</span>
                         <span class="font-bold text-amber-600 ml-1">
                             <%= totalPaid.toLocaleString('ru-RU') %> сум
                         </span>
@@ -31,39 +31,63 @@
             </div>
 
             <% if (user.role==='kassa_admin' ) { %>
-                <!-- Форма новой выплаты -->
+                <!-- Форма нового перевода -->
                 <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-6 mb-8">
-                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Зарегистрировать выплату</h2>
-                    <form method="POST" action="/kassa/payouts" class="flex items-end gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Сумма</label>
-                            <input type="number" name="amount" step="0.01" required
-                                class="rounded-md border-slate-300 text-sm" placeholder="0.00">
+                    <h2 class="text-lg font-semibold text-slate-900 mb-4">Зарегистрировать перевод</h2>
+                    <form method="POST" action="/kassa/payouts" class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Получатель</label>
+                                <select name="recipientType" id="recipientType" onchange="toggleVendorSelect()"
+                                    class="w-full rounded-md border-slate-300 text-sm">
+                                    <option value="vendor">Вендор</option>
+                                    <option value="platform">Платформа (POSA)</option>
+                                </select>
+                            </div>
+                            <div id="vendorSelectWrapper">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Вендор</label>
+                                <select name="recipientId" id="recipientId"
+                                    class="w-full rounded-md border-slate-300 text-sm">
+                                    <option value="">— Выберите вендора —</option>
+                                    <% vendors.forEach(v=> { %>
+                                        <option value="<%= v.id %>">
+                                            <%= v.name %> (к выплате: <%= Number(v.balance || 0).toLocaleString('ru-RU')
+                                                    %> сум)
+                                        </option>
+                                        <% }) %>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Тип</label>
-                            <select name="recipientType" class="rounded-md border-slate-300 text-sm">
-                                <option value="platform">Платформа</option>
-                                <option value="vendor">Вендор</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Комментарий</label>
-                            <input type="text" name="comment" class="rounded-md border-slate-300 text-sm"
-                                placeholder="Необязательно">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Сумма</label>
+                                <input type="number" name="amount" step="0.01" required
+                                    class="w-full rounded-md border-slate-300 text-sm" placeholder="0.00">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Комментарий</label>
+                                <input type="text" name="comment" class="w-full rounded-md border-slate-300 text-sm"
+                                    placeholder="Необязательно">
+                            </div>
                         </div>
                         <button type="submit"
                             class="inline-flex items-center rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
-                            Создать выплату
+                            Создать перевод
                         </button>
                     </form>
                 </div>
+                <script>
+                    function toggleVendorSelect() {
+                        const type = document.getElementById('recipientType').value;
+                        document.getElementById('vendorSelectWrapper').style.display = type === 'vendor' ? 'block' : 'none';
+                    }
+                </script>
                 <% } %>
 
-                    <!-- История выплат -->
+                    <!-- История переводов -->
                     <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200">
                         <div class="px-6 py-4 border-b border-slate-200">
-                            <h2 class="text-lg font-semibold text-slate-900">История выплат</h2>
+                            <h2 class="text-lg font-semibold text-slate-900">История переводов</h2>
                         </div>
                         <table class="min-w-full divide-y divide-slate-200">
                             <thead class="bg-slate-50">
@@ -71,8 +95,8 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Сумма
                                     </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Тип
-                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">
+                                        Получатель</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Баланс
                                         до</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Баланс
@@ -93,7 +117,15 @@
                                                 p.amount.toLocaleString('ru-RU') %>
                                         </td>
                                         <td class="px-6 py-4 text-sm text-slate-600">
-                                            <%= p.recipientType %>
+                                            <% if (p.recipientType==='vendor' && p.recipientId) { %>
+                                                <% const v=typeof vendors !=='undefined' && vendors.find(v=> v.id ===
+                                                    p.recipientId); %>
+                                                    <span class="text-indigo-600">
+                                                        <%= v ? v.name : 'Вендор #' + p.recipientId %>
+                                                    </span>
+                                                    <% } else { %>
+                                                        Платформа
+                                                        <% } %>
                                         </td>
                                         <td class="px-6 py-4 text-sm text-slate-500">
                                             <%= p.balanceBefore.toLocaleString('ru-RU') %>
@@ -112,7 +144,7 @@
                                         <% if (payments.length===0) { %>
                                             <tr>
                                                 <td colspan="7" class="px-6 py-8 text-center text-sm text-slate-400">Нет
-                                                    выплат</td>
+                                                    переводов</td>
                                             </tr>
                                             <% } %>
                             </tbody>

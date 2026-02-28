@@ -133,21 +133,27 @@ export const showPayouts = async (req, res) => {
     try {
         const kassaId = req.session.user.kassaId;
 
-        const payments = await prisma.kassaPayment.findMany({
-            where: { kassaId },
-            orderBy: { createdAt: 'desc' },
-            take: 50,
-        });
-
-        const kassa = await prisma.kassa.findUnique({
-            where: { id: kassaId },
-            select: { balance: true, totalPaid: true },
-        });
+        const [payments, kassa, vendors] = await Promise.all([
+            prisma.kassaPayment.findMany({
+                where: { kassaId },
+                orderBy: { createdAt: 'desc' },
+                take: 50,
+            }),
+            prisma.kassa.findUnique({
+                where: { id: kassaId },
+                select: { balance: true, totalPaid: true },
+            }),
+            prisma.vendor.findMany({
+                where: { kassaId },
+                select: { id: true, name: true, balance: true },
+            }),
+        ]);
 
         res.render('pages/kassa/payouts', {
             layout: false,
             user: req.session.user,
             payments,
+            vendors,
             kassaBalance: kassa?.balance || 0,
             totalPaid: kassa?.totalPaid || 0,
         });
@@ -168,10 +174,16 @@ export const createPayout = async (req, res) => {
             return res.status(400).send('Некорректная сумма');
         }
 
+        // Валидация: для vendor-выплат обязателен recipientId
+        if (recipientType === 'vendor' && !recipientId) {
+            return res.status(400).send('Выберите вендора для выплаты');
+        }
+
         const kassa = await prisma.kassa.findUnique({ where: { id: kassaId } });
         if (!kassa) return res.status(404).send('Касса не найдена');
 
         await prisma.$transaction(async (tx) => {
+            // 1. Запись выплаты
             await tx.kassaPayment.create({
                 data: {
                     kassaId,
@@ -184,6 +196,7 @@ export const createPayout = async (req, res) => {
                 },
             });
 
+            // 2. Уменьшить баланс кассы
             await tx.kassa.update({
                 where: { id: kassaId },
                 data: {
@@ -191,6 +204,49 @@ export const createPayout = async (req, res) => {
                     totalPaid: { increment: parsedAmount },
                 },
             });
+
+            // 3. Если это выплата вендору — уменьшить долг перед вендором
+            if (recipientType === 'vendor' && recipientId) {
+                const vendorId = parseInt(recipientId);
+
+                await tx.vendor.update({
+                    where: { id: vendorId },
+                    data: { balance: { decrement: parsedAmount } },
+                });
+
+                // Гасим PENDING транзакции этого вендора (FIFO)
+                let remaining = parsedAmount;
+                const pendingTx = await tx.voucherTransaction.findMany({
+                    where: { vendorId, kassaId, status: 'PENDING' },
+                    orderBy: { createdAt: 'asc' },
+                });
+
+                for (const row of pendingTx) {
+                    if (remaining <= 0) break;
+                    const payout = Number(row.vendorDebt ?? 0);
+                    if (payout <= 0) {
+                        await tx.voucherTransaction.update({
+                            where: { id: row.id },
+                            data: { status: 'COMPLETED' },
+                        });
+                        continue;
+                    }
+
+                    if (remaining >= payout) {
+                        remaining -= payout;
+                        await tx.voucherTransaction.update({
+                            where: { id: row.id },
+                            data: { status: 'COMPLETED', vendorDebt: 0 },
+                        });
+                    } else {
+                        await tx.voucherTransaction.update({
+                            where: { id: row.id },
+                            data: { vendorDebt: Math.max(0, payout - remaining) },
+                        });
+                        remaining = 0;
+                    }
+                }
+            }
         });
 
         res.redirect('/kassa/payouts');
