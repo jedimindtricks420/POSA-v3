@@ -18,13 +18,13 @@
             <!-- KPI Cards -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-5">
-                    <div class="text-sm font-medium text-slate-500">Баланс</div>
+                    <div class="text-sm font-medium text-slate-500">Нераспределённая комиссия</div>
                     <div class="mt-1 text-2xl font-bold text-indigo-600">
                         <%= kassa.balance.toLocaleString('ru-RU') %> сум
                     </div>
                 </div>
                 <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-5">
-                    <div class="text-sm font-medium text-slate-500">Всего получено</div>
+                    <div class="text-sm font-medium text-slate-500">Оборот через кассу</div>
                     <div class="mt-1 text-2xl font-bold text-emerald-600">
                         <%= kassa.totalReceived.toLocaleString('ru-RU') %> сум
                     </div>
@@ -81,7 +81,8 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Товар</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Вендор</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Сумма</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Комиссия</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Доля платформы
+                            </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Дата</th>
                         </tr>
                     </thead>

@@ -76,7 +76,7 @@ export const confirmCheckout = async (req, res) => {
   for (const item of cart) {
     const { productId, quantity } = item;
 
-    const product = await prisma.product.findUnique({ where: { id: productId } });
+    const product = await prisma.product.findUnique({ where: { id: productId }, include: { vendor: true } });
 
     const vouchers = await prisma.voucher.findMany({
       where: {
@@ -118,6 +118,8 @@ export const confirmCheckout = async (req, res) => {
         where: { username: user.username }
       });
 
+      const kassaId = product.vendor?.kassaId || null;
+
       await prisma.voucherTransaction.create({
         data: {
           voucherValue: voucher.value,
@@ -128,7 +130,8 @@ export const confirmCheckout = async (req, res) => {
           price: product.price,
           merchantDebt,
           vendorDebt: vendorPayout,
-          kassaDebt: platformMargin
+          kassaDebt: platformMargin,
+          kassaId,
         }
       });
 
@@ -151,6 +154,17 @@ export const confirmCheckout = async (req, res) => {
           }
         }
       });
+
+      // P0-2 fix: обновить баланс кассы
+      if (kassaId) {
+        await prisma.kassa.update({
+          where: { id: kassaId },
+          data: {
+            totalReceived: { increment: product.price },
+            balance: { increment: platformMargin },
+          },
+        });
+      }
     }
   }
 
