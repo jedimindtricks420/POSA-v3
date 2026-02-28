@@ -22,7 +22,7 @@ export const showSales = async (req, res) => {
       _sum: {
         merchantDebt: true,
         vendorDebt: true,
-        adminDebt: true,
+        kassaDebt: true,
         price: true,
       },
     }),
@@ -30,7 +30,7 @@ export const showSales = async (req, res) => {
   ]);
 
   const totalSalesAmount = Number(salesAmountAgg._sum.price ?? 0);
-  const platformRevenue = Number(transactionTotals._sum.adminDebt ?? 0);
+  const platformRevenue = Number(transactionTotals._sum.kassaDebt ?? 0);
   const totalMerchantDebt = Number(transactionTotals._sum.merchantDebt ?? 0);
   const totalMerchantCommission = Math.max(0, totalSalesAmount - totalMerchantDebt);
   const vendorPayoutTotal = Number(transactionTotals._sum.vendorDebt ?? 0);
@@ -128,7 +128,7 @@ export const confirmCheckout = async (req, res) => {
           price: product.price,
           merchantDebt,
           vendorDebt: vendorPayout,
-          adminDebt: platformMargin
+          kassaDebt: platformMargin
         }
       });
 

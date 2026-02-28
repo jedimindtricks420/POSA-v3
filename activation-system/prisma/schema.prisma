@@ -16,6 +16,9 @@ model User {
   vendorId Int?
   vendor   Vendor? @relation(fields: [vendorId], references: [id])
 
+  kassaId Int?
+  kassa   Kassa? @relation(fields: [kassaId], references: [id])
+
   note String?
 
   activations       VoucherActivation[]       @relation("UserActivations")
@@ -30,6 +33,8 @@ enum Role {
   financial_mgr
   content_mgr
   support_agent
+  kassa_admin
+  kassa_viewer
 }
 
 enum VendorProductType {
@@ -201,6 +206,9 @@ model Vendor {
   products                 Product[]
   defaultCommissionPercent Float             @default(80)
 
+  kassaId Int?
+  kassa   Kassa? @relation(fields: [kassaId], references: [id])
+
   transactions       VoucherTransaction[] @relation("VendorToTransactions")
   users              User[]
   voucherActivations VoucherActivation[]
@@ -219,8 +227,10 @@ model VoucherTransaction {
   productName  String
   price        Float
   merchantDebt Float
-  adminDebt    Float
+  kassaDebt    Float
   vendorDebt   Float
+  kassaId      Int?
+  kassa        Kassa?            @relation(fields: [kassaId], references: [id])
   status       TransactionStatus @default(PENDING)
   createdAt    DateTime          @default(now())
 }
@@ -448,9 +458,11 @@ model QrPaymentAttempt {
   saleId            Int?            @unique
   voucherValue      String?
   receiptPath       String?
+  kassaId           Int?
 
-  link MerchantProductLink @relation(fields: [linkId], references: [id])
-  sale Sale?               @relation(fields: [saleId], references: [id])
+  link  MerchantProductLink @relation(fields: [linkId], references: [id])
+  sale  Sale?               @relation(fields: [saleId], references: [id])
+  kassa Kassa?              @relation(fields: [kassaId], references: [id])
 }
 
 enum QrPaymentStatus {
@@ -459,4 +471,71 @@ enum QrPaymentStatus {
   PAID
   EXPIRED
   FAILED
+}
+
+// ========================================
+// Kassa Feature - Модели касс
+// ========================================
+
+model Kassa {
+  id        Int      @id @default(autoincrement())
+  name      String
+  legalName String?
+  inn       String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Click credentials
+  clickMerchantId String?
+  clickServiceId  String?
+  clickSecretKey  String?
+
+  // Payme credentials
+  paymeMerchantId String?
+  paymeKey        String?
+  paymeTestKey    String?
+
+  // Контакты
+  contactPerson String?
+  contactPhone  String?
+  contactEmail  String?
+
+  // Балансы
+  balance            Float @default(0)
+  totalReceived      Float @default(0)
+  totalReceivedClick Float @default(0)
+  totalReceivedPayme Float @default(0)
+  totalPaid          Float @default(0)
+
+  // Связи
+  vendors      Vendor[]
+  users        User[]
+  transactions VoucherTransaction[]
+  attempts     QrPaymentAttempt[]
+  payments     KassaPayment[]
+  adjustments  KassaAdjustment[]
+}
+
+model KassaPayment {
+  id            Int      @id @default(autoincrement())
+  kassaId       Int
+  kassa         Kassa    @relation(fields: [kassaId], references: [id])
+  amount        Float
+  recipientType String   // vendor, merchant, platform
+  recipientId   Int?
+  comment       String?
+  balanceBefore Float
+  balanceAfter  Float
+  createdAt     DateTime @default(now())
+}
+
+model KassaAdjustment {
+  id        Int      @id @default(autoincrement())
+  kassaId   Int
+  kassa     Kassa    @relation(fields: [kassaId], references: [id])
+  amount    Float    // положительное = увеличение долга, отрицательное = уменьшение
+  reason    String?
+  vendorId  Int?
+  createdAt DateTime @default(now())
 }

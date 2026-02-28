@@ -17,6 +17,7 @@ import * as rokkyController from '../controllers/admin/rokkyController.js';
 import * as telegramBotController from '../controllers/admin/telegramBotController.js';
 import * as manualActivationController from '../controllers/admin/manualActivationController.js';
 import * as qrLinkController from '../controllers/admin/qrLinkController.js';
+import * as kassaController from '../controllers/admin/kassaController.js';
 import { ensureAdmin, ensureAuthenticated, allowFinance, allowContent, allowSupport, allowFinanceOrContent } from '../middleware/auth.js';
 import { upload } from '../middleware/uploadMiddleware.js';
 import { generationLimiter } from '../middleware/rateLimit.js';
@@ -25,6 +26,13 @@ const router = express.Router();
 
 // Дашборд
 router.get('/dashboard', ensureAuthenticated, dashboardController.showAdminDashboard);
+
+// Кассы (Admin + Finance)
+router.get('/kassas', ensureAuthenticated, allowFinance, kassaController.showKassaList);
+router.get('/kassas/add', ensureAuthenticated, ensureAdmin, kassaController.showCreateKassaForm);
+router.post('/kassas/add', ensureAuthenticated, ensureAdmin, kassaController.handleCreateKassa);
+router.get('/kassas/:id/edit', ensureAuthenticated, ensureAdmin, kassaController.showEditKassaForm);
+router.post('/kassas/:id/edit', ensureAuthenticated, ensureAdmin, kassaController.handleUpdateKassa);
 
 // 1. Финансовый/Коммерческий блок (Admin + Finance)
 // ----------------------------------------------------

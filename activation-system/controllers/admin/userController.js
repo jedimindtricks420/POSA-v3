@@ -2,18 +2,29 @@ import prisma from '../../prisma/client.js';
 import bcrypt from 'bcrypt';
 
 // Показать форму добавления пользователя
-export const showCreateUserForm = (req, res) => {
-  res.render('pages/admin-add-user', { error: null });
+export const showCreateUserForm = async (req, res) => {
+  const kassas = await prisma.kassa.findMany({ where: { isActive: true }, orderBy: { id: 'asc' } });
+  res.render('pages/admin-add-user', { error: null, kassas });
 };
 
 // Обработка создания пользователя
 export const handleCreateUser = async (req, res) => {
-  const { username, password, role } = req.body;
-  if (!username || !password || !role) return res.render('pages/admin-add-user', { error: 'Заполните все поля' });
+  const { username, password, role, kassaId } = req.body;
+  const kassas = await prisma.kassa.findMany({ where: { isActive: true }, orderBy: { id: 'asc' } });
+
+  if (!username || !password || !role) return res.render('pages/admin-add-user', { error: 'Заполните все поля', kassas });
+
+  // Валидация: kassa роли требуют kassaId
+  if ((role === 'kassa_admin' || role === 'kassa_viewer') && !kassaId) {
+    return res.render('pages/admin-add-user', { error: 'Выберите кассу для пользователя с кассовой ролью', kassas });
+  }
 
   const hashedPassword = await bcrypt.hash(password, 10);
   try {
-    await prisma.user.create({ data: { username, password: hashedPassword, role } });
+    const userData = { username, password: hashedPassword, role };
+    if (kassaId) userData.kassaId = parseInt(kassaId);
+
+    await prisma.user.create({ data: userData });
 
     if (role === 'merchant') {
       await prisma.merchant.create({ data: { username, status: 'active', legalInfo: '' } });
@@ -21,7 +32,7 @@ export const handleCreateUser = async (req, res) => {
 
     res.redirect('/admin/users');
   } catch (err) {
-    res.render('pages/admin-add-user', { error: 'Ошибка при создании пользователя' });
+    res.render('pages/admin-add-user', { error: 'Ошибка при создании пользователя', kassas });
   }
 };
 
