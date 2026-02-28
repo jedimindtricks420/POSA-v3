@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Настройки кассы — POSA</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../../partials/kassa-navbar', { user, activeNav: 'settings' }) %>
+
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <h1 class="text-2xl font-bold text-slate-900 mb-6">Настройки — <%= kassa.name %>
+            </h1>
+
+            <!-- Основная информация -->
+            <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-6 mb-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Основная информация</h2>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Название</dt>
+                        <dd class="mt-1 text-sm text-slate-900">
+                            <%= kassa.name %>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Юр. лицо</dt>
+                        <dd class="mt-1 text-sm text-slate-900">
+                            <%= kassa.legalName || '—' %>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">ИНН</dt>
+                        <dd class="mt-1 text-sm text-slate-900">
+                            <%= kassa.inn || '—' %>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Статус</dt>
+                        <dd class="mt-1">
+                            <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+              <%= kassa.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' %>">
+                                <%= kassa.isActive ? 'Активна' : 'Неактивна' %>
+                            </span>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Click реквизиты -->
+            <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-6 mb-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Реквизиты Click</h2>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Merchant ID</dt>
+                        <dd class="mt-1 text-sm text-slate-900 font-mono">
+                            <%= kassa.clickMerchantId || '—' %>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Service ID</dt>
+                        <dd class="mt-1 text-sm text-slate-900 font-mono">
+                            <%= kassa.clickServiceId || '—' %>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Secret Key</dt>
+                        <dd class="mt-1 text-sm text-slate-900 font-mono">
+                            <%= kassa.clickSecretKey ? '••••••••' : '—' %>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Payme реквизиты -->
+            <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-6 mb-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Реквизиты Payme</h2>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Merchant ID</dt>
+                        <dd class="mt-1 text-sm text-slate-900 font-mono">
+                            <%= kassa.paymeMerchantId || '—' %>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Key</dt>
+                        <dd class="mt-1 text-sm text-slate-900 font-mono">
+                            <%= kassa.paymeKey ? '••••••••' : '—' %>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Payme Account Field</dt>
+                        <dd class="mt-1 text-sm text-slate-900 font-mono">Namo <span
+                                class="text-slate-400">(стандартное)</span></dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Callback URLs -->
+            <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-6 mb-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Callback URLs</h2>
+                <p class="text-sm text-slate-500 mb-3">Укажите эти URL в кабинетах Click и Payme:</p>
+                <dl class="space-y-4">
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Click Prepare URL</dt>
+                        <dd class="mt-1">
+                            <code
+                                class="bg-slate-100 text-sm px-3 py-1.5 rounded block text-indigo-700"><%= callbackUrls.clickPrepare %></code>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Click Complete URL</dt>
+                        <dd class="mt-1">
+                            <code
+                                class="bg-slate-100 text-sm px-3 py-1.5 rounded block text-indigo-700"><%= callbackUrls.clickComplete %></code>
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-slate-500">Payme Endpoint URL</dt>
+                        <dd class="mt-1">
+                            <code
+                                class="bg-slate-100 text-sm px-3 py-1.5 rounded block text-indigo-700"><%= callbackUrls.payme %></code>
+                        </dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Привязанные вендоры -->
+            <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-6">
+                <h2 class="text-lg font-semibold text-slate-900 mb-4">Привязанные вендоры</h2>
+                <div class="flex flex-wrap gap-2">
+                    <% kassa.vendors.forEach(v=> { %>
+                        <span
+                            class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                            <%= v.name %>
+                        </span>
+                        <% }) %>
+                            <% if (kassa.vendors.length===0) { %>
+                                <span class="text-sm text-slate-400">Нет привязанных вендоров</span>
+                                <% } %>
+                </div>
+            </div>
+        </div>
+</body>
+
+</html>

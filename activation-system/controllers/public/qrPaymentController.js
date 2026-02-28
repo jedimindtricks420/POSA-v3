@@ -121,13 +121,17 @@ export const processCheckout = async (req, res) => {
             where: { token },
             include: {
                 merchant: true,
-                product: { include: { vendor: true } }
+                product: { include: { vendor: { include: { kassa: true } } } }
             }
         });
 
         if (!link) {
             return res.status(404).json({ success: false, error: 'Ссылка не найдена' });
         }
+
+        // Определяем кассу через вендора
+        const kassa = link.product.vendor.kassa;
+        const kassaCredentials = kassa || null;
 
         // Создать попытку оплаты
         const attempt = await prisma.qrPaymentAttempt.create({
@@ -137,7 +141,8 @@ export const processCheckout = async (req, res) => {
                 amount: link.product.price,
                 paymentMethod: paymentMethod,
                 status: 'PENDING',
-                expiresAt: new Date(Date.now() + 15 * 60 * 1000) // +15 минут
+                expiresAt: new Date(Date.now() + 15 * 60 * 1000),
+                kassaId: kassa?.id || null
             }
         });
 
@@ -148,11 +153,11 @@ export const processCheckout = async (req, res) => {
 
         if (paymentMethod === 'click') {
             // Click - сумма в сумах
-            redirectUrl = generateClickUrl(attempt.id.toString(), link.product.price, returnUrl);
+            redirectUrl = generateClickUrl(attempt.id.toString(), link.product.price, returnUrl, kassaCredentials);
         } else if (paymentMethod === 'payme') {
             // Payme - сумма в тийинах
             const amountInTiyin = Math.round(link.product.price * 100);
-            redirectUrl = generatePaymeUrl(attempt.id.toString(), amountInTiyin, returnUrl);
+            redirectUrl = generatePaymeUrl(attempt.id.toString(), amountInTiyin, returnUrl, kassaCredentials);
         }
 
         console.log(`[Payment] Redirecting to ${paymentMethod}:`, redirectUrl);
@@ -169,7 +174,7 @@ export const processCheckout = async (req, res) => {
 };
 
 // Обработка платежа (внутренняя функция) - ЭКСПОРТИРУЕТСЯ для Click/Payme контроллеров
-export async function processPaymentInternal(attemptId, link) {
+export async function processPaymentInternal(attemptId, link, kassa = null) {
 
     try {
         const attempt = await prisma.qrPaymentAttempt.findUnique({
@@ -261,6 +266,8 @@ export async function processPaymentInternal(attemptId, link) {
             // 7. Комиссии
             const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
             const merchantPayable = product.price * (1 - product.merchantCommissionPercent / 100);
+            const kassaDebt = product.price * (product.vendorCommissionPercent / 100);
+            const kassaId = kassa?.id || link?.product?.vendor?.kassaId || null;
 
             // 8. VoucherTransaction
             await tx.voucherTransaction.create({
@@ -272,7 +279,8 @@ export async function processPaymentInternal(attemptId, link) {
                     productName: product.name,
                     price: product.price,
                     merchantDebt: merchantPayable,
-                    adminDebt: product.price * (product.vendorCommissionPercent / 100),
+                    kassaDebt,
+                    kassaId,
                     vendorDebt
                 }
             });
@@ -288,6 +296,20 @@ export async function processPaymentInternal(attemptId, link) {
                 data: { balance: { increment: merchantPayable } }
             });
 
+            // 9a. Обновить баланс кассы (если есть)
+            if (kassaId) {
+                const paymentMethod = attempt?.paymentMethod;
+                await tx.kassa.update({
+                    where: { id: kassaId },
+                    data: {
+                        totalReceived: { increment: product.price },
+                        ...(paymentMethod === 'click' ? { totalReceivedClick: { increment: product.price } } : {}),
+                        ...(paymentMethod === 'payme' ? { totalReceivedPayme: { increment: product.price } } : {}),
+                        balance: { increment: kassaDebt },
+                    }
+                });
+            }
+
             // 10. Обновить QrPaymentAttempt (включая receiptPath)
             await tx.qrPaymentAttempt.update({
                 where: { id: attemptId },
@@ -296,7 +318,7 @@ export async function processPaymentInternal(attemptId, link) {
                     paidAt: now,
                     saleId: sale.id,
                     voucherValue: voucher.value,
-                    receiptPath: receiptFileName // Сохраняем путь и в QrPaymentAttempt
+                    receiptPath: receiptFileName
                 }
             });
 

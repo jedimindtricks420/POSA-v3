@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Добавить кассу — POSA Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+        <div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">Добавить кассу</h2>
+
+            <% if (error) { %>
+                <div class="rounded-md bg-red-50 p-4 mb-6">
+                    <div class="text-sm text-red-700">
+                        <%= error %>
+                    </div>
+                </div>
+                <% } %>
+
+                    <form method="POST" action="/admin/kassas/add"
+                        class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg p-6 space-y-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Название *</label>
+                                <input type="text" name="name" required
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Юр. лицо</label>
+                                <input type="text" name="legalName"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">ИНН</label>
+                                <input type="text" name="inn"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-200">
+                        <h3 class="text-lg font-medium text-slate-900">Реквизиты Click</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Merchant ID</label>
+                                <input type="text" name="clickMerchantId"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Service ID</label>
+                                <input type="text" name="clickServiceId"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Secret Key</label>
+                                <input type="password" name="clickSecretKey"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-200">
+                        <h3 class="text-lg font-medium text-slate-900">Реквизиты Payme</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Merchant ID</label>
+                                <input type="text" name="paymeMerchantId"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Key (prod)</label>
+                                <input type="password" name="paymeKey"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Test Key</label>
+                                <input type="password" name="paymeTestKey"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 rounded-md p-3 text-sm text-slate-600">
+                            Payme Account Field: <strong>Namo</strong> (стандартное значение для всех касс)
+                        </div>
+
+                        <hr class="border-slate-200">
+                        <h3 class="text-lg font-medium text-slate-900">Контакты</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Контактное лицо</label>
+                                <input type="text" name="contactPerson"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Телефон</label>
+                                <input type="text" name="contactPhone"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Email</label>
+                                <input type="email" name="contactEmail"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                        </div>
+
+                        <hr class="border-slate-200">
+                        <h3 class="text-lg font-medium text-slate-900">Привязка вендоров</h3>
+                        <% if (vendors.length> 0) { %>
+                            <div class="space-y-2">
+                                <% vendors.forEach(v=> { %>
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" name="vendorIds" value="<%= v.id %>"
+                                            class="rounded border-slate-300 text-indigo-600">
+                                        <span class="text-sm text-slate-700">
+                                            <%= v.name %>
+                                        </span>
+                                    </label>
+                                    <% }) %>
+                            </div>
+                            <% } else { %>
+                                <p class="text-sm text-slate-400">Все вендоры уже привязаны к другим кассам</p>
+                                <% } %>
+
+                                    <button type="submit"
+                                        class="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500">
+                                        Создать кассу
+                                    </button>
+                    </form>
+        </div>
+</body>
+
+</html>

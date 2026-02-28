@@ -31,6 +31,7 @@ export const handleLogin = async (req, res) => {
     username: user.username,
     role: user.role,
     vendorId: user.vendorId,
+    kassaId: user.kassaId,
   };
   req.session.rememberMe = rememberMe;
   req.session.cookie.maxAge = rememberMe ? REMEMBER_ME_MAX_AGE : SESSION_MAX_AGE;
@@ -53,6 +54,8 @@ export const handleLogin = async (req, res) => {
     return res.redirect('/merchant/dashboard');
   } else if (user.role === 'vendor_user') {
     return res.redirect('/vendor/dashboard');
+  } else if (user.role === 'kassa_admin' || user.role === 'kassa_viewer') {
+    return res.redirect('/kassa/dashboard');
   } else {
     return res.status(403).send('Unknown role');
   }
@@ -130,6 +133,7 @@ export const refreshSession = async (req, res) => {
         username: user.username,
         role: user.role,
         vendorId: user.vendorId,
+        kassaId: user.kassaId,
       };
       req.session.rememberMe = true;
       req.session.cookie.maxAge = REMEMBER_ME_MAX_AGE;

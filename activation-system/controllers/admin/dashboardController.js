@@ -6,6 +6,11 @@ import prisma from '../../prisma/client.js';
 export const showAdminDashboard = async (req, res) => {
   const role = req.session.user?.role;
 
+  // Кассовые пользователи → свой кабинет
+  if (role === 'kassa_admin' || role === 'kassa_viewer') {
+    return res.redirect('/kassa/dashboard');
+  }
+
   if (role === 'financial_mgr') {
     return showFinanceDashboard(req, res);
   }

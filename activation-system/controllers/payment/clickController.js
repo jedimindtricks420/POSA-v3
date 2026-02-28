@@ -11,8 +11,18 @@ export async function handlePrepare(req, res) {
     console.log('[Click] Prepare:', JSON.stringify(params));
 
     try {
-        // 1. Проверить подпись
-        if (!verifyClickSign(params, 0)) {
+        // 0. Определяем кассу из URL
+        const kassaId = parseInt(req.params.kassaId);
+        if (!kassaId) {
+            return res.json({ click_trans_id: params.click_trans_id, merchant_trans_id: params.merchant_trans_id, error: CLICK_ERRORS.SYSTEM_ERROR, error_note: 'Kassa not specified' });
+        }
+        const kassa = await prisma.kassa.findUnique({ where: { id: kassaId } });
+        if (!kassa) {
+            return res.json({ click_trans_id: params.click_trans_id, merchant_trans_id: params.merchant_trans_id, error: CLICK_ERRORS.SYSTEM_ERROR, error_note: 'Kassa not found' });
+        }
+
+        // 1. Проверить подпись с credentials кассы
+        if (!verifyClickSign(params, 0, kassa)) {
             console.error('[Click] Prepare: Invalid signature');
             return res.json({
                 click_trans_id: params.click_trans_id,
@@ -112,8 +122,18 @@ export async function handleComplete(req, res) {
     console.log('[Click] Complete:', JSON.stringify(params));
 
     try {
-        // 1. Проверить подпись
-        if (!verifyClickSign(params, 1)) {
+        // 0. Определяем кассу из URL
+        const kassaId = parseInt(req.params.kassaId);
+        if (!kassaId) {
+            return res.json({ click_trans_id: params.click_trans_id, merchant_trans_id: params.merchant_trans_id, error: CLICK_ERRORS.SYSTEM_ERROR, error_note: 'Kassa not specified' });
+        }
+        const kassa = await prisma.kassa.findUnique({ where: { id: kassaId } });
+        if (!kassa) {
+            return res.json({ click_trans_id: params.click_trans_id, merchant_trans_id: params.merchant_trans_id, error: CLICK_ERRORS.SYSTEM_ERROR, error_note: 'Kassa not found' });
+        }
+
+        // 1. Проверить подпись с credentials кассы
+        if (!verifyClickSign(params, 1, kassa)) {
             console.error('[Click] Complete: Invalid signature');
             return res.json({
                 click_trans_id: params.click_trans_id,
@@ -189,7 +209,7 @@ export async function handleComplete(req, res) {
 
         // 6. Выполнить оплату - используем СУЩЕСТВУЮЩУЮ функцию из qrPaymentController
         const { processPaymentInternal } = await import('../public/qrPaymentController.js');
-        const result = await processPaymentInternal(attempt.id, attempt.link);
+        const result = await processPaymentInternal(attempt.id, attempt.link, kassa);
 
         if (!result.success) {
             console.error('[Click] Complete: Payment processing failed:', result.error);

@@ -6,7 +6,7 @@ import crypto from 'crypto';
  * @param {Number} action - 0 для Prepare, 1 для Complete
  * @returns {Boolean}
  */
-export function verifyClickSign(params, action) {
+export function verifyClickSign(params, action, kassaCredentials = null) {
     const {
         click_trans_id,
         service_id,
@@ -17,7 +17,7 @@ export function verifyClickSign(params, action) {
         sign_string
     } = params;
 
-    const secretKey = process.env.CLICK_SECRET_KEY;
+    const secretKey = kassaCredentials?.clickSecretKey || process.env.CLICK_SECRET_KEY;
 
     let signData;
     if (action === 0) {
@@ -40,9 +40,9 @@ export function verifyClickSign(params, action) {
  * @param {String} returnUrl - URL для возврата после оплаты
  * @returns {String} - URL для редиректа
  */
-export function generateClickUrl(orderId, amount, returnUrl) {
-    const merchantId = process.env.CLICK_MERCHANT_ID;
-    const serviceId = process.env.CLICK_SERVICE_ID;
+export function generateClickUrl(orderId, amount, returnUrl, kassaCredentials = null) {
+    const merchantId = kassaCredentials?.clickMerchantId || process.env.CLICK_MERCHANT_ID;
+    const serviceId = kassaCredentials?.clickServiceId || process.env.CLICK_SERVICE_ID;
     const env = process.env.CLICK_ENV || 'test';
 
     // Click использует один и тот же URL для test и production

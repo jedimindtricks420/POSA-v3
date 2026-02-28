@@ -13,7 +13,7 @@ export const ensureAdmin = (req, res, next) => {
 // Middleware для Финансов (Админ + Финансист)
 export const allowFinance = (req, res, next) => {
   const role = req.session.user?.role;
-  if (role === 'admin' || role === 'financial_mgr') return next();
+  if (role === 'admin' || role === 'financial_mgr' || role === 'kassa_admin') return next();
   res.status(403).send('Access denied. Finance role required.');
 };
 
@@ -47,4 +47,17 @@ export const ensureMerchant = (req, res, next) => {
 export const ensureVendor = (req, res, next) => {
   if (req.session.user && (req.session.user.role === 'vendor' || req.session.user.role === 'vendor_user')) return next();
   res.status(403).send('Access denied. Vendors only.');
+};
+
+// Middleware для Кассы (kassa_admin + kassa_viewer)
+export const ensureKassa = (req, res, next) => {
+  const role = req.session.user?.role;
+  if ((role === 'kassa_admin' || role === 'kassa_viewer') && req.session.user?.kassaId) return next();
+  res.status(403).send('Access denied. Kassa role required.');
+};
+
+// Middleware для Кассы (только admin)
+export const ensureKassaAdmin = (req, res, next) => {
+  if (req.session.user?.role === 'kassa_admin' && req.session.user?.kassaId) return next();
+  res.status(403).send('Access denied. Kassa admin role required.');
 };

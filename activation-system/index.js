@@ -19,6 +19,7 @@ import walletRoutes from './routes/wallet.js';
 import storeRoutes from './routes/storeRoutes.js';
 import qrPaymentRoutes from './routes/qrPaymentRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import kassaCabinetRoutes from './routes/kassaCabinetRoutes.js';
 import { checkSubdomain } from './middleware/checkSubdomain.js';
 import { SESSION_MAX_AGE, REMEMBER_ME_MAX_AGE } from './utils/authTokens.js';
 
@@ -127,6 +128,8 @@ app.use((req, res, next) => {
     role = 'Merchant';
   } else if (req.session?.user?.role === 'vendor_user') {
     role = 'Vendor';
+  } else if (req.session?.user?.role === 'kassa_admin' || req.session?.user?.role === 'kassa_viewer') {
+    role = 'Kassa';
   } else if (req.session?.user?.role === 'admin') {
     role = 'Admin';
   } else if (req.appRole) {
@@ -156,6 +159,7 @@ app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes);
 app.use('/merchant', merchantRoutes);
 app.use('/vendor', vendorRoutes);
+app.use('/kassa', kassaCabinetRoutes);
 app.use('/api/client', clientApiRoutes);
 app.use('/api/v1', apiV1Routes);
 app.use('/receipts', express.static(path.join(__dirname, 'receipts')));
