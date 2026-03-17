@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "Vendor" ADD COLUMN     "balance" DOUBLE PRECISION NOT NULL DEFAULT 0;
