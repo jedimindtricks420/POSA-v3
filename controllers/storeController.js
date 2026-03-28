@@ -44,6 +44,7 @@ export const getStorePage = async (req, res) => {
                         include: {
                             product: true,
                             rokkyOrder: true,
+                            drwebOrder: true,
                             manualActivationRequest: true
                         }
                     }
@@ -474,11 +475,11 @@ export const activateVoucher = async (req, res) => {
         else if (voucher.product.vendor.productType === 'DRWEB') {
             let drwebOrder;
             try {
-                const sku = voucher.product.rokkySku; // Using the same field rokkySku for SKU, or add drwebSku to model later. Wait, we created DrWebSku model, but let's check what field product has. The schema has rokkySku string. Let's use rokkySku as the SKU field for both or wait. Let's use rokkySku.
-                if (!sku) throw new Error('Product missing DrWeb SKU (field: rokkySku)');
-
+                const sku = voucher.product.drwebSku;
+                if (!sku) throw new Error('Product missing DrWeb SKU');
+ 
                 const orderResult = await drwebService.createOrder(sku, String(voucher.id), voucher.product.price);
-
+ 
                 drwebOrder = await prisma.drWebOrder.upsert({
                     where: { voucherId: voucher.id },
                     update: {
@@ -496,7 +497,7 @@ export const activateVoucher = async (req, res) => {
                         key: orderResult.key
                     }
                 });
-
+ 
             } catch (apiError) {
                 console.error('Dr.Web API Error:', apiError);
                 await prisma.drWebOrder.upsert({
@@ -509,7 +510,7 @@ export const activateVoucher = async (req, res) => {
                     create: {
                         voucherId: voucher.id,
                         drwebOrderId: 'error',
-                        sku: voucher.product.rokkySku || 'unknown',
+                        sku: voucher.product.drwebSku || 'unknown',
                         status: 'FAILED',
                         errorMessage: apiError.message
                     }

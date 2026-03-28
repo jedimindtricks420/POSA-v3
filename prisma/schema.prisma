@@ -77,6 +77,7 @@ model Product {
   storeId         Int?
   store           Store?                @relation(fields: [storeId], references: [id])
   rokkySku        String? // Rokky SKU для интеграции
+  drwebSku        String? // Dr.Web SKU для интеграции
   receiptTemplate String? // JSON-схема шаблона чека для конкретного товара
   merchantLinks   MerchantProductLink[] // QR Payment Feature
 }

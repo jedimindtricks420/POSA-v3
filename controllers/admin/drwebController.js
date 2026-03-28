@@ -141,7 +141,7 @@ export const handleEditSku = async (req, res) => {
         // Если retailPrice изменился, обновляем цены всех товаров с этим SKU
         if (parsedRetailPrice !== null) {
             await prisma.product.updateMany({
-                where: { rokkySku: sku },
+                where: { drwebSku: sku },
                 data: { price: parsedRetailPrice }
             });
         }
@@ -189,7 +189,7 @@ export const handleBindSku = async (req, res) => {
         await prisma.product.update({
             where: { id: productId },
             data: {
-                rokkySku: drwebSku || null
+                drwebSku: drwebSku || null
             }
         });
 
