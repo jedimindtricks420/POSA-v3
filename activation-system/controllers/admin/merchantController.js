@@ -3,23 +3,45 @@ import bcrypt from 'bcrypt';
 
 // Список мерчантов с текущим долгом (по балансу)
 export const showMerchantsWithDebt = async (req, res) => {
-  const merchantsRaw = await prisma.merchant.findMany({
-    orderBy: { id: 'asc' },
-    select: {
-      id: true,
-      username: true,
-      status: true,
-      legalInfo: true,
-      balance: true,
-    },
-  });
+  const [merchantsRaw, txStatsPerMerchant, globalTxData] = await Promise.all([
+    prisma.merchant.findMany({
+      orderBy: { id: 'asc' },
+      select: {
+        id: true,
+        username: true,
+        status: true,
+        legalInfo: true,
+        balance: true,
+      },
+    }),
+    prisma.voucherTransaction.groupBy({
+      by: ['merchantId'],
+      where: { status: { not: 'CANCELLED' } },
+      _sum: {
+        price: true,
+        merchantDebt: true,
+      },
+    }),
+    prisma.voucherTransaction.aggregate({
+      where: { status: { not: 'CANCELLED' } },
+      _sum: {
+        price: true,
+        merchantDebt: true,
+        vendorDebt: true,
+      },
+    }),
+  ]);
 
   const merchants = merchantsRaw.map((m) => {
-    const balance = Number(m.balance ?? 0);
+    const rawBalance = Number(m.balance ?? 0);
+    const mStats = txStatsPerMerchant.find((s) => s.merchantId === m.id)?._sum || { price: 0, merchantDebt: 0 };
+    
     return {
       ...m,
-      balance,
-      actualDebt: balance > 0 ? balance : 0,
+      balance: rawBalance,
+      actualDebt: rawBalance > 0 ? rawBalance : 0,
+      totalVolume: Number(mStats.price ?? 0),
+      totalCommission: Number(mStats.price ?? 0) - Number(mStats.merchantDebt ?? 0),
     };
   });
 
@@ -27,7 +49,8 @@ export const showMerchantsWithDebt = async (req, res) => {
     total: merchants.length,
     active: merchants.filter((m) => m.status === 'active').length,
     suspended: merchants.filter((m) => m.status === 'off').length,
-    totalDebt: merchants.reduce((sum, m) => sum + m.actualDebt, 0),
+    totalVendorRevenue: Number(globalTxData._sum.vendorDebt ?? 0),
+    totalMerchantRevenue: Number(globalTxData._sum.price ?? 0) - Number(globalTxData._sum.merchantDebt ?? 0),
   };
 
   res.render('pages/admin-merchants', {

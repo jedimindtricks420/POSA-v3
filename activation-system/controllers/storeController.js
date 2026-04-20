@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { sendOtpSms } from '../utils/smsService.js';
 import rokkyService from '../services/rokkyService.js';
+import drwebService from '../services/drwebService.js';
 
 const prisma = new PrismaClient();
 
@@ -43,6 +44,7 @@ export const getStorePage = async (req, res) => {
                         include: {
                             product: true,
                             rokkyOrder: true,
+                            drwebOrder: true,
                             manualActivationRequest: true
                         }
                     }
@@ -283,6 +285,14 @@ export const activateVoucher = async (req, res) => {
                     console.log(`Activation failed: Voucher pending but already has COMPLETED Rokky order`);
                 }
             }
+            // For Dr.Web vendors, check DrWebOrder
+            else if (voucher.product.vendor.productType === 'DRWEB') {
+                const existingOrder = await prisma.drWebOrder.findUnique({ where: { voucherId: voucher.id } });
+                if (existingOrder && existingOrder.status === 'COMPLETED') {
+                    error = 'Code already activated';
+                    console.log(`Activation failed: Voucher pending but already has COMPLETED Dr.Web order`);
+                }
+            }
             // For Manual vendors, check ManualActivationRequest
             else if (voucher.product.vendor.productType === 'MANUAL') {
                 const existingRequest = await prisma.manualActivationRequest.findUnique({ where: { voucherId: voucher.id } });
@@ -461,6 +471,74 @@ export const activateVoucher = async (req, res) => {
             // If pending (async)
             return res.json({ success: true, message: 'Activation in progress. Please check back later.' });
         } // End of Rokky vendor block
+        // Call Dr.Web API (only for Dr.Web vendors)
+        else if (voucher.product.vendor.productType === 'DRWEB') {
+            let drwebOrder;
+            try {
+                const sku = voucher.product.drwebSku;
+                if (!sku) throw new Error('Product missing DrWeb SKU');
+ 
+                const orderResult = await drwebService.createOrder(sku, String(voucher.id), voucher.product.price);
+ 
+                drwebOrder = await prisma.drWebOrder.upsert({
+                    where: { voucherId: voucher.id },
+                    update: {
+                        drwebOrderId: orderResult.drwebOrderId || null,
+                        sku: sku,
+                        status: orderResult.status,
+                        key: orderResult.key,
+                        errorMessage: null
+                    },
+                    create: {
+                        voucherId: voucher.id,
+                        drwebOrderId: orderResult.drwebOrderId || null,
+                        sku: sku,
+                        status: orderResult.status,
+                        key: orderResult.key
+                    }
+                });
+ 
+            } catch (apiError) {
+                console.error('Dr.Web API Error:', apiError);
+                await prisma.drWebOrder.upsert({
+                    where: { voucherId: voucher.id },
+                    update: {
+                        drwebOrderId: 'error',
+                        status: 'FAILED',
+                        errorMessage: apiError.message
+                    },
+                    create: {
+                        voucherId: voucher.id,
+                        drwebOrderId: 'error',
+                        sku: voucher.product.drwebSku || 'unknown',
+                        status: 'FAILED',
+                        errorMessage: apiError.message
+                    }
+                });
+                return res.status(500).json({ error: 'Произошла ошибка. Пожалуйста обратитесь в службу поддержки.' });
+            }
+
+            // If we got the key
+            if (drwebOrder.status === 'COMPLETED' && drwebOrder.key) {
+                await prisma.voucherActivation.create({
+                    data: {
+                        voucherId: voucher.id,
+                        vendorId: voucher.product.vendorId,
+                        clientId: clientId,
+                        activatedBy: null // System
+                    }
+                });
+
+                await prisma.voucher.update({
+                    where: { id: voucher.id },
+                    data: { status: 'activated' }
+                });
+
+                return res.json({ success: true, key: drwebOrder.key });
+            }
+
+            return res.json({ success: true, message: 'Activation in progress. Please check back later.' });
+        } // End of Dr.Web block
         else if (voucher.product.vendor.productType === 'VOUCHER') {
             // For VOUCHER type vendors - these are activated outside our system
             // (e.g., in vendor's own system like Spotify balance top-up)

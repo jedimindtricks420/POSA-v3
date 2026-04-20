@@ -239,7 +239,7 @@ export const completeRequest = async (req, res) => {
         if (client) {
             const store = voucher.product.store;
             const smsTemplate = store?.activationSmsTemplate ||
-                'Vash vaucher aktivirovan | Sizning vaucheringiz faollashtirildi https://namo.uz/link';
+                `Vash vaucher aktivirovan | Sizning vaucheringiz faollashtirildi https://a.namo.uz/${store?.slug || 'link'}`;
 
             const smsResult = await sendSMS(client.phoneNumber, smsTemplate);
 

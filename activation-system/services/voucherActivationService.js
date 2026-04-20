@@ -55,11 +55,11 @@ export async function activateVoucherForVendor({ voucherCode, vendorId, userId }
     throw new ActivationError('Ваучер не найден', 'NOT_FOUND', 404);
   }
 
-  // Проверка: ваучеры Rokky активируются только через клиентские магазины
-  if (voucher.product?.vendor?.productType === 'ROKKY') {
+  // Проверка: ваучеры Rokky и Dr.Web активируются только через клиентские магазины
+  if (voucher.product?.vendor?.productType === 'ROKKY' || voucher.product?.vendor?.productType === 'DRWEB') {
     throw new ActivationError(
       'Этот ваучер активируется только через клиентский магазин. Отправьте клиенту ссылку на магазин активации.',
-      'ROKKY_VENDOR_ONLY',
+      'VENDOR_ONLY',
       403
     );
   }

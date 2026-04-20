@@ -29,7 +29,7 @@
     </div>
 
     <% const statsData = stats || { total: 0, active: 0, suspended: 0, totalDebt: 0 }; %>
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
       <div class="rounded-2xl bg-white p-5 shadow ring-1 ring-slate-100">
         <p class="text-sm font-medium text-slate-500">Всего мерчантов</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900"><%= statsData.total %></p>
@@ -42,9 +42,14 @@
         <p class="text-sm font-medium text-slate-500">Выключены</p>
         <p class="mt-2 text-3xl font-semibold text-slate-900"><%= statsData.suspended %></p>
       </div>
-      <div class="rounded-2xl bg-white p-5 shadow ring-1 ring-slate-100">
-        <p class="text-sm font-medium text-slate-500">Суммарный долг</p>
-        <p class="mt-2 text-3xl font-semibold text-rose-600"><%= Number(statsData.totalDebt || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %></p>
+      <div class="rounded-2xl bg-white p-5 shadow ring-1 ring-slate-100 border-l-4 border-rose-500">
+        <p class="text-sm font-medium text-slate-500">Выручка вендоров</p>
+        <p class="mt-2 text-2xl font-semibold text-rose-600"><%= Number(statsData.totalVendorRevenue || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %></p>
+        <p class="text-xs uppercase tracking-widest text-slate-400">сум</p>
+      </div>
+      <div class="rounded-2xl bg-white p-5 shadow ring-1 ring-slate-100 border-l-4 border-indigo-500">
+        <p class="text-sm font-medium text-slate-500">Выручка мерчантов</p>
+        <p class="mt-2 text-2xl font-semibold text-indigo-600"><%= Number(statsData.totalMerchantRevenue || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %></p>
         <p class="text-xs uppercase tracking-widest text-slate-400">сум</p>
       </div>
     </div>
@@ -57,7 +62,8 @@
             <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Логин</th>
             <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Компания</th>
             <th class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Статус</th>
-            <th class="px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Баланс</th>
+            <th class="px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Выручка</th>
+            <th class="px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Баланс (комиссии)</th>
             <th class="px-3 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">Текущий долг</th>
             <th class="relative py-3.5 pl-3 pr-4 text-right text-xs font-semibold uppercase tracking-wide text-slate-500 sm:pr-6">Действия</th>
           </tr>
@@ -82,7 +88,13 @@
                 </td>
                 <td class="whitespace-nowrap px-3 py-4 text-sm text-right">
                   <div class="font-mono font-semibold text-slate-900">
-                    <%= Number(m.balance || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %>
+                    <%= Number(m.totalVolume || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %>
+                  </div>
+                  <div class="text-xs text-slate-500">сум</div>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-right">
+                  <div class="font-mono font-semibold text-indigo-600">
+                    <%= Number(m.totalCommission || 0).toLocaleString('ru-RU', { minimumFractionDigits: 2 }) %>
                   </div>
                   <div class="text-xs text-slate-500">сум</div>
                 </td>

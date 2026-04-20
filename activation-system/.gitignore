@@ -6,3 +6,8 @@ node_modules
 certs/
 *.pem
 *.p12
+
+# Database backups
+db-backups/
+*.sql
+*.dump
