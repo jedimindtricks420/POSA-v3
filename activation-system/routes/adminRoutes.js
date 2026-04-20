@@ -14,6 +14,7 @@ import * as merchantController from '../controllers/admin/merchantController.js'
 import * as clientController from '../controllers/admin/clientController.js';
 import * as storeController from '../controllers/admin/storeController.js';
 import * as rokkyController from '../controllers/admin/rokkyController.js';
+import * as drwebController from '../controllers/admin/drwebController.js';
 import * as telegramBotController from '../controllers/admin/telegramBotController.js';
 import * as manualActivationController from '../controllers/admin/manualActivationController.js';
 import * as qrLinkController from '../controllers/admin/qrLinkController.js';
@@ -124,6 +125,19 @@ router.get('/rokky/products', ensureAdmin, rokkyController.showRokkyProducts);
 router.post('/rokky/products/:id/bind', ensureAdmin, rokkyController.handleBindSku);
 router.get('/rokky/activations', ensureAdmin, rokkyController.showRokkyActivations);
 router.get('/rokky/finance', allowFinance, rokkyController.showRokkyFinance); // Финансы можно видет финансисту
+
+// 7.1 Dr.Web (Admin only)
+// ----------------------------------------------------
+router.get('/drweb', ensureAdmin, drwebController.showDrWebDashboard);
+router.get('/drweb/skus', ensureAdmin, drwebController.showDrWebSkus);
+router.get('/drweb/skus/add', ensureAdmin, drwebController.showAddSkuForm);
+router.post('/drweb/skus/add', ensureAdmin, drwebController.handleAddSku);
+router.get('/drweb/skus/edit/:id', ensureAdmin, drwebController.showEditSkuForm);
+router.post('/drweb/skus/edit/:id', ensureAdmin, drwebController.handleEditSku);
+router.get('/drweb/products', ensureAdmin, drwebController.showDrWebProducts);
+router.post('/drweb/products/:id/bind', ensureAdmin, drwebController.handleBindSku);
+router.get('/drweb/activations', ensureAdmin, drwebController.showDrWebActivations);
+router.get('/drweb/finance', allowFinance, drwebController.showDrWebFinance);
 
 // 8. Telegram боты (Admin only)
 // ----------------------------------------------------

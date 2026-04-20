@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dr.Web - Финансовая сводка</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+            <div class="md:flex md:items-center md:justify-between mb-6">
+                <div class="min-w-0 flex-1">
+                    <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                        Финансовая сводка Dr.Web
+                    </h2>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Анализ выручки, себестоимости и маржи по продажам Dr.Web
+                    </p>
+                </div>
+                <div class="mt-4 flex md:ml-4 md:mt-0">
+                    <a href="/admin/drweb"
+                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+                        </svg>
+                        Назад
+                    </a>
+                </div>
+            </div>
+
+            <!-- Фильтры -->
+            <form method="GET" action="/admin/drweb/finance"
+                class="bg-white shadow-sm ring-1 ring-slate-200 sm:rounded-lg p-4 mb-6">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="startDate" class="block text-xs font-medium text-slate-700">Период от</label>
+                        <input type="date" name="startDate" id="startDate" value="<%= filters.startDate || '' %>"
+                            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div>
+                        <label for="endDate" class="block text-xs font-medium text-slate-700">Период до</label>
+                        <input type="date" name="endDate" id="endDate" value="<%= filters.endDate || '' %>"
+                            class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button type="submit"
+                        class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                        Применить фильтры
+                    </button>
+                </div>
+            </form>
+
+            <!-- Статистика -->
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-4 mb-8">
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-slate-500 truncate">Выручка</dt>
+                                    <dd class="text-lg font-semibold text-slate-900">
+                                        <%= Number(stats.totalRevenue).toLocaleString('ru-RU') %> сум
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-slate-500 truncate">Себестоимость</dt>
+                                    <dd class="text-lg font-semibold text-slate-900">
+                                        <%= Number(stats.totalCost).toLocaleString('ru-RU') %> сум
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-slate-500 truncate">Маржа</dt>
+                                    <dd class="text-lg font-semibold text-slate-900">
+                                        <%= Number(stats.totalMargin).toLocaleString('ru-RU') %> сум
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-slate-500 truncate">Продаж</dt>
+                                    <dd class="text-lg font-semibold text-slate-900">
+                                        <%= stats.salesCount %>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Таблица продаж -->
+            <div class="bg-white shadow-sm ring-1 ring-slate-200 sm:rounded-lg overflow-x-auto">
+                <div class="px-4 py-5 sm:px-6 border-b border-slate-200">
+                    <h3 class="text-lg font-medium leading-6 text-slate-900">Детализация по товарам</h3>
+                </div>
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead>
+                        <tr>
+                            <th scope="col"
+                                class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">Товар
+                            </th>
+                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-slate-900">
+                                Количество</th>
+                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-slate-900">Выручка
+                            </th>
+                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-slate-900">Средняя
+                                цена</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 bg-white">
+                        <% const productStats={}; sales.forEach(sale=> {
+                            const productName = sale.product.name;
+                            if (!productStats[productName]) {
+                            productStats[productName] = { count: 0, revenue: 0 };
+                            }
+                            productStats[productName].count++;
+                            productStats[productName].revenue += Number(sale.price);
+                            });
+
+                            Object.entries(productStats).forEach(([productName, stat]) => {
+                            %>
+                            <tr class="hover:bg-slate-50 transition-colors duration-150">
+                                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
+                                    <%= productName %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-slate-600">
+                                    <%= stat.count %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-mono text-slate-900">
+                                    <%= Number(stat.revenue).toLocaleString('ru-RU') %> сум
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-mono text-slate-600">
+                                    <%= Number(stat.revenue / stat.count).toLocaleString('ru-RU') %> сум
+                                </td>
+                            </tr>
+                            <% }) %>
+                    </tbody>
+                </table>
+
+                <% if (sales.length===0) { %>
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-semibold text-slate-900">Нет продаж</h3>
+                        <p class="mt-1 text-sm text-slate-500">Продажи появятся после активации ваучеров клиентами.</p>
+                    </div>
+                    <% } %>
+            </div>
+        </div>
+</body>
+
+</html>

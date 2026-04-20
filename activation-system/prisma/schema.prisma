@@ -39,6 +39,7 @@ enum Role {
 
 enum VendorProductType {
   ROKKY
+  DRWEB
   MANUAL
   VOUCHER
 }
@@ -76,6 +77,7 @@ model Product {
   storeId         Int?
   store           Store?                @relation(fields: [storeId], references: [id])
   rokkySku        String? // Rokky SKU для интеграции
+  drwebSku        String? // Dr.Web SKU для интеграции
   receiptTemplate String? // JSON-схема шаблона чека для конкретного товара
   merchantLinks   MerchantProductLink[] // QR Payment Feature
 }
@@ -134,6 +136,47 @@ model RokkySku {
   updatedAt   DateTime @updatedAt
 }
 
+model DrWebOrder {
+  id           Int      @id @default(autoincrement())
+  voucherId    Int      @unique
+  drwebOrderId String?
+  sku          String
+  status       String // PENDING, COMPLETED, FAILED
+  key          String? // Digital key from DrWeb
+  errorMessage String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  voucher Voucher @relation(fields: [voucherId], references: [id])
+}
+
+model DrWebApiLog {
+  id           Int      @id @default(autoincrement())
+  method       String // createOrder
+  sku          String?
+  referenceId  String?
+  requestData  String?  @db.Text // JSON
+  responseData String?  @db.Text // JSON
+  statusCode   Int?
+  success      Boolean
+  errorMessage String?  @db.Text
+  duration     Int? // ms
+  createdAt    DateTime @default(now())
+}
+
+model DrWebSku {
+  id          Int      @id @default(autoincrement())
+  sku         String   @unique
+  name        String
+  description String?
+  category    String?
+  costPrice   Float? // Закупочная цена
+  retailPrice Float? // Рекомендованная розничная цена
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 enum ProductStatus {
   on
   off
@@ -152,6 +195,7 @@ model Voucher {
   smsLogs                 VoucherSmsLog[]
   walletLogs              VoucherWalletLog[]
   rokkyOrder              RokkyOrder?
+  drwebOrder              DrWebOrder?
   manualActivationRequest ManualActivationRequest?
 }
 

@@ -51,7 +51,7 @@ export const showAddProductForm = async (req, res) => {
 
 // Обработать создание товара
 export const handleAddProduct = async (req, res) => {
-  const { name, price, status, vendorId, merchantCommissionPercent, vendorCommissionPercent } = req.body;
+  const { name, price, status, vendorId, merchantCommissionPercent, vendorCommissionPercent, rokkySku, drwebSku } = req.body;
 
   try {
     await prisma.product.create({
@@ -62,6 +62,8 @@ export const handleAddProduct = async (req, res) => {
         vendorId: parseInt(vendorId),
         merchantCommissionPercent: parseFloat(merchantCommissionPercent),
         vendorCommissionPercent: parseFloat(vendorCommissionPercent),
+        rokkySku: rokkySku || null,
+        drwebSku: drwebSku || null,
       }
     });
 
@@ -104,7 +106,7 @@ export const showEditProductForm = async (req, res) => {
 // Обработать редактирование товара
 export const handleEditProduct = async (req, res) => {
   const id = Number(req.params.id);
-  const { name, price, status, merchantCommissionPercent, vendorCommissionPercent, rokkySku, useCustomTemplate, templateSchema } = req.body;
+  const { name, price, status, merchantCommissionPercent, vendorCommissionPercent, rokkySku, drwebSku, useCustomTemplate, templateSchema } = req.body;
 
   const existing = await prisma.product.findUnique({
     where: { id },
@@ -142,6 +144,7 @@ export const handleEditProduct = async (req, res) => {
       merchantCommissionPercent: parsedMerchantCommission,
       vendorCommissionPercent: parsedVendorCommission,
       rokkySku: rokkySku || null,
+      drwebSku: drwebSku || null,
       receiptTemplate: schemaToSave ? JSON.stringify(schemaToSave) : null,
     }
   });

@@ -41,7 +41,8 @@
                                 </td>
                                 <td>
                                     <% let key=null; if (item.voucher.rokkyOrder && item.voucher.rokkyOrder.key) {
-                                        key=item.voucher.rokkyOrder.key; } else if (item.voucher.manualActivationRequest
+                                        key=item.voucher.rokkyOrder.key; } else if (item.voucher.drwebOrder && item.voucher.drwebOrder.key) {
+                                        key=item.voucher.drwebOrder.key; } else if (item.voucher.manualActivationRequest
                                         && item.voucher.manualActivationRequest.key) {
                                         key=item.voucher.manualActivationRequest.key; } if (key) { %>
                                         <code><%= key %></code>

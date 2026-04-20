@@ -77,12 +77,21 @@
                 class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
             </div>
 
-            <% if (product.rokkySku !== undefined) { %>
+            <% if (vendor.productType === 'ROKKY') { %>
               <div>
                 <label class="block text-sm font-medium text-slate-700">Rokky SKU</label>
                 <input type="text" name="rokkySku" value="<%= product.rokkySku || '' %>"
                   class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   placeholder="Введите SKU Rokky (опционально)" />
+              </div>
+            <% } %>
+
+            <% if (vendor.productType === 'DRWEB') { %>
+              <div>
+                <label class="block text-sm font-medium text-slate-700">Dr.Web SKU</label>
+                <input type="text" name="drwebSku" value="<%= product.drwebSku || '' %>"
+                  class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="Введите SKU Dr.Web (опционально)" />
               </div>
             <% } %>
 
