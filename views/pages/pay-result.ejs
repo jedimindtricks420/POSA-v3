@@ -1,134 +1,143 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="ru" class="h-full">
 <head>
-    <title>Оплата успешна!</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#9EE52D" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Оплата успешна! — Namo Wallet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/client.css" />
+  <link rel="stylesheet" href="/css/client-overrides.css" />
 </head>
+<body class="min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors safe-area-y">
 
-<body class="bg-gray-100 min-h-screen py-4">
-    <div class="max-w-md mx-auto p-4">
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <!-- Успех -->
-            <div class="text-center mb-4">
-                <div class="text-6xl mb-2">✅</div>
-                <h1 class="text-2xl font-bold text-green-600">Оплата успешна!</h1>
-            </div>
+  <main class="mx-auto w-full max-w-md flex flex-col gap-4 py-8">
 
-            <!-- Чек -->
-            <div class="border-2 border-dashed rounded-lg p-4">
-                <h2 class="text-center font-bold text-lg mb-4">ЭЛЕКТРОННЫЙ ЧЕК</h2>
+    <!-- Заголовок успеха -->
+    <header class="glass-panel p-6 text-center space-y-3">
+      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+        <svg class="h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m4.5 12.75 6 6 9-13.5"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-semibold text-slate-900">Оплата прошла!</h1>
+        <p class="text-sm text-slate-500 mt-1">Ваш ваучер готов к использованию</p>
+      </div>
+    </header>
 
-                <hr class="my-3">
+    <!-- Код ваучера -->
+    <section class="glass-panel p-6 space-y-3">
+      <p class="text-xs uppercase tracking-wider text-slate-500 text-center">Код ваучера</p>
+      <div class="rounded-2xl bg-slate-50 border border-slate-200 px-6 py-5 text-center">
+        <p class="text-2xl font-mono font-bold tracking-[0.15em] text-slate-900"><%= voucherCode %></p>
+      </div>
+      <p class="text-center text-xs text-slate-400">Этот код также отправлен вам по SMS</p>
+    </section>
 
-                <!-- Продавец -->
-                <div class="mb-3">
-                    <p class="text-sm text-gray-500">Продавец</p>
-                    <p class="font-bold">
-                        <%= merchant.username %>
-                    </p>
-                    <% if (merchant.legalInfo) { %>
-                        <p class="text-sm text-gray-600">
-                            <%= merchant.legalInfo %>
-                        </p>
-                        <% } %>
-                </div>
+    <!-- Электронный чек -->
+    <section class="glass-panel p-6 space-y-4">
+      <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">Электронный чек</h2>
 
-                <hr class="my-3">
+      <!-- Продавец -->
+      <div class="space-y-0.5">
+        <p class="text-xs text-slate-400">Продавец</p>
+        <p class="text-sm font-medium text-slate-900"><%= merchant.username %></p>
+        <% if (merchant.legalInfo) { %>
+          <p class="text-xs text-slate-500"><%= merchant.legalInfo %></p>
+        <% } %>
+      </div>
 
-                <!-- Товар -->
-                <div class="flex justify-between mb-1">
-                    <span>Товар</span>
-                    <span class="font-medium">
-                        <%= product.name %>
-                    </span>
-                </div>
-                <div class="flex justify-between mb-1">
-                    <span>Количество</span>
-                    <span>1 шт</span>
-                </div>
-                <div class="flex justify-between">
-                    <span>Цена</span>
-                    <span>
-                        <%= product.price.toLocaleString() %> сум
-                    </span>
-                </div>
+      <hr class="border-slate-100">
 
-                <hr class="my-3">
-
-                <div class="flex justify-between text-lg font-bold">
-                    <span>ИТОГО</span>
-                    <span>
-                        <%= product.price.toLocaleString() %> сум
-                    </span>
-                </div>
-
-                <hr class="my-3">
-
-                <!-- Детали -->
-                <div class="text-sm text-gray-600">
-                    <div class="flex justify-between">
-                        <span>Дата</span>
-                        <span>
-                            <%= new Date(attempt.paidAt).toLocaleDateString('ru-RU') %>
-                        </span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Время</span>
-                        <span>
-                            <%= new Date(attempt.paidAt).toLocaleTimeString('ru-RU', {hour: '2-digit' ,
-                                minute: '2-digit' }) %>
-                        </span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Номер продажи</span>
-                        <span>#<%= sale.id %></span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span>Покупатель</span>
-                        <span>
-                            <%= attempt.phoneNumber %>
-                        </span>
-                    </div>
-                </div>
-
-                <hr class="my-3">
-
-                <!-- Код ваучера -->
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                    <p class="text-sm text-gray-600 mb-1">КОД ВАШЕГО ВАУЧЕРА</p>
-                    <p class="text-2xl font-mono font-bold text-green-700 tracking-wider">
-                        <%= voucherCode %>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Кнопки -->
-            <div class="mt-6 space-y-3">
-                <a href="/pay/<%= token %>/receipt/<%= attempt.id %>"
-                    class="block w-full bg-blue-600 text-white py-3 rounded-xl text-center font-bold">
-                    📥 СОХРАНИТЬ ЧЕК (PDF)
-                </a>
-
-                <a href="/client/dashboard"
-                    class="block w-full bg-gray-200 text-gray-800 py-3 rounded-xl text-center font-bold">
-                    📱 ОТКРЫТЬ КОШЕЛЁК
-                </a>
-            </div>
-
-            <!-- Инструкция -->
-            <div class="mt-6 text-sm text-gray-600">
-                <p class="font-medium mb-2">Как использовать ваучер?</p>
-                <ol class="list-decimal list-inside space-y-1">
-                    <li>Откройте кошелёк wallet.namo.uz</li>
-                    <li>Войдите по номеру телефона</li>
-                    <li>Найдите ваучер в списке</li>
-                    <li>Нажмите "Активировать"</li>
-                </ol>
-            </div>
+      <!-- Детали -->
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Товар</span>
+          <span class="font-medium text-slate-900 text-right max-w-[60%]"><%= product.name %></span>
         </div>
-    </div>
-</body>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Количество</span>
+          <span class="font-medium text-slate-900">1 шт</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Сумма</span>
+          <span class="font-medium text-slate-900"><%= product.price.toLocaleString('ru-RU') %> сум</span>
+        </div>
+      </div>
 
+      <hr class="border-slate-100">
+
+      <div class="flex justify-between text-base font-bold">
+        <span class="text-slate-700">Итого</span>
+        <span class="text-slate-900"><%= product.price.toLocaleString('ru-RU') %> сум</span>
+      </div>
+
+      <hr class="border-slate-100">
+
+      <!-- Дата и покупатель -->
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span class="text-slate-500">Дата</span>
+          <span class="text-slate-700"><%= new Date(attempt.paidAt).toLocaleDateString('ru-RU') %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Время</span>
+          <span class="text-slate-700"><%= new Date(attempt.paidAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Номер продажи</span>
+          <span class="text-slate-700">#<%= sale.id %></span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-slate-500">Покупатель</span>
+          <span class="text-slate-700"><%= attempt.phoneNumber %></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Действия -->
+    <section class="space-y-3">
+      <a href="/pay/<%= token %>/receipt/<%= attempt.id %>"
+        class="flex items-center justify-center gap-2 w-full rounded-2xl btn-wallet-green px-4 py-3.5 text-sm font-semibold transition">
+        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+        </svg>
+        Сохранить чек (PDF)
+      </a>
+      <a href="/client/dashboard"
+        class="flex items-center justify-center gap-2 w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3"/>
+        </svg>
+        Открыть кошелёк
+      </a>
+    </section>
+
+    <!-- Инструкция -->
+    <section class="glass-panel p-5 space-y-3">
+      <p class="text-sm font-medium text-slate-700">Как использовать ваучер?</p>
+      <ol class="space-y-1.5 text-sm text-slate-500">
+        <li class="flex items-start gap-2">
+          <span class="flex-shrink-0 h-5 w-5 rounded-full bg-slate-100 text-xs font-semibold flex items-center justify-center text-slate-600">1</span>
+          Откройте кошелёк wallet.namo.uz
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="flex-shrink-0 h-5 w-5 rounded-full bg-slate-100 text-xs font-semibold flex items-center justify-center text-slate-600">2</span>
+          Войдите по номеру телефона
+        </li>
+        <li class="flex items-start gap-2">
+          <span class="flex-shrink-0 h-5 w-5 rounded-full bg-slate-100 text-xs font-semibold flex items-center justify-center text-slate-600">3</span>
+          Найдите ваучер в списке и нажмите «Активировать»
+        </li>
+      </ol>
+    </section>
+
+  </main>
+
+</body>
 </html>
