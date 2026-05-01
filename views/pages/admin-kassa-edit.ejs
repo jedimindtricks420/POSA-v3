@@ -53,7 +53,7 @@
 
                         <hr class="border-slate-200">
                         <h3 class="text-lg font-medium text-slate-900">Реквизиты Click</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700">Merchant ID</label>
                                 <input type="text" name="clickMerchantId" value="<%= kassa.clickMerchantId || '' %>"
@@ -69,11 +69,23 @@
                                 <input type="password" name="clickSecretKey" value="<%= kassa.clickSecretKey || '' %>"
                                     class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Merchant User ID</label>
+                                <input type="text" name="clickMerchantUserId" value="<%= kassa.clickMerchantUserId || '' %>"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Click ENV</label>
+                                <select name="clickEnv" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                                    <option value="production" <%= (kassa.clickEnv || 'production') === 'production' ? 'selected' : '' %>>production</option>
+                                    <option value="test" <%= kassa.clickEnv === 'test' ? 'selected' : '' %>>test</option>
+                                </select>
+                            </div>
                         </div>
 
                         <hr class="border-slate-200">
                         <h3 class="text-lg font-medium text-slate-900">Реквизиты Payme</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700">Merchant ID</label>
                                 <input type="text" name="paymeMerchantId" value="<%= kassa.paymeMerchantId || '' %>"
@@ -88,6 +100,13 @@
                                 <label class="block text-sm font-medium text-slate-700">Test Key</label>
                                 <input type="password" name="paymeTestKey" value="<%= kassa.paymeTestKey || '' %>"
                                     class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Payme ENV</label>
+                                <select name="paymeEnv" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                                    <option value="test" <%= (kassa.paymeEnv || 'test') === 'test' ? 'selected' : '' %>>test</option>
+                                    <option value="production" <%= kassa.paymeEnv === 'production' ? 'selected' : '' %>>production</option>
+                                </select>
                             </div>
                         </div>
 

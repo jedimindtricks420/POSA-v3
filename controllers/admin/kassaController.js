@@ -27,8 +27,8 @@ export const handleCreateKassa = async (req, res) => {
     try {
         const {
             name, legalName, inn,
-            clickMerchantId, clickServiceId, clickSecretKey,
-            paymeMerchantId, paymeKey, paymeTestKey,
+            clickMerchantId, clickServiceId, clickSecretKey, clickMerchantUserId, clickEnv,
+            paymeMerchantId, paymeKey, paymeTestKey, paymeEnv,
             contactPerson, contactPhone, contactEmail,
             vendorIds,
         } = req.body;
@@ -48,9 +48,12 @@ export const handleCreateKassa = async (req, res) => {
                 clickMerchantId: clickMerchantId || null,
                 clickServiceId: clickServiceId || null,
                 clickSecretKey: clickSecretKey || null,
+                clickMerchantUserId: clickMerchantUserId || null,
+                clickEnv: clickEnv || 'production',
                 paymeMerchantId: paymeMerchantId || null,
                 paymeKey: paymeKey || null,
                 paymeTestKey: paymeTestKey || null,
+                paymeEnv: paymeEnv || 'test',
                 contactPerson: contactPerson || null,
                 contactPhone: contactPhone || null,
                 contactEmail: contactEmail || null,
@@ -99,8 +102,8 @@ export const handleUpdateKassa = async (req, res) => {
         const kassaId = parseInt(req.params.id);
         const {
             name, legalName, inn, isActive,
-            clickMerchantId, clickServiceId, clickSecretKey,
-            paymeMerchantId, paymeKey, paymeTestKey,
+            clickMerchantId, clickServiceId, clickSecretKey, clickMerchantUserId, clickEnv,
+            paymeMerchantId, paymeKey, paymeTestKey, paymeEnv,
             contactPerson, contactPhone, contactEmail,
             vendorIds,
         } = req.body;
@@ -113,9 +116,12 @@ export const handleUpdateKassa = async (req, res) => {
                 clickMerchantId: clickMerchantId || null,
                 clickServiceId: clickServiceId || null,
                 clickSecretKey: clickSecretKey || null,
+                clickMerchantUserId: clickMerchantUserId || null,
+                clickEnv: clickEnv || 'production',
                 paymeMerchantId: paymeMerchantId || null,
                 paymeKey: paymeKey || null,
                 paymeTestKey: paymeTestKey || null,
+                paymeEnv: paymeEnv || 'test',
                 contactPerson: contactPerson || null,
                 contactPhone: contactPhone || null,
                 contactEmail: contactEmail || null,
