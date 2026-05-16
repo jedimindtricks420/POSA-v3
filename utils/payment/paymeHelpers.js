@@ -15,7 +15,7 @@ export function generatePaymeUrl(orderId, amount, callbackUrl, kassaCredentials 
         : 'https://checkout.paycom.uz';
 
     // Формат: m={merchant};ac.order_id={orderId};a={amount};c={callback}
-    const params = `m=${merchantId};ac.order_id=${orderId};a=${amount};c=${encodeURIComponent(callbackUrl)}`;
+    const params = `m=${merchantId};ac.Namo=${orderId};a=${amount};c=${encodeURIComponent(callbackUrl)}`;
     const encoded = Buffer.from(params).toString('base64');
 
     return `${baseUrl}/${encoded}`;

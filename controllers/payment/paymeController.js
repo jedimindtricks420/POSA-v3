@@ -84,11 +84,12 @@ async function CheckPerformTransaction(params) {
     const { amount, account } = params;
 
     // Валидация account
-    if (!account || !account.Namo) {
+    const orderIdRaw = account.Namo || account.order_id;
+    if (!account || !orderIdRaw) {
         throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
     }
 
-    const orderId = parseInt(account.Namo);
+    const orderId = parseInt(orderIdRaw);
 
     if (isNaN(orderId)) {
         throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
@@ -128,11 +129,12 @@ async function CreateTransaction(params) {
     const { id, time, amount, account } = params;
 
     // Валидация account
-    if (!account || !account.Namo) {
+    const orderIdRaw = account.Namo || account.order_id;
+    if (!account || !orderIdRaw) {
         throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
     }
 
-    const orderId = parseInt(account.Namo);
+    const orderId = parseInt(orderIdRaw);
 
     if (isNaN(orderId)) {
         throw new PaymeError(PAYME_ERRORS.ORDER_NOT_FOUND, 'Namo');
@@ -394,7 +396,8 @@ async function GetStatement(params) {
             time: attempt.createdAt.getTime(),
             amount: Math.round(attempt.amount * 100), // Конвертируем в тийины
             account: {
-                Namo: attempt.id.toString()
+                Namo: attempt.id.toString(),
+                order_id: attempt.id.toString()
             },
             create_time: attempt.createdAt.getTime(),
             perform_time: attempt.paidAt ? attempt.paidAt.getTime() : 0,
