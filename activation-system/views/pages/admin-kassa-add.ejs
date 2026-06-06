@@ -45,7 +45,7 @@
 
                         <hr class="border-slate-200">
                         <h3 class="text-lg font-medium text-slate-900">Реквизиты Click</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700">Merchant ID</label>
                                 <input type="text" name="clickMerchantId"
@@ -61,11 +61,23 @@
                                 <input type="password" name="clickSecretKey"
                                     class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Merchant User ID</label>
+                                <input type="text" name="clickMerchantUserId"
+                                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Click ENV</label>
+                                <select name="clickEnv" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                                    <option value="production" selected>production</option>
+                                    <option value="test">test</option>
+                                </select>
+                            </div>
                         </div>
 
                         <hr class="border-slate-200">
                         <h3 class="text-lg font-medium text-slate-900">Реквизиты Payme</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700">Merchant ID</label>
                                 <input type="text" name="paymeMerchantId"
@@ -80,6 +92,13 @@
                                 <label class="block text-sm font-medium text-slate-700">Test Key</label>
                                 <input type="password" name="paymeTestKey"
                                     class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Payme ENV</label>
+                                <select name="paymeEnv" class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
+                                    <option value="test" selected>test</option>
+                                    <option value="production">production</option>
+                                </select>
                             </div>
                         </div>
                         <div class="bg-slate-50 rounded-md p-3 text-sm text-slate-600">

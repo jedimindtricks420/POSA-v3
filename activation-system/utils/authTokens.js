@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import prisma from '../prisma/client.js';
 
-export const SESSION_MAX_AGE = 15 * 60 * 1000;
+export const SESSION_MAX_AGE = 6 * 60 * 60 * 1000; // 6 часов
 export const REMEMBER_ME_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
 const baseCookieOptions = {

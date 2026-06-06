@@ -1,151 +1,176 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="ru" class="h-full">
 <head>
-    <title>Оплата - <%= product.name %>
-    </title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#9EE52D" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Оплата — <%= product.name %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/client.css" />
+  <link rel="stylesheet" href="/css/client-overrides.css" />
 </head>
+<body class="min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors safe-area-y">
 
-<body class="bg-gray-100 min-h-screen">
-    <div class="max-w-md mx-auto p-4">
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-            <!-- Назад -->
-            <a href="/pay/<%= token %>" class="text-blue-600 mb-4 inline-block">← Назад</a>
+  <main class="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center space-y-4 py-8">
 
-            <hr class="my-4">
+    <!-- Шапка -->
+    <header class="flex items-center justify-between">
+      <a href="/pay/<%= token %>" class="inline-flex items-center gap-1.5 text-sm font-medium text-apple-blue hover:text-blue-600 transition">
+        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+        </svg>
+        Назад
+      </a>
+      <p class="text-xs text-slate-500">wallet.namo.uz</p>
+    </header>
 
-            <!-- Товар -->
-            <div class="text-center mb-4">
-                <h2 class="text-xl font-bold">
-                    <%= product.name %>
-                </h2>
-                <p class="text-2xl font-bold text-green-600">
-                    <%= product.price.toLocaleString() %> сум
-                </p>
-            </div>
+    <!-- Карточка -->
+    <section class="glass-panel space-y-5 p-6">
 
-            <hr class="my-4">
+      <!-- Товар и сумма -->
+      <div class="text-center space-y-1">
+        <p class="text-xs uppercase tracking-wider text-slate-500"><%= product.name %></p>
+        <p class="text-3xl font-bold text-slate-900"><%= product.price.toLocaleString('ru-RU') %> <span class="text-lg font-semibold text-slate-500">сум</span></p>
+      </div>
 
-            <!-- Форма -->
-            <form id="checkoutForm">
-                <!-- Телефон -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Номер телефона</label>
-                    <div class="flex border rounded-lg overflow-hidden">
-                        <span class="bg-gray-100 px-4 py-3 text-gray-600">+998</span>
-                        <input type="tel" id="phone" placeholder="90 123 45 67" class="flex-1 px-4 py-3 outline-none"
-                            pattern="[0-9]{9}" maxlength="9" required>
-                    </div>
-                    <p class="text-sm text-gray-500 mt-1">На этот номер будет отправлен ваучер</p>
-                </div>
+      <hr class="border-slate-200">
 
-                <hr class="my-4">
+      <!-- Форма оплаты -->
+      <form id="checkoutForm" class="space-y-5">
 
-                <!-- Способ оплаты -->
-                <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Способ оплаты</label>
-                    <div class="grid grid-cols-2 gap-4">
-                        <label class="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
-                            <input type="radio" name="paymentMethod" value="click" class="sr-only" checked>
-                            <div class="text-2xl mb-1">💳</div>
-                            <div class="font-bold">Click</div>
-                        </label>
-                        <label class="border rounded-lg p-4 text-center cursor-pointer hover:border-blue-500">
-                            <input type="radio" name="paymentMethod" value="payme" class="sr-only">
-                            <div class="text-2xl mb-1">💳</div>
-                            <div class="font-bold">Payme</div>
-                        </label>
-                    </div>
-                </div>
-
-                <hr class="my-4">
-
-                <!-- Итого -->
-                <div class="flex justify-between items-center mb-4">
-                    <span class="text-gray-600">Итого к оплате:</span>
-                    <span class="text-xl font-bold">
-                        <%= product.price.toLocaleString() %> сум
-                    </span>
-                </div>
-
-                <!-- Кнопка -->
-                <button type="submit" id="submitBtn"
-                    class="w-full bg-green-600 text-white py-4 rounded-xl text-xl font-bold hover:bg-green-700">
-                    ОПЛАТИТЬ <%= product.price.toLocaleString() %> сум
-                </button>
-
-                <p class="text-xs text-gray-500 text-center mt-4">
-                    Нажимая "Оплатить", вы соглашаетесь с условиями оферты
-                </p>
-            </form>
-
-            <!-- Загрузка -->
-            <div id="loading" class="hidden text-center py-8">
-                <div class="text-4xl mb-4">⏳</div>
-                <p class="text-xl">Обработка платежа...</p>
-                <p class="text-gray-500">Пожалуйста, не закрывайте страницу</p>
-            </div>
+        <!-- Телефон -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-slate-600">Номер телефона</label>
+          <div class="flex overflow-hidden rounded-2xl border border-slate-200 bg-white transition focus-within:border-apple-blue focus-within:ring-2 focus-within:ring-apple-blue/20">
+            <span class="flex items-center bg-slate-50 px-4 text-sm font-medium text-slate-500 border-r border-slate-200">+998</span>
+            <input
+              type="tel"
+              id="phone"
+              inputmode="numeric"
+              placeholder="90 123 45 67"
+              class="flex-1 px-4 py-3 text-sm outline-none bg-white"
+              pattern="[0-9]{9}"
+              maxlength="9"
+              required
+            />
+          </div>
+          <p class="text-xs text-slate-400">Ваучер придёт на этот номер по SMS</p>
         </div>
+
+        <!-- Способ оплаты -->
+        <div class="space-y-2">
+          <label class="block text-sm font-medium text-slate-600">Способ оплаты</label>
+          <div class="grid grid-cols-2 gap-3">
+
+            <label class="relative cursor-pointer">
+              <input type="radio" name="paymentMethod" value="click" class="sr-only peer" checked />
+              <div class="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-center transition peer-checked:border-apple-blue peer-checked:bg-apple-blue/10 peer-checked:ring-2 peer-checked:ring-apple-blue/20">
+                <img src="/images/click.png" alt="Click" class="object-contain" style="width: 150px; height: 150px;" />
+                <span class="text-sm font-semibold text-slate-700 peer-checked:text-apple-blue">Click</span>
+              </div>
+            </label>
+
+            <label class="relative cursor-pointer">
+              <input type="radio" name="paymentMethod" value="payme" class="sr-only peer" />
+              <div class="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white p-4 text-center transition peer-checked:border-apple-blue peer-checked:bg-apple-blue/10 peer-checked:ring-2 peer-checked:ring-apple-blue/20">
+                <img src="/images/payme.png" alt="Payme" class="object-contain" style="width: 150px; height: 150px;" />
+                <span class="text-sm font-semibold text-slate-700 peer-checked:text-apple-blue">Payme</span>
+              </div>
+            </label>
+
+          </div>
+        </div>
+
+        <hr class="border-slate-200">
+
+        <!-- Итого -->
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-slate-500">Итого к оплате</span>
+          <span class="text-base font-bold text-slate-900"><%= product.price.toLocaleString('ru-RU') %> сум</span>
+        </div>
+
+        <!-- Кнопка -->
+        <button type="submit" id="submitBtn"
+          class="w-full rounded-2xl btn-wallet-green px-4 py-3.5 text-sm font-semibold transition">
+          Оплатить <%= product.price.toLocaleString('ru-RU') %> сум
+        </button>
+
+        <p class="text-center text-xs text-slate-400">Нажимая «Оплатить», вы принимаете условия оферты</p>
+      </form>
+    </section>
+
+    <!-- Состояние загрузки -->
+    <div id="loading" class="hidden glass-panel p-10 text-center space-y-4">
+      <div class="mx-auto h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
+        <svg class="h-6 w-6 animate-spin text-apple-blue" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-900">Обработка платежа…</p>
+        <p class="text-sm text-slate-500 mt-1">Пожалуйста, не закрывайте страницу</p>
+      </div>
     </div>
 
-    <script>
-        const form = document.getElementById('checkoutForm');
-        const loading = document.getElementById('loading');
-        const submitBtn = document.getElementById('submitBtn');
+  </main>
 
-        // Подсветка выбранного способа оплаты
-        document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
-            radio.addEventListener('change', () => {
-                document.querySelectorAll('input[name="paymentMethod"]').forEach(r => {
-                    r.closest('label').classList.remove('border-blue-500', 'bg-blue-50');
-                });
-                radio.closest('label').classList.add('border-blue-500', 'bg-blue-50');
-            });
+  <script>
+    const form = document.getElementById('checkoutForm');
+    const loading = document.getElementById('loading');
+
+    // Подсветка выбранного метода
+    document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        document.querySelectorAll('input[name="paymentMethod"]').forEach(r => {
+          const box = r.nextElementSibling;
+          box.classList.remove('border-apple-blue', 'bg-apple-blue/10', 'ring-2', 'ring-apple-blue/20');
+          box.querySelector('span:last-child').classList.remove('text-apple-blue');
         });
-        // Активировать первый по умолчанию
-        document.querySelector('input[name="paymentMethod"]:checked')
-            .closest('label').classList.add('border-blue-500', 'bg-blue-50');
+        const box = radio.nextElementSibling;
+        box.classList.add('border-apple-blue', 'bg-apple-blue/10', 'ring-2', 'ring-apple-blue/20');
+        box.querySelector('span:last-child').classList.add('text-apple-blue');
+      });
+    });
+    // Активировать первый по умолчанию
+    document.querySelector('input[name="paymentMethod"]:checked').dispatchEvent(new Event('change'));
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const phone = document.getElementById('phone').value.replace(/\s/g, '');
-            if (phone.length !== 9) {
-                alert('Введите 9 цифр номера телефона');
-                return;
-            }
-
-            form.classList.add('hidden');
-            loading.classList.remove('hidden');
-
-            try {
-                const res = await fetch('/pay/<%= token %>/checkout', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        phoneNumber: '+998' + phone,
-                        paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value
-                    })
-                });
-
-                const data = await res.json();
-
-                if (data.success && data.redirectUrl) {
-                    window.location.href = data.redirectUrl;
-                } else {
-                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-                    form.classList.remove('hidden');
-                    loading.classList.add('hidden');
-                }
-            } catch (e) {
-                alert('Ошибка соединения');
-                form.classList.remove('hidden');
-                loading.classList.add('hidden');
-            }
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const phone = document.getElementById('phone').value.replace(/\s/g, '');
+      if (phone.length !== 9 || !/^\d{9}$/.test(phone)) {
+        alert('Введите 9 цифр номера телефона');
+        return;
+      }
+      form.classList.add('hidden');
+      loading.classList.remove('hidden');
+      try {
+        const res = await fetch('/pay/<%= token %>/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phoneNumber: '+998' + phone,
+            paymentMethod: document.querySelector('input[name="paymentMethod"]:checked').value
+          })
         });
-    </script>
+        const data = await res.json();
+        if (data.success && data.redirectUrl) {
+          window.location.href = data.redirectUrl;
+        } else {
+          alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+          form.classList.remove('hidden');
+          loading.classList.add('hidden');
+        }
+      } catch {
+        alert('Ошибка соединения');
+        form.classList.remove('hidden');
+        loading.classList.add('hidden');
+      }
+    });
+  </script>
 </body>
-
 </html>
