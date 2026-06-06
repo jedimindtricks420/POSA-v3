@@ -2,7 +2,7 @@ const REFRESH_ENDPOINT = '/auth/refresh';
 const LOGOUT_URL = '/auth/logout';
 const LOGIN_URL = '/auth/login';
 const REFRESH_INTERVAL = 5 * 60 * 1000;
-const IDLE_TIMEOUT = 15 * 60 * 1000;
+const IDLE_TIMEOUT = 6 * 60 * 60 * 1000; // 6 часов
 
 const hasRememberMe = document.cookie.includes('remember_me=1');
 

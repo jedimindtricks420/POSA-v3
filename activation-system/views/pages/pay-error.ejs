@@ -1,50 +1,93 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="ru" class="h-full">
 <head>
-    <title>Ошибка</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2/dist/tailwind.min.css" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#9EE52D" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Ошибка — Namo Wallet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/client.css" />
+  <link rel="stylesheet" href="/css/client-overrides.css" />
 </head>
+<body class="min-h-screen bg-wallet-bg px-4 text-slate-900 transition-colors safe-area-y">
 
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
-        <% if (error==='expired' ) { %>
-            <div class="text-6xl mb-4">⏰</div>
-            <h1 class="text-2xl font-bold text-orange-600 mb-2">Время оплаты истекло</h1>
-            <p class="text-gray-600 mb-6">
-                У вас было 2 минуты для завершения оплаты.<br>
-                Пожалуйста, попробуйте снова.
-            </p>
-            <% } else if (error==='failed' ) { %>
-                <div class="text-6xl mb-4">❌</div>
-                <h1 class="text-2xl font-bold text-red-600 mb-2">Оплата не прошла</h1>
-                <p class="text-gray-600 mb-6">
-                    Платёж был отклонён. Проверьте баланс карты<br>
-                    или попробуйте другой способ оплаты.
-                </p>
-                <% } else if (error==='no_vouchers' ) { %>
-                    <div class="text-6xl mb-4">😔</div>
-                    <h1 class="text-2xl font-bold text-gray-600 mb-2">Товар закончился</h1>
-                    <p class="text-gray-600 mb-6">
-                        К сожалению, пока вы оплачивали,<br>
-                        последний ваучер был куплен.<br><br>
-                        Ваши средства не были списаны.
-                    </p>
-                    <% } else { %>
-                        <div class="text-6xl mb-4">❌</div>
-                        <h1 class="text-2xl font-bold text-red-600 mb-2">
-                            <%= message %>
-                        </h1>
-                        <% } %>
+  <main class="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center gap-4 py-8">
 
-                            <% if (typeof token !=='undefined' ) { %>
-                                <a href="/pay/<%= token %>"
-                                    class="inline-block bg-blue-600 text-white px-8 py-3 rounded-xl font-bold">
-                                    Попробовать снова
-                                </a>
-                                <% } %>
-    </div>
+    <section class="glass-panel w-full p-8 text-center space-y-5">
+
+      <% if (error === 'expired') { %>
+        <!-- Истекло время -->
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+          <svg class="h-8 w-8 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+          </svg>
+        </div>
+        <div class="space-y-2">
+          <h1 class="text-xl font-semibold text-slate-900">Время истекло</h1>
+          <p class="text-sm text-slate-500">У вас было ограниченное время для завершения оплаты.<br>Пожалуйста, попробуйте снова.</p>
+        </div>
+
+      <% } else if (error === 'failed') { %>
+        <!-- Отклонён -->
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+          <svg class="h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 18 6M6 6l12 12"/>
+          </svg>
+        </div>
+        <div class="space-y-2">
+          <h1 class="text-xl font-semibold text-slate-900">Оплата не прошла</h1>
+          <p class="text-sm text-slate-500">Платёж был отклонён. Проверьте баланс карты<br>или выберите другой способ оплаты.</p>
+        </div>
+
+      <% } else if (error === 'no_vouchers') { %>
+        <!-- Закончились ваучеры -->
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+          <svg class="h-8 w-8 text-slate-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/>
+          </svg>
+        </div>
+        <div class="space-y-2">
+          <h1 class="text-xl font-semibold text-slate-900">Товар закончился</h1>
+          <p class="text-sm text-slate-500">К сожалению, пока вы оплачивали, последний ваучер был куплен.</p>
+          <p class="text-sm font-medium text-green-600">Ваши средства не были списаны.</p>
+        </div>
+
+      <% } else { %>
+        <!-- Общая ошибка -->
+        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+          <svg class="h-8 w-8 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+          </svg>
+        </div>
+        <div class="space-y-2">
+          <h1 class="text-xl font-semibold text-slate-900"><%= message || 'Что-то пошло не так' %></h1>
+          <p class="text-sm text-slate-500">Попробуйте повторить операцию или обратитесь в поддержку.</p>
+        </div>
+      <% } %>
+
+      <!-- Кнопки -->
+      <div class="space-y-3 pt-2">
+        <% if (typeof token !== 'undefined') { %>
+          <a href="/pay/<%= token %>"
+            class="block w-full rounded-2xl btn-wallet-green px-4 py-3.5 text-sm font-semibold transition">
+            Попробовать снова
+          </a>
+        <% } %>
+        <a href="https://t.me/namo_help_bot"
+          class="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
+          Написать в поддержку
+        </a>
+      </div>
+
+    </section>
+
+    <p class="text-center text-xs text-slate-400">wallet.namo.uz</p>
+
+  </main>
+
 </body>
-
 </html>

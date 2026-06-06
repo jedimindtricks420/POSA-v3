@@ -97,7 +97,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    maxAge: 15 * 60 * 1000,
+    maxAge: SESSION_MAX_AGE,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
   },

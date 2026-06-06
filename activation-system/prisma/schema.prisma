@@ -531,14 +531,17 @@ model Kassa {
   updatedAt DateTime @updatedAt
 
   // Click credentials
-  clickMerchantId String?
-  clickServiceId  String?
-  clickSecretKey  String?
+  clickMerchantId     String?
+  clickServiceId      String?
+  clickSecretKey      String?
+  clickMerchantUserId String?
+  clickEnv            String?  @default("production")
 
   // Payme credentials
   paymeMerchantId String?
   paymeKey        String?
   paymeTestKey    String?
+  paymeEnv        String?  @default("test")
 
   // Контакты
   contactPerson String?

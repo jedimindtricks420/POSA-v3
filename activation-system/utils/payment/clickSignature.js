@@ -41,21 +41,28 @@ export function verifyClickSign(params, action, kassaCredentials = null) {
  * @returns {String} - URL для редиректа
  */
 export function generateClickUrl(orderId, amount, returnUrl, kassaCredentials = null) {
-    const merchantId = kassaCredentials?.clickMerchantId || process.env.CLICK_MERCHANT_ID;
-    const serviceId = kassaCredentials?.clickServiceId || process.env.CLICK_SERVICE_ID;
-    const env = process.env.CLICK_ENV || 'test';
+    const merchantId     = kassaCredentials?.clickMerchantId     || process.env.CLICK_MERCHANT_ID;
+    const serviceId      = kassaCredentials?.clickServiceId      || process.env.CLICK_SERVICE_ID;
+    const merchantUserId = kassaCredentials?.clickMerchantUserId || process.env.CLICK_MERCHANT_USER_ID;
+    // BUG FIX: брать clickEnv из кассы (БД), а не только из process.env
+    const env = kassaCredentials?.clickEnv || process.env.CLICK_ENV || 'production';
 
     // Click использует один и тот же URL для test и production
     // Различие только в service_id и merchant_id
     const baseUrl = 'https://my.click.uz/services/pay';
 
     const params = new URLSearchParams({
-        service_id: serviceId,
-        merchant_id: merchantId,
-        amount: amount, // В сумах
+        service_id:        serviceId,
+        merchant_id:       merchantId,
+        amount:            amount, // В сумах
         transaction_param: orderId,
-        return_url: returnUrl
+        return_url:        returnUrl,
     });
+
+    // merchant_user_id — необязательный, добавляем только если задан
+    if (merchantUserId) {
+        params.set('merchant_user_id', merchantUserId);
+    }
 
     return `${baseUrl}?${params.toString()}`;
 }
