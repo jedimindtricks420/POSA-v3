@@ -1,34 +1,117 @@
 <div class="card p-4">
-    <h3 class="text-center mb-4">Вход в <%= store ? store.name : 'Магазин' %>
-    </h3>
+    <% if (!(store && store.logoUrl)) { %>
+        <h3 class="text-center mb-4">Вход в <%= store ? store.name : 'Магазин' %>
+        </h3>
+        <% } %>
 
-    <div id="step-phone">
-        <div class="mb-3">
-            <label class="form-label">Номер телефона</label>
-            <input type="tel" id="phone" class="form-control" placeholder="+998901234567">
-        </div>
-        <button class="btn btn-primary w-100" onclick="sendOtp()">Получить код</button>
-    </div>
+            <div class="progress mb-2" style="height: 4px;">
+                <div id="stepProgress" class="progress-bar" role="progressbar" style="width: 50%;"></div>
+            </div>
+            <p class="text-center text-muted small mb-3">Шаг <span id="stepLabel">1</span> из 2</p>
 
-    <div id="step-otp" style="display:none;">
-        <div class="mb-3">
-            <label class="form-label">Код из SMS</label>
-            <input type="text" id="otp" class="form-control" placeholder="123456">
-        </div>
-        <button class="btn btn-primary w-100" onclick="verifyOtp()">Войти</button>
-        <button class="btn btn-link w-100 mt-2" onclick="backToPhone()">Изменить номер</button>
-    </div>
+            <div id="step-phone">
+                <div class="mb-3">
+                    <label class="form-label" for="phone">Номер телефона</label>
+                    <input type="tel" id="phone" class="form-control" value="+998 " autocomplete="tel">
+                </div>
+                <button type="button" id="sendOtpBtn" class="btn btn-primary w-100" onclick="sendOtp(false)">Получить
+                    код</button>
+            </div>
 
-    <div id="error-msg" class="alert alert-danger mt-3" style="display:none;"></div>
+            <div id="step-otp" style="display:none;">
+                <div class="mb-3">
+                    <label class="form-label" for="otp">Код из SMS</label>
+                    <input type="text" id="otp" class="form-control" placeholder="123456">
+                </div>
+                <button type="button" id="verifyOtpBtn" class="btn btn-primary w-100" onclick="verifyOtp()">Войти</button>
+                <button type="button" class="btn btn-link w-100 mt-2" onclick="backToPhone()">Изменить номер</button>
+
+                <div id="resendWrap" class="text-center mt-2" style="display:none;">
+                    <span id="resendTimerText" class="text-muted small"></span>
+                    <button type="button" id="resendBtn" class="btn btn-link btn-sm p-0" style="display:none;"
+                        onclick="resendOtp()">Отправить код повторно</button>
+                </div>
+            </div>
+
+            <div id="error-msg" class="alert alert-danger mt-3" style="display:none;"></div>
 </div>
 
 <script>
     const storeSlug = '<%= store ? store.slug : "" %>';
     let currentPhone = '';
+    let resendInterval = null;
 
-    async function sendOtp() {
-        const phone = document.getElementById('phone').value;
-        if (!phone) return showError('Введите номер телефона');
+    function setLoading(btn, loading, loadingText) {
+        if (!btn) return;
+        if (loading) {
+            if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + (loadingText || 'Загрузка...');
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+        }
+    }
+
+    function setStep(n) {
+        document.getElementById('stepProgress').style.width = (n === 2 ? '100%' : '50%');
+        document.getElementById('stepLabel').textContent = n;
+    }
+
+    function formatPhoneInput(e) {
+        let digits = e.target.value.replace(/\D/g, '');
+        if (digits.startsWith('998')) digits = digits.slice(3);
+        digits = digits.slice(0, 9);
+        let formatted = '+998';
+        if (digits.length > 0) formatted += ' ' + digits.slice(0, 2);
+        if (digits.length > 2) formatted += ' ' + digits.slice(2, 5);
+        if (digits.length > 5) formatted += ' ' + digits.slice(5, 7);
+        if (digits.length > 7) formatted += ' ' + digits.slice(7, 9);
+        e.target.value = formatted;
+    }
+
+    function getRawPhone() {
+        return document.getElementById('phone').value.replace(/\s+/g, '');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const phoneInput = document.getElementById('phone');
+        phoneInput.addEventListener('input', formatPhoneInput);
+    });
+
+    function startResendTimer(seconds) {
+        const wrap = document.getElementById('resendWrap');
+        const text = document.getElementById('resendTimerText');
+        const btn = document.getElementById('resendBtn');
+        wrap.style.display = 'block';
+        btn.style.display = 'none';
+        text.style.display = 'inline';
+        let remaining = seconds;
+        text.textContent = 'Отправить код повторно можно через ' + remaining + ' сек';
+        clearInterval(resendInterval);
+        resendInterval = setInterval(() => {
+            remaining--;
+            if (remaining <= 0) {
+                clearInterval(resendInterval);
+                text.style.display = 'none';
+                btn.style.display = 'inline-block';
+            } else {
+                text.textContent = 'Отправить код повторно можно через ' + remaining + ' сек';
+            }
+        }, 1000);
+    }
+
+    async function resendOtp() {
+        hideError();
+        await sendOtp(true);
+    }
+
+    async function sendOtp(isResend) {
+        const phone = isResend ? currentPhone : getRawPhone();
+        if (!phone || phone.length !== 13) return showError('Введите корректный номер телефона');
+
+        const btn = isResend ? document.getElementById('resendBtn') : document.getElementById('sendOtpBtn');
+        setLoading(btn, true, 'Отправка...');
 
         try {
             const res = await fetch(`/${storeSlug}/otp`, {
@@ -42,18 +125,25 @@
                 currentPhone = phone;
                 document.getElementById('step-phone').style.display = 'none';
                 document.getElementById('step-otp').style.display = 'block';
+                setStep(2);
                 hideError();
+                startResendTimer(60);
             } else {
                 showError(data.error || 'Ошибка отправки SMS');
             }
         } catch (e) {
             showError('Ошибка сети');
+        } finally {
+            setLoading(btn, false);
         }
     }
 
     async function verifyOtp() {
         const code = document.getElementById('otp').value;
         if (!code) return showError('Введите код');
+
+        const btn = document.getElementById('verifyOtpBtn');
+        setLoading(btn, true, 'Проверка...');
 
         try {
             const res = await fetch(`/${storeSlug}/verify`, {
@@ -70,12 +160,17 @@
             }
         } catch (e) {
             showError('Ошибка сети');
+        } finally {
+            setLoading(btn, false);
         }
     }
 
     function backToPhone() {
         document.getElementById('step-phone').style.display = 'block';
         document.getElementById('step-otp').style.display = 'none';
+        setStep(1);
+        clearInterval(resendInterval);
+        document.getElementById('resendWrap').style.display = 'none';
         hideError();
     }
 

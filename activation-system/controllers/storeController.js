@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { sendOtpSms } from '../utils/smsService.js';
 import rokkyService from '../services/rokkyService.js';
 import drwebService from '../services/drwebService.js';
+import manastoreService from '../services/manastoreService.js';
 
 const prisma = new PrismaClient();
 
@@ -45,6 +46,7 @@ export const getStorePage = async (req, res) => {
                             product: true,
                             rokkyOrder: true,
                             drwebOrder: true,
+                            manastoreOrder: true,
                             manualActivationRequest: true
                         }
                     }
@@ -293,6 +295,16 @@ export const activateVoucher = async (req, res) => {
                     console.log(`Activation failed: Voucher pending but already has COMPLETED Dr.Web order`);
                 }
             }
+            // For ManaStore vendors, check ManaStoreOrder
+            else if (voucher.product.vendor.productType === 'MANASTORE') {
+                const existingOrder = await prisma.manaStoreOrder.findUnique({ where: { voucherId: voucher.id } });
+                if (existingOrder && existingOrder.status === 'COMPLETED') {
+                    error = 'Code already activated';
+                    console.log(`Activation failed: Voucher pending but already has COMPLETED ManaStore order`);
+                }
+                // If PENDING or FAILED, fall through — the ManaStore block below re-checks status
+                // instead of blindly recreating the order (createOrder debits a real wallet).
+            }
             // For Manual vendors, check ManualActivationRequest
             else if (voucher.product.vendor.productType === 'MANUAL') {
                 const existingRequest = await prisma.manualActivationRequest.findUnique({ where: { voucherId: voucher.id } });
@@ -539,6 +551,129 @@ export const activateVoucher = async (req, res) => {
 
             return res.json({ success: true, message: 'Activation in progress. Please check back later.' });
         } // End of Dr.Web block
+        // Call ManaStore API (only for ManaStore vendors)
+        else if (voucher.product.vendor.productType === 'MANASTORE') {
+            let manastoreOrder;
+            try {
+                const existingOrder = await prisma.manaStoreOrder.findUnique({ where: { voucherId: voucher.id } });
+
+                if (existingOrder && existingOrder.status === 'PENDING') {
+                    // Idempotency: never call createOrder again for a voucher that already has an
+                    // order — createOrder debits a real wallet. Re-check status/content instead.
+                    const statusResult = await manastoreService.getOrderStatus(existingOrder.manaOrderId);
+
+                    manastoreOrder = await prisma.manaStoreOrder.update({
+                        where: { voucherId: voucher.id },
+                        data: {
+                            fulfillmentStatus: statusResult.fulfillmentStatus,
+                            paymentStatus: statusResult.paymentStatus,
+                            status: statusResult.status,
+                            rawContent: JSON.stringify(statusResult.rawContent)
+                        }
+                    });
+
+                    if (manastoreOrder.status === 'COMPLETED' && !manastoreOrder.key) {
+                        const content = await manastoreService.getOrderContent(existingOrder.manaOrderId);
+                        if (content.ready && content.codes.length > 0) {
+                            manastoreOrder = await prisma.manaStoreOrder.update({
+                                where: { voucherId: voucher.id },
+                                data: {
+                                    key: content.codes[0].code,
+                                    codes: JSON.stringify(content.codes)
+                                }
+                            });
+                        }
+                    }
+                } else if (existingOrder && existingOrder.status === 'COMPLETED') {
+                    manastoreOrder = existingOrder;
+                } else {
+                    // No order yet, or previous attempt FAILED — safe to create a new order.
+                    const variantId = voucher.product.manastoreVariantId;
+                    if (!variantId) throw new Error('Product missing ManaStore variant id');
+
+                    const orderResult = await manastoreService.createOrder(variantId);
+
+                    manastoreOrder = await prisma.manaStoreOrder.upsert({
+                        where: { voucherId: voucher.id },
+                        update: {
+                            environment: manastoreService.environment,
+                            manaOrderId: orderResult.manaOrderId,
+                            manaOrderNumber: orderResult.manaOrderNumber,
+                            variantId,
+                            fulfillmentStatus: orderResult.fulfillmentStatus,
+                            paymentStatus: orderResult.paymentStatus,
+                            status: orderResult.status,
+                            rawContent: JSON.stringify(orderResult.rawContent),
+                            errorMessage: null
+                        },
+                        create: {
+                            voucherId: voucher.id,
+                            environment: manastoreService.environment,
+                            manaOrderId: orderResult.manaOrderId,
+                            manaOrderNumber: orderResult.manaOrderNumber,
+                            variantId,
+                            fulfillmentStatus: orderResult.fulfillmentStatus,
+                            paymentStatus: orderResult.paymentStatus,
+                            status: orderResult.status,
+                            rawContent: JSON.stringify(orderResult.rawContent)
+                        }
+                    });
+
+                    if (manastoreOrder.status === 'COMPLETED') {
+                        const content = await manastoreService.getOrderContent(manastoreOrder.manaOrderId);
+                        if (content.ready && content.codes.length > 0) {
+                            manastoreOrder = await prisma.manaStoreOrder.update({
+                                where: { voucherId: voucher.id },
+                                data: {
+                                    key: content.codes[0].code,
+                                    codes: JSON.stringify(content.codes)
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (apiError) {
+                console.error('ManaStore API Error:', apiError);
+                await prisma.manaStoreOrder.upsert({
+                    where: { voucherId: voucher.id },
+                    update: {
+                        status: 'FAILED',
+                        errorMessage: apiError.message
+                    },
+                    create: {
+                        voucherId: voucher.id,
+                        environment: manastoreService.environment,
+                        manaOrderId: 'error',
+                        variantId: voucher.product.manastoreVariantId || 0,
+                        status: 'FAILED',
+                        errorMessage: apiError.message
+                    }
+                });
+                return res.status(500).json({ error: 'Произошла ошибка. Пожалуйста обратитесь в службу поддержки.' });
+            }
+
+            // If we got a real key
+            if (manastoreOrder.status === 'COMPLETED' && manastoreOrder.key) {
+                await prisma.voucherActivation.create({
+                    data: {
+                        voucherId: voucher.id,
+                        vendorId: voucher.product.vendorId,
+                        clientId: clientId,
+                        activatedBy: null // System
+                    }
+                });
+
+                await prisma.voucher.update({
+                    where: { id: voucher.id },
+                    data: { status: 'activated' }
+                });
+
+                return res.json({ success: true, key: manastoreOrder.key });
+            }
+
+            // Pending — order created/checked, but codes not ready yet
+            return res.json({ success: true, message: 'Activation in progress. Please check back later.', pending: true });
+        } // End of ManaStore block
         else if (voucher.product.vendor.productType === 'VOUCHER') {
             // For VOUCHER type vendors - these are activated outside our system
             // (e.g., in vendor's own system like Spotify balance top-up)
@@ -583,4 +718,59 @@ export const logout = (req, res) => {
     const { storeSlug } = req.params;
     req.session.clientId = null;
     res.redirect(`/${storeSlug}`);
+};
+
+// Lightweight JSON status check used by the activate page to poll pending
+// activations (voucher key not issued yet) without a full page reload.
+export const getHistoryStatus = async (req, res) => {
+    const { storeSlug } = req.params;
+    const clientId = req.session.clientId;
+
+    if (!clientId) return res.status(401).json({ error: 'Unauthorized' });
+
+    try {
+        const store = await prisma.store.findUnique({ where: { slug: storeSlug } });
+        if (!store) return res.status(404).json({ error: 'Store not found' });
+
+        const history = await prisma.voucherActivation.findMany({
+            where: {
+                clientId,
+                voucher: {
+                    product: {
+                        storeId: store.id
+                    }
+                }
+            },
+            include: {
+                voucher: {
+                    include: {
+                        rokkyOrder: true,
+                        drwebOrder: true,
+                        manastoreOrder: true,
+                        manualActivationRequest: true
+                    }
+                }
+            },
+            orderBy: { activatedAt: 'desc' }
+        });
+
+        const result = history.map(item => {
+            let key = null;
+            if (item.voucher.rokkyOrder && item.voucher.rokkyOrder.key) {
+                key = item.voucher.rokkyOrder.key;
+            } else if (item.voucher.drwebOrder && item.voucher.drwebOrder.key) {
+                key = item.voucher.drwebOrder.key;
+            } else if (item.voucher.manastoreOrder && item.voucher.manastoreOrder.key) {
+                key = item.voucher.manastoreOrder.key;
+            } else if (item.voucher.manualActivationRequest && item.voucher.manualActivationRequest.key) {
+                key = item.voucher.manualActivationRequest.key;
+            }
+            return { id: item.id, key };
+        });
+
+        res.json({ success: true, history: result });
+    } catch (error) {
+        console.error('getHistoryStatus error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 };
