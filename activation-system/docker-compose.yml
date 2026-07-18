@@ -6,7 +6,6 @@ services:
     restart: always
     ports:
       - "4000:4000"
-      - "5555:5555"
     env_file:
       - .env
     depends_on:
@@ -15,6 +14,21 @@ services:
       - .:/app
       - /app/node_modules
     command: sh -c "npm run build:wallet && npm start"
+
+  studio:
+    build: .
+    container_name: activation-studio
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "127.0.0.1:5557:5555"
+    command: sh -c "npx prisma studio --port 5555 --browser none"
 
   db:
     image: postgres:16
