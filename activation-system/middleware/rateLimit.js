@@ -32,3 +32,23 @@ export const generationLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// 4. Protection for OTP Verification (Anti-Brute-Force)
+// Safe Limit: 5 attempts per 15 minutes per IP.
+export const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: 'Слишком много неверных попыток. Подождите 15 минут.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// 5. Protection for Client Registration (Anti-Spam)
+// Safe Limit: 5 registrations per hour per IP.
+export const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: 'Слишком много попыток регистрации. Попробуйте позже.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});

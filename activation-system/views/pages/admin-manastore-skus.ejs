@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ManaStore - Каталог SKU</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+            <div class="md:flex md:items-center md:justify-between mb-6">
+                <div class="min-w-0 flex-1">
+                    <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                        Каталог SKU ManaStore
+                    </h2>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Управление вариантами товаров из каталога ManaStore
+                    </p>
+                </div>
+                <div class="mt-4 flex md:ml-4 md:mt-0 gap-3">
+                    <a href="/admin/manastore"
+                        class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+                        </svg>
+                        Назад
+                    </a>
+                    <form method="POST" action="/admin/manastore/skus/sync" class="inline">
+                        <button type="submit"
+                            class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Синхронизировать каталог
+                        </button>
+                    </form>
+                    <a href="/admin/manastore/skus/add"
+                        class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Добавить SKU вручную
+                    </a>
+                </div>
+            </div>
+
+            <div class="bg-white shadow-sm ring-1 ring-slate-200 sm:rounded-lg overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead>
+                        <tr>
+                            <th scope="col"
+                                class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">Variant
+                                ID</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">SKU
+                                (алиас)</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Название
+                            </th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Категория
+                            </th>
+                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-slate-900">
+                                Закупочная цена</th>
+                            <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-slate-900">
+                                Розничная цена</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Статус
+                            </th>
+                            <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                                <span class="sr-only">Действия</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 bg-white">
+                        <% skus.forEach(sku=> { %>
+                            <tr class="hover:bg-slate-50 transition-colors duration-150">
+                                <td
+                                    class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-mono font-medium text-slate-900 sm:pl-6">
+                                    <%= sku.variantId %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm font-mono text-slate-600">
+                                    <%= sku.sku || '—' %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-900">
+                                    <%= sku.name %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">
+                                    <% if (sku.category) { %>
+                                        <span
+                                            class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                                            <%= sku.category %>
+                                        </span>
+                                        <% } else { %>
+                                            <span class="text-slate-400">—</span>
+                                            <% } %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-slate-600">
+                                    <% if (sku.costPrice) { %>
+                                        <span class="font-mono">
+                                            <%= Number(sku.costPrice).toLocaleString('ru-RU') %>
+                                        </span> сум
+                                        <% } else { %>
+                                            <span class="text-slate-400">—</span>
+                                            <% } %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-right text-slate-600">
+                                    <% if (sku.retailPrice) { %>
+                                        <span class="font-mono">
+                                            <%= Number(sku.retailPrice).toLocaleString('ru-RU') %>
+                                        </span> сум
+                                        <% } else { %>
+                                            <span class="text-slate-400">—</span>
+                                            <% } %>
+                                </td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                    <% if (sku.isActive) { %>
+                                        <span
+                                            class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                            Активен
+                                        </span>
+                                        <% } else { %>
+                                            <span
+                                                class="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 ring-1 ring-inset ring-gray-500/10">
+                                                Неактивен
+                                            </span>
+                                            <% } %>
+                                </td>
+                                <td
+                                    class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                    <a href="/admin/manastore/skus/edit/<%= sku.id %>"
+                                        class="text-indigo-600 hover:text-indigo-900">
+                                        Редактировать
+                                    </a>
+                                </td>
+                            </tr>
+                            <% }) %>
+                    </tbody>
+                </table>
+
+                <% if (skus.length===0) { %>
+                    <div class="text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-semibold text-slate-900">Нет SKU</h3>
+                        <p class="mt-1 text-sm text-slate-500">Синхронизируйте каталог ManaStore или добавьте SKU
+                            вручную.</p>
+                        <div class="mt-6">
+                            <a href="/admin/manastore/skus/add"
+                                class="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Добавить SKU
+                            </a>
+                        </div>
+                    </div>
+                    <% } %>
+            </div>
+        </div>
+</body>
+
+</html>

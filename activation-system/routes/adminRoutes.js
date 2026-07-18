@@ -15,6 +15,7 @@ import * as clientController from '../controllers/admin/clientController.js';
 import * as storeController from '../controllers/admin/storeController.js';
 import * as rokkyController from '../controllers/admin/rokkyController.js';
 import * as drwebController from '../controllers/admin/drwebController.js';
+import * as manastoreController from '../controllers/admin/manastoreController.js';
 import * as telegramBotController from '../controllers/admin/telegramBotController.js';
 import * as manualActivationController from '../controllers/admin/manualActivationController.js';
 import * as qrLinkController from '../controllers/admin/qrLinkController.js';
@@ -138,6 +139,20 @@ router.get('/drweb/products', ensureAdmin, drwebController.showDrWebProducts);
 router.post('/drweb/products/:id/bind', ensureAdmin, drwebController.handleBindSku);
 router.get('/drweb/activations', ensureAdmin, drwebController.showDrWebActivations);
 router.get('/drweb/finance', allowFinance, drwebController.showDrWebFinance);
+
+// 7.2 ManaStore (Admin only - техническая интеграция)
+// ----------------------------------------------------
+router.get('/manastore', ensureAdmin, manastoreController.showManaStoreDashboard);
+router.get('/manastore/skus', ensureAdmin, manastoreController.showManaStoreSkus);
+router.get('/manastore/skus/add', ensureAdmin, manastoreController.showAddSkuForm);
+router.post('/manastore/skus/add', ensureAdmin, manastoreController.handleAddSku);
+router.get('/manastore/skus/edit/:id', ensureAdmin, manastoreController.showEditSkuForm);
+router.post('/manastore/skus/edit/:id', ensureAdmin, manastoreController.handleEditSku);
+router.post('/manastore/skus/sync', ensureAdmin, manastoreController.handleSyncSkuCatalog);
+router.get('/manastore/products', ensureAdmin, manastoreController.showManaStoreProducts);
+router.post('/manastore/products/:id/bind', ensureAdmin, manastoreController.handleBindSku);
+router.get('/manastore/activations', ensureAdmin, manastoreController.showManaStoreActivations);
+router.get('/manastore/finance', allowFinance, manastoreController.showManaStoreFinance); // финансист тоже может видеть, как у Rokky
 
 // 8. Telegram боты (Admin only)
 // ----------------------------------------------------

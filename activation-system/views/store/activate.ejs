@@ -1,3 +1,24 @@
+<%
+    const historyView = history.map(item => {
+        let key = null;
+        if (item.voucher.rokkyOrder && item.voucher.rokkyOrder.key) {
+            key = item.voucher.rokkyOrder.key;
+        } else if (item.voucher.drwebOrder && item.voucher.drwebOrder.key) {
+            key = item.voucher.drwebOrder.key;
+        } else if (item.voucher.manastoreOrder && item.voucher.manastoreOrder.key) {
+            key = item.voucher.manastoreOrder.key;
+        } else if (item.voucher.manualActivationRequest && item.voucher.manualActivationRequest.key) {
+            key = item.voucher.manualActivationRequest.key;
+        }
+        return {
+            id: item.id,
+            date: new Date(item.activatedAt).toLocaleString(),
+            product: item.voucher.product.name,
+            key
+        };
+    });
+    const hasPending = historyView.some(h => !h.key);
+%>
 <div class="card p-4 mb-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="mb-0">Активация ваучера <%= store.name %>
@@ -7,53 +28,87 @@
         </form>
     </div>
     <div class="mb-3">
-        <label class="form-label">Код ваучера</label>
+        <label class="form-label" for="voucherCode">Код ваучера</label>
         <input type="text" id="voucherCode" class="form-control" placeholder="Введите код">
     </div>
-    <button class="btn btn-success w-100" onclick="activate()">Активировать</button>
+    <button type="button" id="activateBtn" class="btn btn-success w-100" onclick="activate()">Активировать</button>
     <div id="error-msg" class="alert alert-danger mt-3" style="display:none;"></div>
 </div>
 
 <div class="card p-4">
     <h5>История активаций</h5>
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Дата</th>
-                    <th>Товар</th>
-                    <th>Ключ</th>
-                </tr>
-            </thead>
-            <tbody>
-                <% if (history.length===0) { %>
-                    <tr>
-                        <td colspan="3" class="text-center text-muted">История пуста</td>
-                    </tr>
-                    <% } %>
-                        <% history.forEach(item=> { %>
+
+    <div id="historySection" data-has-pending="<%= hasPending %>">
+        <% if (historyView.length===0) { %>
+            <p class="text-center text-muted mb-0">История пуста. Здесь появится история после первой активации.</p>
+            <% } else { %>
+
+                <!-- Desktop/tablet: table -->
+                <div class="table-responsive d-none d-md-block">
+                    <table class="table">
+                        <thead>
                             <tr>
-                                <td>
-                                    <%= new Date(item.activatedAt).toLocaleString() %>
-                                </td>
-                                <td>
-                                    <%= item.voucher.product.name %>
-                                </td>
-                                <td>
-                                    <% let key=null; if (item.voucher.rokkyOrder && item.voucher.rokkyOrder.key) {
-                                        key=item.voucher.rokkyOrder.key; } else if (item.voucher.drwebOrder && item.voucher.drwebOrder.key) {
-                                        key=item.voucher.drwebOrder.key; } else if (item.voucher.manualActivationRequest
-                                        && item.voucher.manualActivationRequest.key) {
-                                        key=item.voucher.manualActivationRequest.key; } if (key) { %>
-                                        <code><%= key %></code>
+                                <th>Дата</th>
+                                <th>Товар</th>
+                                <th>Ключ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% historyView.forEach(h=> { %>
+                                <tr data-activation-id="<%= h.id %>">
+                                    <td>
+                                        <%= h.date %>
+                                    </td>
+                                    <td>
+                                        <%= h.product %>
+                                    </td>
+                                    <td data-key-cell>
+                                        <% if (h.key) { %>
+                                            <code>
+                                                <%= h.key %>
+                                            </code>
+                                            <% } else { %>
+                                                <span class="badge bg-warning text-dark">Ожидание</span>
+                                                <% } %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile: stacked cards -->
+                <div class="d-md-none">
+                    <% historyView.forEach(h=> { %>
+                        <div class="border rounded p-2 mb-2" data-activation-id="<%= h.id %>">
+                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                <div>
+                                    <div class="fw-semibold">
+                                        <%= h.product %>
+                                    </div>
+                                    <small class="text-muted">
+                                        <%= h.date %>
+                                    </small>
+                                </div>
+                                <div data-key-cell class="text-end">
+                                    <% if (h.key) { %>
+                                        <code>
+                                            <%= h.key %>
+                                        </code>
                                         <% } else { %>
                                             <span class="badge bg-warning text-dark">Ожидание</span>
                                             <% } %>
-                                </td>
-                            </tr>
-                            <% }) %>
-            </tbody>
-        </table>
+                                </div>
+                            </div>
+                        </div>
+                        <% }) %>
+                </div>
+
+                <% if (hasPending) { %>
+                    <p id="pendingNote" class="text-muted small mt-2 mb-0">Ключ появится автоматически, обновлять
+                        страницу не нужно.</p>
+                    <% } %>
+                        <% } %>
     </div>
 </div>
 
@@ -67,7 +122,11 @@
             </div>
             <div class="modal-body text-center">
                 <p>Ваш цифровой ключ:</p>
-                <h3 id="modalKey" class="text-primary"></h3>
+                <div class="d-flex align-items-center justify-content-center gap-2">
+                    <h3 id="modalKey" class="text-primary mb-0"></h3>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="copyKey()">Скопировать</button>
+                </div>
+                <div id="copyFeedback" class="text-success small mt-2" style="display:none;">Скопировано!</div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
@@ -78,10 +137,32 @@
 
 <script>
     const storeSlug = '<%= store.slug %>';
+    let historyPollTimer = null;
+
+    function setLoading(btn, loading, loadingText) {
+        if (!btn) return;
+        if (loading) {
+            if (!btn.dataset.originalHtml) btn.dataset.originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>' + (loadingText || 'Загрузка...');
+        } else {
+            btn.disabled = false;
+            if (btn.dataset.originalHtml) btn.innerHTML = btn.dataset.originalHtml;
+        }
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
 
     async function activate() {
         const code = document.getElementById('voucherCode').value;
         if (!code) return showError('Введите код');
+
+        const btn = document.getElementById('activateBtn');
+        setLoading(btn, true, 'Активация...');
 
         try {
             const res = await fetch(`/${storeSlug}/activate`, {
@@ -94,6 +175,7 @@
             if (data.success) {
                 if (data.key) {
                     document.getElementById('modalKey').innerText = data.key;
+                    document.getElementById('copyFeedback').style.display = 'none';
                     const modal = new bootstrap.Modal(document.getElementById('successModal'));
                     modal.show();
                     document.getElementById('successModal').addEventListener('hidden.bs.modal', () => {
@@ -105,10 +187,31 @@
                 }
             } else {
                 showError(data.error || 'Ошибка активации');
+                setLoading(btn, false);
             }
         } catch (e) {
             showError('Ошибка сети');
+            setLoading(btn, false);
         }
+    }
+
+    async function copyKey() {
+        const key = document.getElementById('modalKey').innerText;
+        try {
+            await navigator.clipboard.writeText(key);
+        } catch (e) {
+            const ta = document.createElement('textarea');
+            ta.value = key;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch (e2) { /* clipboard unavailable */ }
+            document.body.removeChild(ta);
+        }
+        const fb = document.getElementById('copyFeedback');
+        fb.style.display = 'block';
+        setTimeout(() => { fb.style.display = 'none'; }, 2000);
     }
 
     function showError(msg) {
@@ -116,4 +219,40 @@
         el.innerText = msg;
         el.style.display = 'block';
     }
+
+    async function pollHistoryStatus() {
+        try {
+            const res = await fetch(`/${storeSlug}/history`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.success) return;
+
+            let stillPending = false;
+            data.history.forEach(item => {
+                if (item.key) {
+                    document.querySelectorAll(`[data-activation-id="${item.id}"] [data-key-cell]`).forEach(cell => {
+                        cell.innerHTML = '<code>' + escapeHtml(item.key) + '</code>';
+                    });
+                } else {
+                    stillPending = true;
+                }
+            });
+
+            if (!stillPending && historyPollTimer) {
+                clearInterval(historyPollTimer);
+                historyPollTimer = null;
+                const note = document.getElementById('pendingNote');
+                if (note) note.style.display = 'none';
+            }
+        } catch (e) {
+            // silent — will retry on next interval
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const section = document.getElementById('historySection');
+        if (section && section.dataset.hasPending === 'true') {
+            historyPollTimer = setInterval(pollHistoryStatus, 15000);
+        }
+    });
 </script>

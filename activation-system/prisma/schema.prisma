@@ -42,6 +42,7 @@ enum VendorProductType {
   DRWEB
   MANUAL
   VOUCHER
+  MANASTORE
 }
 
 model Merchant {
@@ -74,12 +75,13 @@ model Product {
   merchantCommissionPercent Float
   vendorCommissionPercent   Float
 
-  storeId         Int?
-  store           Store?                @relation(fields: [storeId], references: [id])
-  rokkySku        String? // Rokky SKU для интеграции
-  drwebSku        String? // Dr.Web SKU для интеграции
-  receiptTemplate String? // JSON-схема шаблона чека для конкретного товара
-  merchantLinks   MerchantProductLink[] // QR Payment Feature
+  storeId            Int?
+  store              Store?                @relation(fields: [storeId], references: [id])
+  rokkySku           String? // Rokky SKU для интеграции
+  drwebSku           String? // Dr.Web SKU для интеграции
+  manastoreVariantId Int? // product_variant_id из каталога ManaStore
+  receiptTemplate    String? // JSON-схема шаблона чека для конкретного товара
+  merchantLinks      MerchantProductLink[] // QR Payment Feature
 }
 
 model Store {
@@ -131,6 +133,59 @@ model RokkySku {
   category    String?
   costPrice   Float? // Закупочная цена от Rokky
   retailPrice Float? // Рекомендованная розничная цена
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ManaStoreOrder {
+  id                Int      @id @default(autoincrement())
+  voucherId         Int      @unique
+  environment       String // staging | production — контур, в котором создан заказ
+  manaOrderId       String // ulid заказа ManaStore, используется в путях /orders/{order}
+  manaOrderNumber   String? // order_number — человекочитаемый номер для саппорта/логов
+  variantId         Int
+  fulfillmentStatus String? // pending, processing, partially_fulfilled, completed, refunded
+  paymentStatus     String? // pending, completed
+  status            String // внутренний нормализованный: PENDING, COMPLETED, FAILED, REFUNDED
+  key               String? // первый/основной код — для совместимости с общим flow
+  codes             String?  @db.Text // JSON: полный список {code, serial_number, pin_code, expiration_date}
+  rawContent        String?  @db.Text
+  errorMessage      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  voucher Voucher @relation(fields: [voucherId], references: [id])
+}
+
+model ManaStoreApiLog {
+  id           Int      @id @default(autoincrement())
+  method       String
+  environment  String // staging | production — контур, из которого выполнен вызов
+  variantId    String?
+  referenceId  String? // внутренний voucherId POSA (ManaStore такое поле не принимает)
+  requestData  String?  @db.Text
+  responseData String?  @db.Text
+  statusCode   Int?
+  success      Boolean
+  errorMessage String?  @db.Text
+  duration     Int?
+  createdAt    DateTime @default(now())
+}
+
+model ManaStoreSku {
+  id          Int      @id @default(autoincrement())
+  variantId   Int      @unique // product_variant_id из ManaStore
+  productId   Int? // id родительского товара ManaStore (для каталога/синка)
+  sku         String? // опциональный внутренний код/алиас для админки
+  name        String
+  description String?
+  category    String?
+  costPrice   Float? // закупочная — ManaStore её не отдаёт, вводится вручную
+  retailPrice Float?
+  faceValue   Float? // face_value из каталога ManaStore, если отличается от price
+  currency    String?
+  meta        String?  @db.Text // сырой JSON товара/варианта из каталога
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -196,6 +251,7 @@ model Voucher {
   walletLogs              VoucherWalletLog[]
   rokkyOrder              RokkyOrder?
   drwebOrder              DrWebOrder?
+  manastoreOrder          ManaStoreOrder?
   manualActivationRequest ManualActivationRequest?
 }
 
