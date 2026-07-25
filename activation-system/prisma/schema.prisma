@@ -599,6 +599,13 @@ model Kassa {
   paymeTestKey    String?
   paymeEnv        String?  @default("test")
 
+  // Alifpay credentials
+  alifTokenProduction     String?
+  alifTokenSandbox        String?
+  alifSecretKeyProduction String? // для проверки подписи вебхука (HMAC-SHA256), production
+  alifSecretKeySandbox    String? // для проверки подписи вебхука (HMAC-SHA256), sandbox
+  alifEnv                 String?  @default("sandbox") // "sandbox" | "production"
+
   // Контакты
   contactPerson String?
   contactPhone  String?
@@ -609,6 +616,7 @@ model Kassa {
   totalReceived      Float @default(0)
   totalReceivedClick Float @default(0)
   totalReceivedPayme Float @default(0)
+  totalReceivedAlif  Float @default(0)
   totalPaid          Float @default(0)
 
   // Связи
