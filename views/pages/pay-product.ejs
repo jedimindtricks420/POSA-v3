@@ -28,6 +28,12 @@
     <!-- Карточка товара -->
     <section class="glass-panel space-y-6 p-6">
 
+      <!-- Изображение товара -->
+      <div class="mx-auto w-[250px] max-w-full aspect-square overflow-hidden rounded-2xl bg-slate-50 ring-1 ring-slate-100">
+        <img src="<%= (product.images && product.images[0]) ? product.images[0].url : '/images/product-placeholder.svg' %>"
+          alt="<%= product.name %>" class="h-full w-full object-cover" />
+      </div>
+
       <!-- Вендор и товар -->
       <div class="text-center space-y-2">
         <p class="text-xs uppercase tracking-wider text-slate-500"><%= product.vendor ? product.vendor.name : 'Товар' %></p>
@@ -39,21 +45,19 @@
       <!-- Цена -->
       <div class="text-center">
         <p class="text-xs text-slate-500 mb-1">Стоимость</p>
-        <p class="text-3xl font-bold text-slate-900"><%= product.price.toLocaleString('ru-RU') %> <span class="text-lg font-semibold text-slate-500">сум</span></p>
+        <p class="text-xl font-medium price-old"><%= oldPrice.toLocaleString('ru-RU') %> сум</p>
+        <div class="flex items-baseline justify-center gap-2">
+          <p class="text-3xl font-bold text-slate-900"><%= product.price.toLocaleString('ru-RU') %> <span class="text-lg font-semibold text-slate-500">сум</span></p>
+          <span class="discount-badge">−<%= discountPercent %>%</span>
+        </div>
       </div>
 
       <hr class="border-slate-200">
 
-      <!-- Продавец -->
-      <div class="flex items-center justify-between text-sm">
-        <span class="text-slate-500">Продавец</span>
-        <span class="font-medium text-slate-700"><%= merchant.username %></span>
-      </div>
-
       <!-- Кнопка -->
       <% if (hasVouchers) { %>
         <a href="/pay/<%= link.token %>/checkout"
-          class="block w-full rounded-2xl btn-wallet-green px-4 py-3.5 text-center text-sm font-semibold transition">
+          class="block w-full rounded-2xl btn-wallet-green btn-pulse-glow px-4 py-3.5 text-center text-sm font-semibold transition">
           Купить
         </a>
       <% } else { %>
@@ -63,6 +67,16 @@
         </button>
         <p class="text-center text-xs text-slate-400">Ваучеры закончились</p>
       <% } %>
+
+      <!-- Способы оплаты -->
+      <div class="text-center space-y-2">
+        <p class="text-xs text-slate-500">Принимаем к оплате</p>
+        <div class="payment-methods-row">
+          <span class="payment-logo-chip"><img src="/images/click-white.png" alt="Click" /></span>
+          <span class="payment-logo-chip"><img src="/images/payme.png" alt="Payme" /></span>
+          <span class="payment-logo-chip"><img src="/images/alif.png" alt="Alif" /></span>
+        </div>
+      </div>
     </section>
 
     <p class="text-center text-xs text-slate-400">Безопасная оплата через Namo Wallet</p>

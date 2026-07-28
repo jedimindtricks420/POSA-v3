@@ -5,6 +5,9 @@ export const showProductsForSale = async (req, res) => {
   const products = await prisma.product.findMany({
     where: { status: 'on' },
     orderBy: { id: 'asc' },
+    include: {
+      images: { where: { isPrimary: true }, take: 1 },
+    },
   });
 
   if (!Array.isArray(req.session.cart)) {

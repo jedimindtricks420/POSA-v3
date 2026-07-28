@@ -40,3 +40,73 @@
 .wallet-bottom-nav__item--active {
   color: #0f172a;
 }
+
+/* pay-product: discounted price display */
+.price-old {
+  text-decoration: line-through;
+  text-decoration-color: #94a3b8;
+  color: #94a3b8;
+}
+
+.discount-badge {
+  display: inline-block;
+  align-self: center;
+  background-color: #9EE52D;
+  color: #0f172a;
+  font-size: 0.6875rem;
+  line-height: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* pay-product: payment method logos */
+.payment-methods-row {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.625rem;
+}
+
+.payment-logo-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 100px;
+  height: 100px;
+  padding: 0.625rem;
+  border-radius: 0.75rem;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .10), 0 1px 2px rgba(15, 23, 42, .06);
+}
+
+.payment-logo-chip img {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+/* pay-product: CTA pulse/glow, scoped so it doesn't affect other btn-wallet-green buttons */
+.btn-pulse-glow {
+  animation: btn-pulse-glow 2.4s ease-out infinite;
+}
+
+.btn-pulse-glow:hover {
+  animation-play-state: paused;
+}
+
+@keyframes btn-pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(158, 229, 45, 0.55); }
+  70% { box-shadow: 0 0 0 12px rgba(158, 229, 45, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(158, 229, 45, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-pulse-glow {
+    animation: none;
+  }
+}

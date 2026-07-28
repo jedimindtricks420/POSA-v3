@@ -2,6 +2,7 @@ import express from 'express';
 import * as authController from '../controllers/client/authController.js';
 import { showDashboard } from '../controllers/client/dashboardController.js';
 import { isClientAuthenticated } from '../middleware/authClient.js';
+import { otpVerifyLimiter, registerLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
@@ -25,9 +26,9 @@ router.get('/', (req, res, next) => {
 router.get('/wallet', authController.showLogin);
 router.post('/wallet', authController.handleLogin);
 router.get('/client-register', authController.showRegister);
-router.post('/client-register', authController.handleRegister);
+router.post('/client-register', registerLimiter, authController.handleRegister);
 router.get('/client-verify', authController.showOtpPage);
-router.post('/client-verify', authController.verifyOtp);
+router.post('/client-verify', otpVerifyLimiter, authController.verifyOtp);
 router.get('/client/logout', authController.logout);
 router.get('/logout', authController.logout);
 router.post('/refresh', authController.refreshSession);

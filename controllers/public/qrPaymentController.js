@@ -10,6 +10,7 @@ import {
 } from '../merchant/saleController.js';
 import { generateClickUrl } from '../../utils/payment/clickSignature.js';
 import { generatePaymeUrl } from '../../utils/payment/paymeHelpers.js';
+import { createInvoice, getCheckoutUrl, isAmountInAlifRange } from '../../utils/payment/alifClient.js';
 
 // Страница товара
 export const showProductPage = async (req, res) => {
@@ -20,7 +21,12 @@ export const showProductPage = async (req, res) => {
             where: { token },
             include: {
                 merchant: true,
-                product: { include: { vendor: true } }
+                product: {
+                    include: {
+                        vendor: true,
+                        images: { where: { isPrimary: true }, take: 1 }
+                    }
+                }
             }
         });
 
@@ -50,11 +56,18 @@ export const showProductPage = async (req, res) => {
             where: { productId: link.productId, status: 'active' }
         });
 
+        // Зачёркнутая "старая" цена для витрины: подобрана так, чтобы текущая
+        // цена реально была скидкой 10% от неё (price = oldPrice * 0.9)
+        const oldPrice = Math.round(link.product.price / 0.9);
+        const discountPercent = Math.round((oldPrice - link.product.price) / oldPrice * 100);
+
         res.render('pages/pay-product', {
             link,
             merchant: link.merchant,
             product: link.product,
-            hasVouchers: voucherCount > 0
+            hasVouchers: voucherCount > 0,
+            oldPrice,
+            discountPercent
         });
     } catch (error) {
         console.error('Error loading product page:', error);
@@ -110,7 +123,7 @@ export const processCheckout = async (req, res) => {
         }
 
         // Валидация метода оплаты
-        if (!paymentMethod || !['click', 'payme'].includes(paymentMethod)) {
+        if (!paymentMethod || !['click', 'payme', 'alif'].includes(paymentMethod)) {
             return res.status(400).json({
                 success: false,
                 error: 'Выберите способ оплаты'
@@ -158,6 +171,61 @@ export const processCheckout = async (req, res) => {
             // Payme - сумма в тийинах
             const amountInTiyin = Math.round(link.product.price * 100);
             redirectUrl = generatePaymeUrl(attempt.id.toString(), amountInTiyin, returnUrl, kassaCredentials);
+        } else if (paymentMethod === 'alif') {
+            const env = kassaCredentials?.alifEnv || 'sandbox';
+            const alifToken = env === 'production'
+                ? kassaCredentials?.alifTokenProduction
+                : kassaCredentials?.alifTokenSandbox;
+
+            if (!alifToken) {
+                await prisma.qrPaymentAttempt.update({
+                    where: { id: attempt.id },
+                    data: { status: 'FAILED' }
+                });
+                return res.status(400).json({ success: false, error: 'Alifpay не настроен для этой кассы' });
+            }
+
+            const priceInTiyin = Math.round(link.product.price * 100);
+            if (!isAmountInAlifRange(priceInTiyin)) {
+                await prisma.qrPaymentAttempt.update({
+                    where: { id: attempt.id },
+                    data: { status: 'FAILED' }
+                });
+                return res.status(400).json({ success: false, error: 'Сумма вне допустимого диапазона Alifpay' });
+            }
+
+            // Alifpay требует https:// для cancel_url/redirect_url/webhook_url
+            const httpsBaseUrl = baseUrl.replace(/^http:/, 'https:');
+            const httpsReturnUrl = returnUrl.replace(/^http:/, 'https:');
+            const webhookUrl = `${httpsBaseUrl}/api/payments/alif/${kassaCredentials?.id}/webhook`;
+
+            const invoiceResult = await createInvoice({
+                token: alifToken,
+                env,
+                items: [{ name: link.product.name, amount: 1, price: priceInTiyin }],
+                cancelUrl: `${httpsBaseUrl}/pay/${token}/checkout`,
+                redirectUrl: httpsReturnUrl,
+                webhookUrl,
+                meta: { order_id: attempt.id.toString() },
+            });
+
+            if (!invoiceResult.success) {
+                // Откатываем попытку, чтобы не плодить "мёртвые" PENDING-записи
+                await prisma.qrPaymentAttempt.update({
+                    where: { id: attempt.id },
+                    data: { status: 'FAILED' },
+                });
+                return res.status(502).json({ success: false, error: invoiceResult.error });
+            }
+
+            // Сохраняем invoice id сразу — в отличие от Click/Payme, здесь мы это можем
+            // сделать синхронно, т.к. счёт уже реально создан на стороне Alifpay.
+            await prisma.qrPaymentAttempt.update({
+                where: { id: attempt.id },
+                data: { externalPaymentId: invoiceResult.id },
+            });
+
+            redirectUrl = getCheckoutUrl(invoiceResult.id, env);
         }
 
         console.log(`[Payment] Redirecting to ${paymentMethod}:`, redirectUrl);
@@ -305,6 +373,7 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
                         totalReceived: { increment: product.price },
                         ...(paymentMethod === 'click' ? { totalReceivedClick: { increment: product.price } } : {}),
                         ...(paymentMethod === 'payme' ? { totalReceivedPayme: { increment: product.price } } : {}),
+                        ...(paymentMethod === 'alif' ? { totalReceivedAlif: { increment: product.price } } : {}),
                         balance: { increment: kassaDebt },
                     }
                 });

@@ -20,31 +20,17 @@ function generateOtp() {
 
 // Хелпер: установка OTP в сессию и отправка SMS
 async function setOtpSessionAndSend(req, phone) {
-  // DEMO ACCOUNTS for App Store Review
-  const DEMO_ACCOUNTS = {
-    '+998003332211': '777777',  // Primary demo account (persistent)
-    '+998003332222': '888888',  // For testing account deletion
-    '+998003332233': '999999',  // For testing payments/transactions
-    '+998003332244': '111111',  // For testing error handling
-    '+998003332255': '222222'   // Additional/reserve account
-  };
-
-  const isDemo = phone in DEMO_ACCOUNTS;
-  const otp = isDemo ? DEMO_ACCOUNTS[phone] : generateOtp();
+  const otp = generateOtp();
   req.session.otp = otp;
   req.session.phone = phone;
+  req.session.otpCreatedAt = Date.now();
 
-  console.log(`OTP для ${phone}: ${otp}`); // лог для тестирования
+  console.log(`OTP сгенерирован и отправлен для ${phone}`);
 
-  // Skip SMS sending for demo accounts
-  if (!isDemo) {
-    try {
-      await sendOtpSms(phone, otp);
-    } catch (error) {
-      console.error('Ошибка при отправке SMS:', error);
-    }
-  } else {
-    console.log(`[DEMO] Skipping SMS for demo account: ${phone}, code: ${DEMO_ACCOUNTS[phone]}`);
+  try {
+    await sendOtpSms(phone, otp);
+  } catch (error) {
+    console.error('Ошибка при отправке SMS:', error);
   }
 }
 
@@ -193,6 +179,17 @@ export const showOtpPage = (req, res) => {
 // === Проверка OTP ===
 export const verifyOtp = async (req, res) => {
   const { otp } = req.body;
+
+  // Проверяем срок действия OTP (5 минут)
+  const OTP_TTL_MS = 5 * 60 * 1000;
+  if (!req.session.otpCreatedAt || Date.now() - req.session.otpCreatedAt > OTP_TTL_MS) {
+    delete req.session.otp;
+    delete req.session.otpCreatedAt;
+    return res.render('pages/client-verify', {
+      phone: req.session.phone,
+      error: 'Код истёк. Пожалуйста, вернитесь назад и запросите новый код.'
+    });
+  }
 
   if (!otp || otp !== req.session.otp) {
     return res.render('pages/client-verify', { phone: req.session.phone, error: 'Неверный код' });

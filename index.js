@@ -41,7 +41,15 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// verify captures the exact raw bytes of every JSON body into req.rawBody —
+// нужно для проверки HMAC-подписи вебхука Alifpay (см. controllers/payment/alifController.js).
+// JSON.stringify(req.body) не подходит: повторная сериализация может изменить
+// порядок ключей/пробелы и подпись не совпадёт с присланной Alifpay.
+app.use(express.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(cookieParser());
 
 //const walletStaticPath = path.join(__dirname, 'public', 'wallet');

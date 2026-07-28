@@ -11,3 +11,6 @@ certs/
 db-backups/
 *.sql
 *.dump
+
+# *.sql above also matched Prisma migration files - keep those in version control
+!prisma/migrations/**/*.sql

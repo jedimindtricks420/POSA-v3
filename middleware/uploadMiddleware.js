@@ -37,3 +37,25 @@ export const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: fileFilter
 });
+
+// Отдельная папка для изображений товаров — живут отдельно от прочих загрузок
+const productImagesDir = 'public/uploads/products';
+if (!fs.existsSync(productImagesDir)) {
+    fs.mkdirSync(productImagesDir, { recursive: true });
+}
+
+const productImageStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, productImagesDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+export const uploadProductImage = multer({
+    storage: productImageStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: fileFilter
+});

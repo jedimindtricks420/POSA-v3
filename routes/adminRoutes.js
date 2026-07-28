@@ -5,6 +5,7 @@ import express from 'express';
 // Контроллеры по модулям
 import * as dashboardController from '../controllers/admin/dashboardController.js';
 import * as productController from '../controllers/admin/productController.js';
+import * as productImageController from '../controllers/admin/productImageController.js';
 import * as voucherController from '../controllers/admin/voucherController.js';
 import * as saleController from '../controllers/admin/saleController.js';
 import * as userController from '../controllers/admin/userController.js';
@@ -15,12 +16,13 @@ import * as clientController from '../controllers/admin/clientController.js';
 import * as storeController from '../controllers/admin/storeController.js';
 import * as rokkyController from '../controllers/admin/rokkyController.js';
 import * as drwebController from '../controllers/admin/drwebController.js';
+import * as manastoreController from '../controllers/admin/manastoreController.js';
 import * as telegramBotController from '../controllers/admin/telegramBotController.js';
 import * as manualActivationController from '../controllers/admin/manualActivationController.js';
 import * as qrLinkController from '../controllers/admin/qrLinkController.js';
 import * as kassaController from '../controllers/admin/kassaController.js';
 import { ensureAdmin, ensureAuthenticated, allowFinance, allowContent, allowSupport, allowFinanceOrContent } from '../middleware/auth.js';
-import { upload } from '../middleware/uploadMiddleware.js';
+import { upload, uploadProductImage } from '../middleware/uploadMiddleware.js';
 import { generationLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
@@ -71,6 +73,12 @@ router.get('/edit-product/:id', allowContent, productController.showEditProductF
 router.post('/edit-product/:id', allowContent, productController.handleEditProduct);
 router.post('/delete-product/:id', allowContent, productController.handleDeleteProduct);
 router.post('/products/:id/receipt/preview', allowContent, productController.previewProductReceiptTemplate);
+
+router.get('/product-images', allowContent, productImageController.showProductImagesList);
+router.get('/product-images/:productId', allowContent, productImageController.showManageProductImages);
+router.post('/product-images/:productId/upload', allowContent, uploadProductImage.single('image'), productImageController.uploadProductImage);
+router.post('/product-images/image/:imageId/primary', allowContent, productImageController.setPrimaryImage);
+router.post('/product-images/image/:imageId/delete', allowContent, productImageController.deleteProductImage);
 
 router.get('/vouchers', allowContent, voucherController.showAllVouchers);
 router.get('/add-voucher', allowContent, voucherController.showAddVoucherForm);
@@ -138,6 +146,20 @@ router.get('/drweb/products', ensureAdmin, drwebController.showDrWebProducts);
 router.post('/drweb/products/:id/bind', ensureAdmin, drwebController.handleBindSku);
 router.get('/drweb/activations', ensureAdmin, drwebController.showDrWebActivations);
 router.get('/drweb/finance', allowFinance, drwebController.showDrWebFinance);
+
+// 7.2 ManaStore (Admin only - техническая интеграция)
+// ----------------------------------------------------
+router.get('/manastore', ensureAdmin, manastoreController.showManaStoreDashboard);
+router.get('/manastore/skus', ensureAdmin, manastoreController.showManaStoreSkus);
+router.get('/manastore/skus/add', ensureAdmin, manastoreController.showAddSkuForm);
+router.post('/manastore/skus/add', ensureAdmin, manastoreController.handleAddSku);
+router.get('/manastore/skus/edit/:id', ensureAdmin, manastoreController.showEditSkuForm);
+router.post('/manastore/skus/edit/:id', ensureAdmin, manastoreController.handleEditSku);
+router.post('/manastore/skus/sync', ensureAdmin, manastoreController.handleSyncSkuCatalog);
+router.get('/manastore/products', ensureAdmin, manastoreController.showManaStoreProducts);
+router.post('/manastore/products/:id/bind', ensureAdmin, manastoreController.handleBindSku);
+router.get('/manastore/activations', ensureAdmin, manastoreController.showManaStoreActivations);
+router.get('/manastore/finance', allowFinance, manastoreController.showManaStoreFinance); // финансист тоже может видеть, как у Rokky
 
 // 8. Telegram боты (Admin only)
 // ----------------------------------------------------

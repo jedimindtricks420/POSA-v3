@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ManaStore - Панель управления</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+            <div class="mb-6 flex items-center gap-3">
+                <h2 class="text-3xl font-bold text-slate-900">ManaStore - Панель управления</h2>
+                <% if (environment==='production' ) { %>
+                    <span
+                        class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-bold text-red-800 ring-1 ring-inset ring-red-600/20">
+                        PRODUCTION
+                    </span>
+                    <% } else { %>
+                        <span
+                            class="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold text-yellow-800 ring-1 ring-inset ring-yellow-600/20">
+                            STAGING
+                        </span>
+                        <% } %>
+            </div>
+            <p class="mt-1 text-sm text-slate-500 -mt-4 mb-6">Управление интеграцией с ManaStore API</p>
+
+            <!-- Статистика -->
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-4 mb-8">
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-slate-500 truncate">Товаров</dt>
+                                    <dd class="text-lg font-semibold text-slate-900">
+                                        <%= stats.products %>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-slate-500 truncate">SKU в каталоге</dt>
+                                    <dd class="text-lg font-semibold text-slate-900">
+                                        <%= stats.skus %>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-slate-500 truncate">Активаций</dt>
+                                    <dd class="text-lg font-semibold text-slate-900">
+                                        <%= stats.activations %>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                            </div>
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-slate-500 truncate">Баланс кошелька</dt>
+                                    <dd class="text-lg font-semibold text-slate-900">
+                                        <% if (walletBalance && walletBalance.balance) { %>
+                                            <%= walletBalance.balance.formatted || Number(walletBalance.balance.amount
+                                                || 0).toLocaleString('ru-RU') %>
+                                                <% } else { %>
+                                                    <span class="text-slate-400 text-sm">недоступно</span>
+                                                    <% } %>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Быстрые действия -->
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+                <a href="/admin/manastore/skus"
+                    class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-slate-900">Каталог SKU</h3>
+                                <p class="text-sm text-slate-500">Управление SKU</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="/admin/manastore/products"
+                    class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-8 w-8 text-green-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-slate-900">Товары</h3>
+                                <p class="text-sm text-slate-500">Привязка вариантов</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="/admin/manastore/activations"
+                    class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-slate-900">История</h3>
+                                <p class="text-sm text-slate-500">Активации</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="/admin/manastore/finance"
+                    class="bg-white overflow-hidden shadow rounded-lg hover:shadow-md transition-shadow">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="h-8 w-8 text-purple-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-lg font-medium text-slate-900">Финансы</h3>
+                                <p class="text-sm text-slate-500">Сводка</p>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+
+            <!-- API Logs -->
+            <div class="bg-white shadow-sm ring-1 ring-slate-200 sm:rounded-lg">
+                <div class="px-4 py-5 sm:px-6 border-b border-slate-200">
+                    <h3 class="text-lg font-medium leading-6 text-slate-900">API Лог (последние 20 запросов)</h3>
+                    <p class="mt-1 text-sm text-slate-500">Мониторинг всех запросов к ManaStore API (контур: <%=
+                            environment %>)</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col"
+                                    class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">
+                                    Время</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Метод
+                                </th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">
+                                    Variant ID</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">
+                                    Контур</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">
+                                    Статус</th>
+                                <th scope="col" class="px-3 py-3.5 text-right text-sm font-semibold text-slate-900">
+                                    Время (ms)</th>
+                                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">
+                                    Ошибка</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 bg-white">
+                            <% apiLogs.forEach(log=> { %>
+                                <tr class="hover:bg-slate-50">
+                                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-slate-900 sm:pl-6">
+                                        <%= new Date(log.createdAt).toLocaleString('ru-RU') %>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm font-mono text-slate-600">
+                                        <%= log.method %>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm font-mono text-slate-900">
+                                        <%= log.variantId || '—' %>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm font-mono text-slate-600">
+                                        <%= log.environment %>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                        <% if (log.success) { %>
+                                            <span
+                                                class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">
+                                                <%= log.statusCode %> OK
+                                            </span>
+                                            <% } else { %>
+                                                <span
+                                                    class="inline-flex items-center rounded-md bg-red-50 px-2 py-1 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/10">
+                                                    <%= log.statusCode || 'ERR' %>
+                                                </span>
+                                                <% } %>
+                                    </td>
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-right font-mono text-slate-600">
+                                        <%= log.duration || '—' %>
+                                    </td>
+                                    <td class="px-3 py-4 text-sm text-slate-600 max-w-xs truncate">
+                                        <%= log.errorMessage || '—' %>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+
+                    <% if (apiLogs.length===0) { %>
+                        <div class="text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-semibold text-slate-900">Нет API логов</h3>
+                            <p class="mt-1 text-sm text-slate-500">Логи появятся после первого запроса к ManaStore API.
+                            </p>
+                        </div>
+                        <% } %>
+                </div>
+            </div>
+        </div>
+</body>
+
+</html>
