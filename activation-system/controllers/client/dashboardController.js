@@ -66,7 +66,12 @@ export async function showDashboard(req, res) {
     }
 
     const vouchers = (client.onlineVouchers || [])
-      .filter((item) => !['activated', 'used', 'deleted'].includes(item.voucher.status))
+      .filter((item) => {
+        const status = item.voucher.status;
+        if (['used', 'deleted'].includes(status)) return false;
+        if (status === 'activated' && !item.voucher.product?.walletOnDemandEnabled) return false;
+        return true;
+      })
       .map(formatVoucher);
 
     res.render('pages/client-dashboard', {

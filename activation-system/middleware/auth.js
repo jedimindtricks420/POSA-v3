@@ -10,6 +10,15 @@ export const ensureAdmin = (req, res, next) => {
   res.status(403).send('Access denied. Admins only.');
 };
 
+// Middleware для главного дашборда /admin/dashboard.
+// Ровно те роли, для которых логин (controllers/authController.js) редиректит сюда:
+// admin, financial_mgr, content_mgr, support_agent. Мерчанты/вендоры/касса — не сюда.
+export const allowOfficeDashboard = (req, res, next) => {
+  const role = req.session.user?.role;
+  if (['admin', 'financial_mgr', 'content_mgr', 'support_agent'].includes(role)) return next();
+  res.status(403).send('Access denied.');
+};
+
 // Middleware для Финансов (Админ + Финансист)
 export const allowFinance = (req, res, next) => {
   const role = req.session.user?.role;

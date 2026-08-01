@@ -261,6 +261,11 @@ function bindModalAppleTracking() {
 }
 
 function populateModal(detail) {
+  if (detail.displayMode === 'ondemand' && typeof window !== 'undefined' && typeof window.openOndemandModal === 'function') {
+    window.openOndemandModal(detail);
+    return true;
+  }
+
   const voucherSerial = detail.value || detail.voucherCode || '';
   const walletPayload = {
     serial: voucherSerial,
@@ -350,17 +355,17 @@ async function handleCardClick(event) {
   if (!voucherId) return;
 
   try {
-    let detail = state.detailsCache.get(voucherId);
-    if (!detail) {
-      try {
-        detail = await getVoucher(voucherId);
-        state.detailsCache.set(voucherId, detail);
-        await walletOfflineStore.save(`voucher-${voucherId}`, detail);
-      } catch (networkError) {
-        detail = await walletOfflineStore.load(`voucher-${voucherId}`);
-        if (!detail) throw networkError;
-        state.detailsCache.set(voucherId, detail);
-      }
+    // Статус получения кода может измениться на сервере (заявка обработана,
+    // ManaStore готов и т.д.), поэтому при открытии карточки всегда сначала
+    // пробуем свежие данные — кэш используем только как резерв при отсутствии сети.
+    let detail;
+    try {
+      detail = await getVoucher(voucherId);
+      state.detailsCache.set(voucherId, detail);
+      await walletOfflineStore.save(`voucher-${voucherId}`, detail);
+    } catch (networkError) {
+      detail = state.detailsCache.get(voucherId) || (await walletOfflineStore.load(`voucher-${voucherId}`));
+      if (!detail) throw networkError;
     }
     const openedViaVoucherScript = populateModal(detail);
     if (!openedViaVoucherScript) {

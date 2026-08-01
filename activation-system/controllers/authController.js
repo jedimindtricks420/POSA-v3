@@ -143,7 +143,7 @@ export const refreshSession = async (req, res) => {
         setRememberCookies(res, rotated.token);
       }
 
-      res.json({ ok: true });
+      res.json({ ok: true, role: user.role });
     });
   } catch (error) {
     console.error('Refresh session error:', error);

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import prisma from '../../prisma/client.js';
 
 // Показать товары
@@ -5,14 +6,34 @@ export const showProductsForSale = async (req, res) => {
   const products = await prisma.product.findMany({
     where: { status: 'on' },
     orderBy: { id: 'asc' },
+    include: {
+      images: { where: { isPrimary: true }, take: 1 },
+    },
   });
+
+  // Считаем активные (доступные для продажи) ваучеры по каждому товару,
+  // чтобы бейдж "В наличии" отражал реальный остаток, а не только статус товара.
+  const productIds = products.map((p) => p.id);
+  const voucherCounts = await prisma.voucher.groupBy({
+    by: ['productId'],
+    where: { status: 'active', productId: { in: productIds } },
+    _count: { _all: true },
+  });
+  const voucherMap = {};
+  voucherCounts.forEach((vc) => {
+    voucherMap[vc.productId] = vc._count._all;
+  });
+  const enrichedProducts = products.map((p) => ({
+    ...p,
+    activeVoucherCount: voucherMap[p.id] || 0,
+  }));
 
   if (!Array.isArray(req.session.cart)) {
     req.session.cart = [];
   }
 
   res.render('pages/merchant-sell', {
-    products,
+    products: enrichedProducts,
     cart: req.session.cart,
     user: req.session.user,
   });
@@ -50,10 +71,15 @@ export const showCart = (req, res) => {
   const totalPrice = enrichedCart.reduce((sum, item) => sum + item.total, 0);
   const totalQuantity = enrichedCart.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
+  // Одноразовый токен на каждый рендер чека — защита от повторной отправки
+  // формы (двойной клик / повтор запроса при медленной сети).
+  req.session.checkoutToken = cart.length ? crypto.randomUUID() : null;
+
   res.render('pages/checkout', {
     items: enrichedCart,
     totalPrice,
     totalQuantity,
+    checkoutToken: req.session.checkoutToken,
     user: req.session.user,
   });
 };

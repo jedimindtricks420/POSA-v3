@@ -52,6 +52,20 @@ export const confirmCheckout = async (req, res) => {
     return res.status(400).send('Корзина пуста');
   }
 
+  // Подтверждение получения оплаты обязательно (чекбокс на странице чека).
+  if (req.body.paymentConfirmed !== 'on') {
+    return res.status(400).send('Подтвердите, что оплата от клиента получена, прежде чем завершить продажу');
+  }
+
+  // Защита от повторной отправки формы (двойной клик / повтор запроса).
+  const submittedToken = req.body.checkoutToken;
+  if (!submittedToken || submittedToken !== req.session.checkoutToken) {
+    return res.status(409).send('Эта продажа уже обработана либо срок чека истёк. Обновите страницу чека и попробуйте снова.');
+  }
+  // Инвалидируем токен сразу, до похода в БД, чтобы второй параллельный запрос
+  // с тем же токеном отсекался здесь же, а не доходил до продажи ваучера.
+  req.session.checkoutToken = null;
+
   // Валидация для онлайн продаж
   if (saleType === 'ONLINE') {
     if (!normalizedPhone || !normalizedPhone.match(/^\+998[0-9]{9}$/)) {
@@ -135,16 +149,22 @@ export const confirmCheckout = async (req, res) => {
 
 
   try {
-    const { updatedVoucher, saleId } = await prisma.$transaction(async (tx) => {
-      const updated = await tx.voucher.update({
-        where: { id: activeVoucher.id },
+    const { saleId } = await prisma.$transaction(async (tx) => {
+      // Атомарная выдача: перевод в 'sold' происходит только если ваучер всё ещё
+      // 'active'. Если между findFirst выше и этим моментом его забрал другой
+      // запрос, count будет 0 — тогда откатываем всю транзакцию и просим повторить.
+      const claim = await tx.voucher.updateMany({
+        where: { id: activeVoucher.id, status: 'active' },
         data: { status: 'sold' },
-        select: { id: true, value: true },
       });
+
+      if (claim.count !== 1) {
+        throw new Error('VOUCHER_ALREADY_TAKEN');
+      }
 
       const sale = await tx.sale.create({
         data: {
-          voucherValue: updated.value,
+          voucherValue: activeVoucher.value,
           price: product.price,
           productId: product.id,
           productName: product.name,
@@ -160,7 +180,7 @@ export const confirmCheckout = async (req, res) => {
         await tx.onlineVoucher.create({
           data: {
             clientId: client.id,
-            voucherId: updated.id,
+            voucherId: activeVoucher.id,
             assignedAt: new Date(),
           },
         });
@@ -168,18 +188,21 @@ export const confirmCheckout = async (req, res) => {
         await tx.voucherWalletLog.create({
           data: {
             clientId: client.id,
-            voucherId: updated.id,
+            voucherId: activeVoucher.id,
             isAddedToWallet: true,
           },
         });
       }
 
-      const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
+      // Вендору выплачивается остаток цены за вычетом ОБЕИХ комиссий (платформы и мерчанта),
+      // чтобы доля мерчанта не выплачивалась дважды (мерчант получает её отдельно через merchantPayable).
+      const vendorDebt = product.price
+        * (1 - product.vendorCommissionPercent / 100 - product.merchantCommissionPercent / 100);
       const merchantPayable = product.price * (1 - product.merchantCommissionPercent / 100);
 
       await tx.voucherTransaction.create({
         data: {
-          voucherValue: updated.value,
+          voucherValue: activeVoucher.value,
           merchantId: merchant.id,
           vendorId: product.vendorId,
           productId: product.id,
@@ -216,11 +239,11 @@ export const confirmCheckout = async (req, res) => {
         });
       }
 
-      return { updatedVoucher: updated, saleId: sale.id };
+      return { saleId: sale.id };
     });
 
     processedVoucher = {
-      voucher: updatedVoucher,
+      voucher: activeVoucher,
       product,
       saleId,
     };
@@ -367,6 +390,9 @@ export const confirmCheckout = async (req, res) => {
     }
 
   } catch (error) {
+    if (error.message === 'VOUCHER_ALREADY_TAKEN') {
+      return res.status(409).send(`Ваучер для товара "${product.name}" только что был продан другой кассой. Обновите страницу чека и попробуйте снова.`);
+    }
     console.error('Error during checkout:', error);
     res.status(500).send('Ошибка при оформлении покупки: ' + error.message);
   }

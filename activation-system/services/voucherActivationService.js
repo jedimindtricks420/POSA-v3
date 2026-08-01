@@ -85,11 +85,6 @@ export async function activateVoucherForVendor({ voucherCode, vendorId, userId }
     activationKey = await fetchActivationKeyFromTelegram(voucher.value);
   }
 
-  const transaction = await prisma.voucherTransaction.findFirst({
-    where: { voucherValue: voucher.value },
-    orderBy: { createdAt: 'desc' },
-  });
-
   await prisma.$transaction(async (tx) => {
     await tx.voucher.update({
       where: { id: voucher.id },
@@ -97,15 +92,6 @@ export async function activateVoucherForVendor({ voucherCode, vendorId, userId }
         status: 'activated',
       },
     });
-
-    if (transaction && transaction.status !== 'COMPLETED') {
-      await tx.voucherTransaction.update({
-        where: { id: transaction.id },
-        data: {
-          status: 'COMPLETED',
-        },
-      });
-    }
 
     await tx.voucherActivation.create({
       data: {

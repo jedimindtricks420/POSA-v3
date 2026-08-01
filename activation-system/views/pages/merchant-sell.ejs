@@ -18,8 +18,7 @@
         class="bg-white shadow-sm ring-1 ring-slate-200 rounded-xl p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Оформление продажи</h1>
-          <p class="mt-2 text-sm sm:text-base text-slate-500">Выберите продукты, добавьте их в чек и завершите
-            оформление в пару шагов.</p>
+          <p class="mt-2 text-sm sm:text-base text-slate-500">Выберите товар и добавьте его в чек. Одна продажа — один товар.</p>
         </div>
         <div class="grid grid-cols-2 gap-3 w-full sm:w-auto">
           <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
@@ -29,9 +28,9 @@
             </p>
           </div>
           <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p class="text-xs uppercase tracking-wide text-slate-400">Позиции</p>
+            <p class="text-xs uppercase tracking-wide text-slate-400">Товар выбран</p>
             <p class="text-xl font-semibold text-slate-900">
-              <%= (cart || []).length %>
+              <%= (cart || []).length > 0 ? 'Да' : 'Нет' %>
             </p>
           </div>
         </div>
@@ -83,9 +82,15 @@
               <% } else { %>
                 <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3" id="productGrid">
                   <% products.forEach(product=> { %>
+                    <% const inStock = (product.activeVoucherCount || 0) > 0; %>
                     <article data-product-card data-name="<%= (product.name || '').toLowerCase() %>"
                       data-id="<%= product.id %>"
                       class="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+                      <div class="mb-4 mx-auto w-[350px] max-w-full aspect-square overflow-hidden rounded-lg bg-slate-50 ring-1 ring-slate-100">
+                        <img
+                          src="<%= (product.images && product.images[0]) ? product.images[0].url : '/images/product-placeholder.svg' %>"
+                          alt="<%= product.name %>" class="h-full w-full object-cover" />
+                      </div>
                       <div class="flex items-start justify-between gap-3">
                         <div>
                           <h3 class="text-lg font-semibold text-slate-900">
@@ -94,9 +99,15 @@
                           <p class="mt-1 text-sm text-slate-500">ID: <span class="font-mono text-xs">#<%= product.id %>
                                 </span></p>
                         </div>
-                        <span
-                          class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">В
-                          наличии</span>
+                        <% if (inStock) { %>
+                          <span
+                            class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">В
+                            наличии</span>
+                        <% } else { %>
+                          <span
+                            class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">Нет
+                            в наличии</span>
+                        <% } %>
                       </div>
                       <div class="mt-6 mb-8">
                         <p class="text-3xl font-bold text-slate-900">
@@ -106,13 +117,13 @@
                       </div>
                       <form method="POST" action="/merchant/add-to-cart" class="mt-auto">
                         <input type="hidden" name="productId" value="<%= product.id %>" />
-                        <button type="submit"
-                          class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <button type="submit" <%= inStock ? '' : 'disabled' %>
+                          class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300">
                           <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                           </svg>
-                          Добавить в чек
+                          <%= inStock ? 'Добавить в чек' : 'Нет в наличии' %>
                         </button>
                       </form>
                     </article>

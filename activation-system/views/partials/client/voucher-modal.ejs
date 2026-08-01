@@ -41,7 +41,40 @@
     </div>
   </div>
 </div>
+<!-- Новый вид: "получить код по запросу" — без QR/штрихкода/текста кода до получения -->
+<div id="voucherOndemandModal" class="fixed inset-0 z-50 hidden flex items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-center">
+  <div class="relative w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 sm:rounded-3xl max-h-[90svh] overflow-y-auto overscroll-contain">
+    <button id="odModalClose" class="absolute right-4 top-4 text-slate-400 hover:text-slate-600" aria-label="Закрыть">
+      <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18 18 6m0 12L6 6" />
+      </svg>
+    </button>
+
+    <div id="odPartnerRow" class="mb-4 hidden items-center gap-2">
+      <span id="odPartnerLogo" class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold text-white"></span>
+      <span id="odPartnerName" class="text-sm font-semibold"></span>
+    </div>
+
+    <div class="mb-4 flex items-center gap-4">
+      <div id="odProductImage" class="flex h-[90px] w-[90px] flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800"></div>
+      <div class="min-w-0">
+        <h2 id="odProductName" class="text-base font-semibold text-slate-900 dark:text-slate-100"></h2>
+        <p id="odVendorName" class="text-xs text-slate-500"></p>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <span class="badge text-slate-900 dark:text-slate-100">
+        <span id="odStatusDot" class="mr-2 inline-block h-2 w-2 rounded-full"></span><span id="odStatusLabel"></span>
+      </span>
+    </div>
+
+    <div id="odStage"></div>
+  </div>
+</div>
+
 <% if (isClient) { %>
   <script src="/vendor/capacitor/capacitor.js"></script>
 <% } %>
 <script src="/js/voucher-modal.js" defer></script>
+<script type="module" src="/js/voucher-ondemand.js" defer></script>

@@ -19,8 +19,8 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p class="text-xs uppercase tracking-wide text-slate-400">Позиций</p>
-            <p id="checkoutTotalQuantity" class="text-xl font-semibold text-slate-900"><%= typeof totalQuantity !== 'undefined' ? totalQuantity : items.reduce((sum, item) => sum + item.quantity, 0) %></p>
+            <p class="text-xs uppercase tracking-wide text-slate-400">Товар в чеке</p>
+            <p id="checkoutTotalQuantity" class="text-xl font-semibold text-slate-900"><%= (typeof totalQuantity !== 'undefined' ? totalQuantity : items.reduce((sum, item) => sum + item.quantity, 0)) > 0 ? 'Да' : 'Нет' %></p>
           </div>
           <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
             <p class="text-xs uppercase tracking-wide text-slate-400">Сумма</p>
@@ -50,6 +50,7 @@
       </section>
     <% } else { %>
       <form method="POST" action="/merchant/checkout/confirm" class="space-y-6">
+        <input type="hidden" name="checkoutToken" value="<%= checkoutToken %>" />
         <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-4">
           <h2 class="text-lg font-semibold text-slate-900">Тип продажи</h2>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -114,9 +115,6 @@
                     <td class="px-6 py-4 text-slate-600">
                       <%= item.price.toLocaleString('ru-RU') %> сум
                     </td>
-                    <td class="px-6 py-4 text-slate-600">
-                      <%= item.price.toLocaleString('ru-RU') %> сум
-                    </td>
                     <td class="px-6 py-4 font-semibold text-slate-900">
                       <%= item.price.toLocaleString('ru-RU') %> сум
                     </td>
@@ -142,6 +140,14 @@
           </div>
         </section>
 
+        <section class="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-5">
+          <label class="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" id="paymentConfirmed" name="paymentConfirmed"
+                   class="mt-0.5 h-5 w-5 rounded border-slate-300 text-green-600 focus:ring-green-500" required />
+            <span class="text-sm font-medium text-slate-700">Оплата от клиента получена полностью</span>
+          </label>
+        </section>
+
         <section class="flex flex-col gap-3 sm:flex-row sm:justify-end">
           <a href="/merchant/sell" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +155,7 @@
             </svg>
             Вернуться к товарам
           </a>
-          <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+          <button type="submit" id="confirmSaleButton" disabled class="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:hover:bg-slate-300">
             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
@@ -164,6 +170,19 @@
     const saleTypeRadios = document.querySelectorAll('input[name="saleType"]');
     const phoneSection = document.getElementById('phoneSection');
     const phoneInput = document.getElementById('customerPhone');
+    const paymentCheckbox = document.getElementById('paymentConfirmed');
+    const confirmButton = document.getElementById('confirmSaleButton');
+
+    function toggleConfirmButton() {
+      if (confirmButton) {
+        confirmButton.disabled = !(paymentCheckbox && paymentCheckbox.checked);
+      }
+    }
+
+    if (paymentCheckbox) {
+      paymentCheckbox.addEventListener('change', toggleConfirmButton);
+      toggleConfirmButton();
+    }
 
     function togglePhoneSection() {
       const selected = document.querySelector('input[name="saleType"]:checked');
@@ -192,7 +211,17 @@
             event.preventDefault();
             alert('Введите корректный номер телефона в формате +998XXXXXXXXX');
             phoneInput.focus();
+            return;
           }
+        }
+        if (!paymentCheckbox || !paymentCheckbox.checked) {
+          event.preventDefault();
+          return;
+        }
+        // Защита от повторной отправки формы двойным кликом / медленной сетью.
+        if (confirmButton) {
+          confirmButton.disabled = true;
+          confirmButton.textContent = 'Обработка...';
         }
       });
     }

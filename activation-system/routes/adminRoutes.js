@@ -5,6 +5,7 @@ import express from 'express';
 // Контроллеры по модулям
 import * as dashboardController from '../controllers/admin/dashboardController.js';
 import * as productController from '../controllers/admin/productController.js';
+import * as productImageController from '../controllers/admin/productImageController.js';
 import * as voucherController from '../controllers/admin/voucherController.js';
 import * as saleController from '../controllers/admin/saleController.js';
 import * as userController from '../controllers/admin/userController.js';
@@ -20,14 +21,14 @@ import * as telegramBotController from '../controllers/admin/telegramBotControll
 import * as manualActivationController from '../controllers/admin/manualActivationController.js';
 import * as qrLinkController from '../controllers/admin/qrLinkController.js';
 import * as kassaController from '../controllers/admin/kassaController.js';
-import { ensureAdmin, ensureAuthenticated, allowFinance, allowContent, allowSupport, allowFinanceOrContent } from '../middleware/auth.js';
-import { upload } from '../middleware/uploadMiddleware.js';
+import { ensureAdmin, ensureAuthenticated, allowFinance, allowContent, allowSupport, allowFinanceOrContent, allowOfficeDashboard } from '../middleware/auth.js';
+import { upload, uploadProductImage, uploadVoucherFile } from '../middleware/uploadMiddleware.js';
 import { generationLimiter } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
 // Дашборд
-router.get('/dashboard', ensureAuthenticated, dashboardController.showAdminDashboard);
+router.get('/dashboard', ensureAuthenticated, allowOfficeDashboard, dashboardController.showAdminDashboard);
 
 // Кассы (Admin + Finance)
 router.get('/kassas', ensureAuthenticated, allowFinance, kassaController.showKassaList);
@@ -73,11 +74,17 @@ router.post('/edit-product/:id', allowContent, productController.handleEditProdu
 router.post('/delete-product/:id', allowContent, productController.handleDeleteProduct);
 router.post('/products/:id/receipt/preview', allowContent, productController.previewProductReceiptTemplate);
 
+router.get('/product-images', allowContent, productImageController.showProductImagesList);
+router.get('/product-images/:productId', allowContent, productImageController.showManageProductImages);
+router.post('/product-images/:productId/upload', allowContent, uploadProductImage.single('image'), productImageController.uploadProductImage);
+router.post('/product-images/image/:imageId/primary', allowContent, productImageController.setPrimaryImage);
+router.post('/product-images/image/:imageId/delete', allowContent, productImageController.deleteProductImage);
+
 router.get('/vouchers', allowContent, voucherController.showAllVouchers);
 router.get('/add-voucher', allowContent, voucherController.showAddVoucherForm);
 router.post('/add-voucher', allowContent, voucherController.handleAddVoucher);
 router.get('/vouchers/add', allowContent, voucherController.showAddVouchersPage);
-router.post('/vouchers/add', allowContent, voucherController.addVouchers);
+router.post('/vouchers/add', allowContent, uploadVoucherFile.single('voucherFile'), voucherController.addVouchers);
 router.post('/vouchers/generate', ensureAdmin, generationLimiter, voucherController.generateVouchers); // Генерация - только админ
 
 router.get('/stores', allowContent, storeController.showStores);

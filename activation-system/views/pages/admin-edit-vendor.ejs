@@ -77,7 +77,17 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-700">Удержание (Комиссия) платформы с вендора(%)</label>
+              <label class="block text-sm font-medium text-slate-700">Как использовать код (по умолчанию для всех товаров)</label>
+              <textarea name="redeemInstructions" rows="3" maxlength="500"
+                placeholder="Например: активируйте код в приложении вендора в разделе «Способ оплаты»"
+                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"><%= vendor.redeemInstructions || '' %></textarea>
+              <p class="mt-1 text-xs text-slate-500">
+                Показывается клиенту в приложении после получения кода. Можно переопределить для конкретного товара на странице редактирования товара. Если и здесь, и на товаре пусто — блок не показывается.
+              </p>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-slate-700">Комиссия платформы с вендора (%)</label>
               <input type="number" step="0.1" min="0" max="100" name="defaultCommissionPercent"
                 value="<%= vendor.defaultCommissionPercent %>" required
                 class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />

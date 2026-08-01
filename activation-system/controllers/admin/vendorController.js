@@ -125,6 +125,7 @@ export const handleEditVendor = async (req, res) => {
     description,
     templateSchema,
     defaultCommissionPercent,
+    redeemInstructions,
   } = req.body;
 
   const vendorId = Number(req.params.id);
@@ -146,6 +147,7 @@ export const handleEditVendor = async (req, res) => {
         description,
         receiptTemplate: JSON.stringify(schemaToSave),
         defaultCommissionPercent: Number(defaultCommissionPercent),
+        redeemInstructions: redeemInstructions?.trim() || null,
       },
     });
 

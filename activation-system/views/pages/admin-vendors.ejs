@@ -71,7 +71,7 @@
             </div>
 
             <div class="rounded-2xl bg-white p-5 shadow ring-1 ring-slate-100">
-              <p class="text-sm font-medium text-slate-500">Доля платформы</p>
+              <p class="text-sm font-medium text-slate-500">Нераспределённый доход платформы</p>
               <p class="mt-2 text-3xl font-semibold text-amber-600">
                 <%= formatCurrency(statsData.platformRevenueShare) %>
               </p>
@@ -158,7 +158,7 @@
                             <div class="font-semibold text-slate-900">
                               <%= vendor.name %>
                             </div>
-                            <div class="text-xs text-slate-500">Комиссия: <%= vendor.defaultCommissionPercent %>%</div>
+                            <div class="text-xs text-slate-500">Комиссия платформы с вендора: <%= vendor.defaultCommissionPercent %>%</div>
                           </td>
                           <td class="whitespace-nowrap px-3 py-4">
                             <span

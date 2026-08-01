@@ -21,7 +21,12 @@ export const showProductPage = async (req, res) => {
             where: { token },
             include: {
                 merchant: true,
-                product: { include: { vendor: true } }
+                product: {
+                    include: {
+                        vendor: true,
+                        images: { where: { isPrimary: true }, take: 1 }
+                    }
+                }
             }
         });
 
@@ -51,11 +56,18 @@ export const showProductPage = async (req, res) => {
             where: { productId: link.productId, status: 'active' }
         });
 
+        // Зачёркнутая "старая" цена для витрины: подобрана так, чтобы текущая
+        // цена реально была скидкой 10% от неё (price = oldPrice * 0.9)
+        const oldPrice = Math.round(link.product.price / 0.9);
+        const discountPercent = Math.round((oldPrice - link.product.price) / oldPrice * 100);
+
         res.render('pages/pay-product', {
             link,
             merchant: link.merchant,
             product: link.product,
-            hasVouchers: voucherCount > 0
+            hasVouchers: voucherCount > 0,
+            oldPrice,
+            discountPercent
         });
     } catch (error) {
         console.error('Error loading product page:', error);
@@ -320,7 +332,10 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
             });
 
             // 7. Комиссии
-            const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
+            // Вендору выплачивается остаток цены за вычетом ОБЕИХ комиссий (платформы и мерчанта),
+            // чтобы доля мерчанта не выплачивалась дважды (мерчант получает её отдельно через merchantPayable).
+            const vendorDebt = product.price
+                * (1 - product.vendorCommissionPercent / 100 - product.merchantCommissionPercent / 100);
             const merchantPayable = product.price * (1 - product.merchantCommissionPercent / 100);
             const kassaDebt = product.price * (product.vendorCommissionPercent / 100);
             const kassaId = kassa?.id || link?.product?.vendor?.kassaId || null;

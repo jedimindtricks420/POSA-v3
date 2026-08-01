@@ -110,6 +110,22 @@ export function resolveReceiptTemplate(product, vendor) {
   return buildDefaultReceiptSchema(vendorName);
 }
 
+/**
+ * Текст "как использовать код" для блока on-demand активации в PWA.
+ * В отличие от resolveReceiptTemplate — третьего (дефолтного) уровня НЕТ:
+ * если не заполнено ни на товаре, ни на вендоре, блок не должен показываться вообще.
+ *
+ * @param {Object} product - товар с полем redeemInstructions (и, опционально, vendor)
+ * @param {Object} vendor - вендор с полем redeemInstructions
+ * @returns {string|null}
+ */
+export function resolveRedeemInstructions(product, vendor) {
+  const own = product?.redeemInstructions?.trim();
+  if (own) return own;
+
+  const inherited = (vendor?.redeemInstructions || product?.vendor?.redeemInstructions)?.trim();
+  return inherited || null;
+}
 
 export function parseReceiptSchema(raw, vendorName) {
   if (!raw) {

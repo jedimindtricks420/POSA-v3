@@ -101,13 +101,22 @@ export const showEditProductForm = async (req, res) => {
     user: req.session.user,
     templateSchema: JSON.stringify(schema),
     hasCustomTemplate: !!product.receiptTemplate,
+    hasCustomInstructions: !!product.redeemInstructions,
   });
 };
+
+// Вендоры, для которых имеет смысл получение кода по запросу в PWA.
+// VOUCHER сюда намеренно не входит — код там известен клиенту сразу при получении ваучера.
+const WALLET_ONDEMAND_PRODUCT_TYPES = ['ROKKY', 'DRWEB', 'MANASTORE', 'MANUAL'];
 
 // Обработать редактирование товара
 export const handleEditProduct = async (req, res) => {
   const id = Number(req.params.id);
-  const { name, price, status, merchantCommissionPercent, vendorCommissionPercent, rokkySku, drwebSku, manastoreVariantId, useCustomTemplate, templateSchema } = req.body;
+  const {
+    name, price, status, merchantCommissionPercent, vendorCommissionPercent,
+    rokkySku, drwebSku, manastoreVariantId, useCustomTemplate, templateSchema,
+    walletOnDemandEnabled, useCustomInstructions, redeemInstructions,
+  } = req.body;
 
   const existing = await prisma.product.findUnique({
     where: { id },
@@ -136,6 +145,15 @@ export const handleEditProduct = async (req, res) => {
     }
   }
 
+  // "Получение кода по запросу" неприменимо для вендоров типа VOUCHER — форсируем false
+  // независимо от присланного значения, даже если запрос отправлен в обход формы.
+  const canUseWalletOnDemand = WALLET_ONDEMAND_PRODUCT_TYPES.includes(existing.vendor.productType);
+  const nextWalletOnDemandEnabled = canUseWalletOnDemand && walletOnDemandEnabled === 'true';
+
+  const nextRedeemInstructions = (useCustomInstructions === 'true' && redeemInstructions?.trim())
+    ? redeemInstructions.trim()
+    : null;
+
   await prisma.product.update({
     where: { id },
     data: {
@@ -148,6 +166,8 @@ export const handleEditProduct = async (req, res) => {
       drwebSku: drwebSku || null,
       manastoreVariantId: manastoreVariantId ? parseInt(manastoreVariantId, 10) : null,
       receiptTemplate: schemaToSave ? JSON.stringify(schemaToSave) : null,
+      walletOnDemandEnabled: nextWalletOnDemandEnabled,
+      redeemInstructions: nextRedeemInstructions,
     }
   });
 
