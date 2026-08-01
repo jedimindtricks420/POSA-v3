@@ -13,3 +13,9 @@ activation-system/receipts/
 activation-system/.env
 telegram-key-bot/*.session
 telegram-key-bot/__pycache__/
+
+# Дампы БД и подписывающие ключи — никогда не должны попадать в git
+db-backups/
+*.keystore
+*.p12
+*.pfx
