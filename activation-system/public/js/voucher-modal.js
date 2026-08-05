@@ -4,7 +4,19 @@
   const btnCloseTop = document.getElementById('voucherModalClose');
   const btnCloseBottom = document.getElementById('voucherModalCloseBottom');
 
-  function showModal() { if (!modal) return; modal.classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+  const panel = modal?.firstElementChild || null;
+
+  function showModal() {
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    // Перезапускаем CSS-анимацию появления при каждом открытии (force reflow).
+    modal.classList.remove('modal-anim-backdrop');
+    panel?.classList.remove('modal-anim-panel');
+    void modal.offsetWidth;
+    modal.classList.add('modal-anim-backdrop');
+    panel?.classList.add('modal-anim-panel');
+  }
   function hideModal() { if (!modal) return; modal.classList.add('hidden'); document.body.style.overflow = ''; }
   btnCloseTop?.addEventListener('click', hideModal);
   btnCloseBottom?.addEventListener('click', hideModal);

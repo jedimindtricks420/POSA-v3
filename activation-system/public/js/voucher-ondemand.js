@@ -12,6 +12,7 @@ if (modal) {
   const statusDot = document.getElementById('odStatusDot');
   const statusLabel = document.getElementById('odStatusLabel');
   const stage = document.getElementById('odStage');
+  const panel = modal.firstElementChild || null;
 
   let current = null;
   let pollTimer = null;
@@ -37,6 +38,12 @@ if (modal) {
   function openModal() {
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+    // Перезапускаем CSS-анимацию появления при каждом открытии (force reflow).
+    modal.classList.remove('modal-anim-backdrop');
+    panel?.classList.remove('modal-anim-panel');
+    void modal.offsetWidth;
+    modal.classList.add('modal-anim-backdrop');
+    panel?.classList.add('modal-anim-panel');
   }
 
   function closeModal() {
