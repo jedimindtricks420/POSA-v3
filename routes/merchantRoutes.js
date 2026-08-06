@@ -8,6 +8,10 @@ import * as publicController from '../controllers/publicController.js';
 
 const router = express.Router();
 
+// 🔑 Вход (публичный). Сама форма постит на /auth/login — см. controllers/authController.js
+// и docs/merchant-redesign-tz.md, п.5.1.
+router.get('/login', (req, res) => res.render('pages/merchant-login', { error: null }));
+
 // 📊 Панель мерчанта
 router.get('/dashboard', ensureMerchant, dashboardController.showMerchantDashboard);
 

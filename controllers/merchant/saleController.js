@@ -52,6 +52,20 @@ export const confirmCheckout = async (req, res) => {
     return res.status(400).send('Корзина пуста');
   }
 
+  // Подтверждение получения оплаты обязательно (чекбокс на странице чека).
+  if (req.body.paymentConfirmed !== 'on') {
+    return res.status(400).send('Подтвердите, что оплата от клиента получена, прежде чем завершить продажу');
+  }
+
+  // Защита от повторной отправки формы (двойной клик / повтор запроса).
+  const submittedToken = req.body.checkoutToken;
+  if (!submittedToken || submittedToken !== req.session.checkoutToken) {
+    return res.status(409).send('Эта продажа уже обработана либо срок чека истёк. Обновите страницу чека и попробуйте снова.');
+  }
+  // Инвалидируем токен сразу, до похода в БД, чтобы второй параллельный запрос
+  // с тем же токеном отсекался здесь же, а не доходил до продажи ваучера.
+  req.session.checkoutToken = null;
+
   // Валидация для онлайн продаж
   if (saleType === 'ONLINE') {
     if (!normalizedPhone || !normalizedPhone.match(/^\+998[0-9]{9}$/)) {
@@ -135,16 +149,22 @@ export const confirmCheckout = async (req, res) => {
 
 
   try {
-    const { updatedVoucher, saleId } = await prisma.$transaction(async (tx) => {
-      const updated = await tx.voucher.update({
-        where: { id: activeVoucher.id },
+    const { saleId } = await prisma.$transaction(async (tx) => {
+      // Атомарная выдача: перевод в 'sold' происходит только если ваучер всё ещё
+      // 'active'. Если между findFirst выше и этим моментом его забрал другой
+      // запрос, count будет 0 — тогда откатываем всю транзакцию и просим повторить.
+      const claim = await tx.voucher.updateMany({
+        where: { id: activeVoucher.id, status: 'active' },
         data: { status: 'sold' },
-        select: { id: true, value: true },
       });
+
+      if (claim.count !== 1) {
+        throw new Error('VOUCHER_ALREADY_TAKEN');
+      }
 
       const sale = await tx.sale.create({
         data: {
-          voucherValue: updated.value,
+          voucherValue: activeVoucher.value,
           price: product.price,
           productId: product.id,
           productName: product.name,
@@ -160,7 +180,7 @@ export const confirmCheckout = async (req, res) => {
         await tx.onlineVoucher.create({
           data: {
             clientId: client.id,
-            voucherId: updated.id,
+            voucherId: activeVoucher.id,
             assignedAt: new Date(),
           },
         });
@@ -168,18 +188,21 @@ export const confirmCheckout = async (req, res) => {
         await tx.voucherWalletLog.create({
           data: {
             clientId: client.id,
-            voucherId: updated.id,
+            voucherId: activeVoucher.id,
             isAddedToWallet: true,
           },
         });
       }
 
-      const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
+      // Вендору выплачивается остаток цены за вычетом ОБЕИХ комиссий (платформы и мерчанта),
+      // чтобы доля мерчанта не выплачивалась дважды (мерчант получает её отдельно через merchantPayable).
+      const vendorDebt = product.price
+        * (1 - product.vendorCommissionPercent / 100 - product.merchantCommissionPercent / 100);
       const merchantPayable = product.price * (1 - product.merchantCommissionPercent / 100);
 
       await tx.voucherTransaction.create({
         data: {
-          voucherValue: updated.value,
+          voucherValue: activeVoucher.value,
           merchantId: merchant.id,
           vendorId: product.vendorId,
           productId: product.id,
@@ -216,11 +239,11 @@ export const confirmCheckout = async (req, res) => {
         });
       }
 
-      return { updatedVoucher: updated, saleId: sale.id };
+      return { saleId: sale.id };
     });
 
     processedVoucher = {
-      voucher: updatedVoucher,
+      voucher: activeVoucher,
       product,
       saleId,
     };
@@ -283,11 +306,20 @@ export const confirmCheckout = async (req, res) => {
     // Ответ в зависимости от типа продажи
     if (saleType === 'OFFLINE') {
       res.send(`
-        <html>
+        <!DOCTYPE html>
+        <html lang="ru">
           <head>
-            <title>Продажа завершена</title>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Продажа завершена</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
             <script src="https://cdn.tailwindcss.com"></script>
+            <script>
+              tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] }, colors: { 'm-primary': '#ff9500', 'm-primary-dark': '#e08300' } } } };
+            </script>
+            <link rel="stylesheet" href="/css/merchant.css">
             <script>
               function printPdf(){
                 const iframe = document.createElement('iframe');
@@ -304,25 +336,25 @@ export const confirmCheckout = async (req, res) => {
               window.addEventListener('load', () => setTimeout(printPdf, 300));
             </script>
           </head>
-          <body class="bg-slate-50 min-h-screen flex items-center justify-center">
-            <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <body class="min-h-screen flex items-center justify-center px-4 antialiased">
+            <div class="m-card w-full max-w-md p-8 text-center">
               <div class="mb-6">
-                <div class="bg-green-100 rounded-full p-3 w-16 h-16 mx-auto mb-4">
-                  <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--m-success-bg)]">
+                  <svg class="h-8 w-8 text-[var(--m-success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                   </svg>
                 </div>
-                <h2 class="text-2xl font-bold text-slate-900 mb-2">Продажа завершена</h2>
-                <p class="text-slate-600">Чек был создан и сохранён</p>
+                <h2 class="text-xl font-bold text-slate-900 mb-1.5">Продажа завершена</h2>
+                <p class="text-sm text-[var(--m-text-muted)]">Чек был создан и сохранён</p>
               </div>
-              <div class="bg-slate-50 rounded-lg p-4 mb-6">
+              <div class="mb-6 rounded-lg border border-[var(--m-border)] bg-[var(--m-bg)] px-4 py-3">
                 <code class="text-sm text-slate-700">${receiptFileName}</code>
               </div>
               <div class="space-y-3">
-                <a href="/merchant/sales" class="block w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                <a href="/merchant/sales" class="m-btn m-btn--primary w-full py-2.5">
                   Перейти к продажам
                 </a>
-                <a href="/${receiptPath.replace(/\\\\/g, '/')}" target="_blank" class="block w-full bg-slate-200 text-slate-700 py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">
+                <a href="/${receiptPath.replace(/\\\\/g, '/')}" target="_blank" class="m-btn m-btn--secondary w-full py-2.5">
                   Печать чека
                 </a>
               </div>
@@ -332,31 +364,40 @@ export const confirmCheckout = async (req, res) => {
       `);
     } else {
       res.send(`
-        <html>
+        <!DOCTYPE html>
+        <html lang="ru">
           <head>
-            <title>Онлайн продажа завершена</title>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Онлайн продажа завершена</title>
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
             <script src="https://cdn.tailwindcss.com"></script>
+            <script>
+              tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'sans-serif'] }, colors: { 'm-primary': '#ff9500', 'm-primary-dark': '#e08300' } } } };
+            </script>
+            <link rel="stylesheet" href="/css/merchant.css">
           </head>
-          <body class="bg-slate-50 min-h-screen flex items-center justify-center">
-            <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+          <body class="min-h-screen flex items-center justify-center px-4 antialiased">
+            <div class="m-card w-full max-w-md p-8 text-center">
               <div class="mb-6">
-                <div class="bg-green-100 rounded-full p-3 w-16 h-16 mx-auto mb-4">
-                  <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--m-success-bg)]">
+                  <svg class="h-8 w-8 text-[var(--m-success)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/>
                   </svg>
                 </div>
-                <h2 class="text-2xl font-bold text-slate-900 mb-2">Онлайн продажа завершена</h2>
-                <p class="text-slate-600">SMS с ваучером отправлено на номер</p>
+                <h2 class="text-xl font-bold text-slate-900 mb-1.5">Онлайн продажа завершена</h2>
+                <p class="text-sm text-[var(--m-text-muted)]">SMS с ваучером отправлено на номер</p>
               </div>
-              <div class="bg-slate-50 rounded-lg п-4 mb-6">
+              <div class="mb-6 rounded-lg border border-[var(--m-border)] bg-[var(--m-bg)] px-4 py-3">
                 <code class="text-sm text-slate-700">${customerPhoneDisplay}</code>
               </div>
               <div class="space-y-3">
-                <a href="/merchant/sales" class="block w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                <a href="/merchant/sales" class="m-btn m-btn--primary w-full py-2.5">
                   Перейти к продажам
                 </a>
-                <a href="/merchant/sell" class="block w-full bg-slate-200 text-slate-700 py-2 px-4 rounded-lg hover:bg-slate-300 transition-colors">
+                <a href="/merchant/sell" class="m-btn m-btn--secondary w-full py-2.5">
                   Новая продажа
                 </a>
               </div>
@@ -367,6 +408,9 @@ export const confirmCheckout = async (req, res) => {
     }
 
   } catch (error) {
+    if (error.message === 'VOUCHER_ALREADY_TAKEN') {
+      return res.status(409).send(`Ваучер для товара "${product.name}" только что был продан другой кассой. Обновите страницу чека и попробуйте снова.`);
+    }
     console.error('Error during checkout:', error);
     res.status(500).send('Ошибка при оформлении покупки: ' + error.message);
   }

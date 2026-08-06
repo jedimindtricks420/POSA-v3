@@ -110,7 +110,10 @@ export const confirmCheckout = async (req, res) => {
 
       // создаём запись в таблице VoucherTransaction c едиными формулами комиссий
       const merchantDebt = product.price * (1 - product.merchantCommissionPercent / 100);
-      const vendorPayout = product.price * (1 - product.vendorCommissionPercent / 100);
+      // Вендору выплачивается остаток цены за вычетом ОБЕИХ комиссий (платформы и мерчанта),
+      // чтобы доля мерчанта не выплачивалась дважды (мерчант получает её отдельно через merchantDebt).
+      const vendorPayout = product.price
+        * (1 - product.vendorCommissionPercent / 100 - product.merchantCommissionPercent / 100);
       const platformMargin = product.price * (product.vendorCommissionPercent / 100);
 
       // создаём запись в таблице VoucherTransaction

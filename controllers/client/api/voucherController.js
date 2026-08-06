@@ -2,6 +2,37 @@ import QRCode from 'qrcode';
 import bwipjs from 'bwip-js';
 import prisma from '../../../prisma/client.js';
 import { buildVoucherQrUrl, extractVoucherCode } from '../../../utils/qr.js';
+import { resolveRedeemInstructions } from '../../../utils/receiptRenderer.js';
+import {
+  resolveStatusPayload,
+  requestVoucherCode,
+  getVoucherCodeStatus,
+  WalletActivationError,
+} from '../../../services/walletActivationService.js';
+
+// Товар с этим типом вендора всегда показывается по-старому (QR/штрихкод) —
+// код клиенту уже известен сразу, вызывать внешний API не нужно.
+const LEGACY_ONLY_TYPE = 'VOUCHER';
+
+function resolveDisplayMode(voucher) {
+  const vendor = voucher.product?.vendor;
+  if (!vendor || vendor.productType === LEGACY_ONLY_TYPE) return 'qr';
+  return voucher.product.walletOnDemandEnabled ? 'ondemand' : 'qr';
+}
+
+const DEEP_VOUCHER_INCLUDE = {
+  product: {
+    include: {
+      vendor: true,
+      store: true,
+      images: { where: { isPrimary: true }, take: 1 },
+    },
+  },
+  rokkyOrder: true,
+  drwebOrder: true,
+  manastoreOrder: true,
+  manualActivationRequest: true,
+};
 
 const STATUS_META = {
   active: { label: 'Активен', color: 'bg-emerald-400' },
@@ -48,6 +79,31 @@ function formatSummary(raw) {
 
 async function buildDetail(raw, origin) {
   const summary = formatSummary(raw);
+  const product = raw.voucher.product;
+  const vendor = product?.vendor || null;
+  const displayMode = resolveDisplayMode(raw.voucher);
+
+  const base = {
+    ...summary,
+    displayMode,
+    vendorName: vendor?.name || null,
+    vendorProductType: vendor?.productType || null,
+    store: product?.store
+      ? { name: product.store.name, logoUrl: product.store.logoUrl, themeColor: product.store.themeColor }
+      : null,
+    productImage: product?.images?.[0]?.url || null,
+    redeemInstructions: resolveRedeemInstructions(product, vendor),
+    codeStatus: displayMode === 'ondemand' ? resolveStatusPayload(raw.voucher) : null,
+    lastSyncAt: new Date().toISOString(),
+  };
+
+  if (displayMode === 'ondemand') {
+    // Новый вид: код физически не отдаём в ответе, пока клиент его не
+    // запросит через POST /voucher/:id/request-code — поэтому QR/штрихкод
+    // тут не нужны и не генерируются.
+    return base;
+  }
+
   const qrUrl = buildVoucherQrUrl({
     voucherCode: raw.voucher.value,
     origin,
@@ -76,7 +132,7 @@ async function buildDetail(raw, origin) {
   }
 
   return {
-    ...summary,
+    ...base,
     passSerial,
     qrUrl,
     qrPayload: qrUrl,
@@ -87,7 +143,6 @@ async function buildDetail(raw, origin) {
       raw.voucher.product?.description ||
       'Используйте этот ваучер согласно условиям продавца. Подробности уточняйте у поддержки.',
     brandColor: '#0A84FF',
-    lastSyncAt: new Date().toISOString(),
     passUrl,
   };
 }
@@ -111,7 +166,16 @@ export async function list(req, res) {
     });
 
     const vouchers = onlineVouchers
-      .filter((item) => !['activated', 'used', 'deleted'].includes(item.voucher.status))
+      .filter((item) => {
+        const status = item.voucher.status;
+        if (['used', 'deleted'].includes(status)) return false;
+        // Для QR-ваучеров (VOUCHER-тип) код виден ещё до активации, поэтому
+        // activated там можно скрывать как раньше. Для walletOnDemandEnabled
+        // товаров активация — это момент, когда код ТОЛЬКО появился, скрывать
+        // карточку в этот момент нельзя, иначе клиент физически не увидит код.
+        if (status === 'activated' && !item.voucher.product?.walletOnDemandEnabled) return false;
+        return true;
+      })
       .map(formatSummary);
     res.json({ vouchers, syncedAt: new Date().toISOString() });
   } catch (error) {
@@ -139,9 +203,7 @@ export async function show(req, res) {
         clientId: client.id,
       },
       include: {
-        voucher: {
-          include: { product: true },
-        },
+        voucher: { include: DEEP_VOUCHER_INCLUDE },
       },
     });
 
@@ -155,6 +217,56 @@ export async function show(req, res) {
   } catch (error) {
     console.error('show voucher error', error);
     res.status(500).json({ error: 'Failed to load voucher' });
+  }
+}
+
+// Клиент нажал "Получить код" — вызывает провайдера/создаёт заявку оператору.
+export async function requestCode(req, res) {
+  const phone = req.session?.client?.phone;
+  if (!phone) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const voucherId = Number(req.params.id);
+  if (!Number.isInteger(voucherId)) {
+    return res.status(400).json({ error: 'Invalid voucher id' });
+  }
+
+  try {
+    const client = await ensureClient(phone);
+    const result = await requestVoucherCode({ voucherId, clientId: client.id });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    if (error instanceof WalletActivationError) {
+      return res.status(error.status).json({ success: false, error: error.message, code: error.code });
+    }
+    console.error('request voucher code error', error);
+    res.status(500).json({ success: false, error: 'Не удалось получить код. Попробуйте ещё раз.' });
+  }
+}
+
+// Лёгкий поллинг статуса, пока модалка открыта на "Готовим код"/"Ваша заявка в обработке.".
+export async function codeStatus(req, res) {
+  const phone = req.session?.client?.phone;
+  if (!phone) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const voucherId = Number(req.params.id);
+  if (!Number.isInteger(voucherId)) {
+    return res.status(400).json({ error: 'Invalid voucher id' });
+  }
+
+  try {
+    const client = await ensureClient(phone);
+    const result = await getVoucherCodeStatus({ voucherId, clientId: client.id });
+    res.json({ success: true, ...result });
+  } catch (error) {
+    if (error instanceof WalletActivationError) {
+      return res.status(error.status).json({ success: false, error: error.message, code: error.code });
+    }
+    console.error('voucher code status error', error);
+    res.status(500).json({ success: false, error: 'Не удалось получить статус' });
   }
 }
 

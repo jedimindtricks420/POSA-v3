@@ -62,19 +62,35 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-700">Комиссия мерчанта (%)</label>
+              <label class="block text-sm font-medium text-slate-700">Доля мерчанта (%)</label>
               <input type="number" step="0.01" min="0" max="100" name="merchantCommissionPercent"
+                id="merchantCommissionPercentInput"
                 value="<%= typeof product.merchantCommissionPercent === 'number' ? product.merchantCommissionPercent : 0 %>"
                 required
                 class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+              <p class="mt-1 text-xs text-slate-500">
+                Мерчант получит с продажи: <span id="merchantShareAmount" class="font-semibold text-slate-700">0 сум</span>
+              </p>
             </div>
 
             <div>
               <label class="block text-sm font-medium text-slate-700">Комиссия платформы (%)</label>
               <input type="number" step="0.01" min="0" max="100" name="vendorCommissionPercent"
+                id="vendorCommissionPercentInput"
                 value="<%= typeof product.vendorCommissionPercent === 'number' ? product.vendorCommissionPercent : 0 %>"
                 required
                 class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+              <p class="mt-1 text-xs text-slate-500">
+                Платформа получит: <span id="platformCommissionAmount" class="font-semibold text-slate-700">0 сум</span>
+                · Вендору перечислим: <span id="vendorPayoutAmount" class="font-semibold text-slate-700">0 сум</span>
+              </p>
+            </div>
+
+            <div id="commissionSummaryBox" class="rounded-md bg-slate-50 ring-1 ring-slate-200 p-3 text-sm text-slate-600 space-y-1">
+              <div class="flex justify-between"><span>Цена товара</span><span id="summaryPrice" class="font-medium text-slate-800">0 сум</span></div>
+              <div class="flex justify-between"><span>Доля мерчанта</span><span id="summaryMerchant" class="font-medium text-slate-800">0 сум</span></div>
+              <div class="flex justify-between"><span>Комиссия платформы</span><span id="summaryPlatform" class="font-medium text-slate-800">0 сум</span></div>
+              <div class="flex justify-between"><span>Выплата вендору</span><span id="summaryVendor" class="font-medium text-slate-800">0 сум</span></div>
             </div>
 
             <% if (vendor.productType === 'ROKKY') { %>
@@ -101,6 +117,59 @@
                 <input type="number" name="manastoreVariantId" value="<%= product.manastoreVariantId || '' %>"
                   class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                   placeholder="Введите ID варианта ManaStore (опционально)" />
+              </div>
+            <% } %>
+
+            <% const walletOnDemandTypes = ['ROKKY', 'DRWEB', 'MANASTORE', 'MANUAL']; %>
+            <% if (walletOnDemandTypes.includes(vendor.productType)) { %>
+              <div class="pt-4 border-t border-slate-200 space-y-4">
+                <div>
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="walletOnDemandEnabled" id="walletOnDemandEnabled" value="true"
+                      <%= product.walletOnDemandEnabled ? 'checked' : '' %>
+                      class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <span class="ml-2 text-sm font-medium text-slate-700">
+                      Показывать в приложении кнопку «Получить код» (вместо перехода в магазин)
+                    </span>
+                  </label>
+                  <p class="mt-1 ml-6 text-xs text-slate-500">
+                    По умолчанию выключено. Пока выключено — активация этого товара работает как раньше, только через магазин активации.
+                  </p>
+                </div>
+
+                <div>
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="useCustomInstructions" id="useCustomInstructions" value="true"
+                      <%= hasCustomInstructions ? 'checked' : '' %>
+                      class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                    <span class="ml-2 text-sm font-medium text-slate-700">
+                      Своя инструкция «Как использовать код» для этого товара
+                    </span>
+                  </label>
+                  <p class="mt-1 ml-6 text-xs text-slate-500">
+                    Если выключено и не задано на вендоре — блок с инструкцией в приложении не показывается вообще.
+                  </p>
+                </div>
+
+                <div id="redeemInstructionsBlock" style="<%= hasCustomInstructions ? '' : 'display:none' %>" class="ml-6">
+                  <label class="block text-sm font-medium text-slate-700">Текст инструкции</label>
+                  <textarea name="redeemInstructions" id="redeemInstructionsInput" rows="3" maxlength="500"
+                    placeholder="Например: активируйте код в приложении Netflix в разделе «Способ оплаты»"
+                    class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"><%= product.redeemInstructions || '' %></textarea>
+
+                  <p class="mt-2 text-xs font-medium text-slate-500">Предпросмотр (как увидит клиент в приложении):</p>
+                  <div id="redeemInstructionsPreview"
+                    class="mt-1 rounded-lg bg-slate-100 p-3 text-sm text-slate-600"><%= product.redeemInstructions || '' %></div>
+                  <p id="redeemInstructionsEmptyHint" class="mt-1 text-xs text-slate-400" style="<%= (product.redeemInstructions || '').trim() ? 'display:none' : '' %>">
+                    Пусто — блок не будет показан клиенту.
+                  </p>
+                </div>
+              </div>
+            <% } else { %>
+              <div class="pt-4 border-t border-slate-200">
+                <p class="text-xs text-slate-400">
+                  Получение кода по запросу в приложении недоступно для товаров типа «Ваучеры» — код клиенту уже известен сразу после покупки.
+                </p>
               </div>
             <% } %>
 
@@ -235,6 +304,51 @@
         const refreshButton = document.getElementById('refreshPreviewBtn');
         const form = document.getElementById('productForm');
 
+        // Живой расчёт сумм по проценту доли мерчанта / комиссии платформы
+        const priceInput = form.querySelector('input[name="price"]');
+        const merchantPercentInput = document.getElementById('merchantCommissionPercentInput');
+        const vendorPercentInput = document.getElementById('vendorCommissionPercentInput');
+        const merchantShareAmountEl = document.getElementById('merchantShareAmount');
+        const platformCommissionAmountEl = document.getElementById('platformCommissionAmount');
+        const vendorPayoutAmountEl = document.getElementById('vendorPayoutAmount');
+        const summaryPriceEl = document.getElementById('summaryPrice');
+        const summaryMerchantEl = document.getElementById('summaryMerchant');
+        const summaryPlatformEl = document.getElementById('summaryPlatform');
+        const summaryVendorEl = document.getElementById('summaryVendor');
+
+        function formatSum(amount) {
+          const safeAmount = Number.isFinite(amount) ? amount : 0;
+          return `${safeAmount.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} сум`;
+        }
+
+        function updateCommissionPreview() {
+          const price = parseFloat(priceInput.value) || 0;
+          const merchantPercent = parseFloat(merchantPercentInput.value) || 0;
+          const vendorPercent = parseFloat(vendorPercentInput.value) || 0;
+
+          // Формулы соответствуют расчёту в контроллерах продаж (saleController, qrPaymentController):
+          // merchantShare = price * merchantCommissionPercent / 100
+          // platformCommission = price * vendorCommissionPercent / 100
+          // vendorPayout = price - merchantShare - platformCommission
+          const merchantShare = price * (merchantPercent / 100);
+          const platformCommission = price * (vendorPercent / 100);
+          const vendorPayout = price - merchantShare - platformCommission;
+
+          merchantShareAmountEl.textContent = formatSum(merchantShare);
+          platformCommissionAmountEl.textContent = formatSum(platformCommission);
+          vendorPayoutAmountEl.textContent = formatSum(vendorPayout);
+
+          summaryPriceEl.textContent = formatSum(price);
+          summaryMerchantEl.textContent = formatSum(merchantShare);
+          summaryPlatformEl.textContent = formatSum(platformCommission);
+          summaryVendorEl.textContent = formatSum(vendorPayout);
+        }
+
+        [priceInput, merchantPercentInput, vendorPercentInput].forEach((input) => {
+          input.addEventListener('input', updateCommissionPreview);
+        });
+        updateCommissionPreview();
+
         // Показать/скрыть конструктор при изменении чекбокса
         useCustomCheckbox.addEventListener('change', (e) => {
           templateBuilder.style.display = e.target.checked ? 'block' : 'none';
@@ -242,6 +356,28 @@
             schedulePreview(true);
           }
         });
+
+        // Блок "Как использовать код" — показ/скрытие textarea + живой предпросмотр без запроса на сервер
+        const useCustomInstructionsCheckbox = document.getElementById('useCustomInstructions');
+        const redeemInstructionsBlock = document.getElementById('redeemInstructionsBlock');
+        const redeemInstructionsInput = document.getElementById('redeemInstructionsInput');
+        const redeemInstructionsPreview = document.getElementById('redeemInstructionsPreview');
+        const redeemInstructionsEmptyHint = document.getElementById('redeemInstructionsEmptyHint');
+
+        function updateRedeemInstructionsPreview() {
+          const text = redeemInstructionsInput.value.trim();
+          redeemInstructionsPreview.textContent = text;
+          redeemInstructionsEmptyHint.style.display = text ? 'none' : '';
+        }
+
+        if (useCustomInstructionsCheckbox) {
+          useCustomInstructionsCheckbox.addEventListener('change', (e) => {
+            redeemInstructionsBlock.style.display = e.target.checked ? 'block' : 'none';
+            updateRedeemInstructionsPreview();
+          });
+          redeemInstructionsInput.addEventListener('input', updateRedeemInstructionsPreview);
+          updateRedeemInstructionsPreview();
+        }
 
         const initialSchemaJSON = document.getElementById('templateSchemaData').textContent;
         const parsedSchema = (() => {

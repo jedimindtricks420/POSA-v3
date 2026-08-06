@@ -1,202 +1,191 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Чек продажи</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/css/admin.css" />
+  <%- include('../partials/merchant/head', { title: 'Чек продажи' }) %>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800">
-  <%- include('../partials/merchant-navbar', { user }) %>
 
-  <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-8">
-    <section class="bg-white shadow-sm ring-1 ring-slate-200 rounded-xl p-6 sm:p-8">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Чек продажи</h1>
-          <p class="mt-2 text-sm sm:text-base text-slate-500">Подтвердите корзину, выберите тип доставки ваучера и завершите оформление.</p>
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p class="text-xs uppercase tracking-wide text-slate-400">Позиций</p>
-            <p id="checkoutTotalQuantity" class="text-xl font-semibold text-slate-900"><%= typeof totalQuantity !== 'undefined' ? totalQuantity : items.reduce((sum, item) => sum + item.quantity, 0) %></p>
-          </div>
-          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p class="text-xs uppercase tracking-wide text-slate-400">Сумма</p>
-            <p id="checkoutSummaryAmount" class="text-xl font-semibold text-slate-900"><%= totalPrice.toLocaleString('ru-RU') %> сум</p>
-          </div>
-        </div>
-      </div>
-    </section>
+<body class="text-slate-900 antialiased">
+  <div class="m-shell">
+    <%- include('../partials/merchant/sidebar', { active: 'checkout', user, cartCount: totalQuantity }) %>
 
-    <% if (!items.length) { %>
-      <section class="rounded-xl border border-dashed border-slate-300 bg-white px-8 py-14 text-center shadow-sm">
-        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-          <svg class="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
-          </svg>
-        </div>
-        <h2 class="mt-6 text-xl font-semibold text-slate-900">Корзина пуста</h2>
-        <p class="mt-2 text-sm text-slate-500">Добавьте товары, чтобы сформировать чек и завершить продажу.</p>
-        <div class="mt-6">
-          <a href="/merchant/sell" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Вернуться к каталогу
-          </a>
-        </div>
-      </section>
-    <% } else { %>
-      <form method="POST" action="/merchant/checkout/confirm" class="space-y-6">
-        <section class="rounded-xl border border-slate-200 bg-white shadow-sm p-6 space-y-4">
-          <h2 class="text-lg font-semibold text-slate-900">Тип продажи</h2>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <label class="relative flex cursor-pointer flex-col gap-3 rounded-lg border-2 border-slate-200 bg-white p-4 transition hover:border-slate-300">
-              <input type="radio" name="saleType" value="OFFLINE" class="sr-only peer" checked />
-              <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 peer-checked:bg-indigo-100 peer-checked:text-indigo-600">
-                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </span>
+      <div class="lg:pl-[260px] flex flex-col min-h-dvh">
+        <%- include('../partials/merchant/topbar', { active: 'checkout', user }) %>
+
+          <main class="m-content flex-1 pb-24 lg:pb-10">
+            <div class="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+              <div class="m-fade-in flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p class="text-sm font-semibold text-slate-900">Оффлайн выдача</p>
-                  <p class="text-xs text-slate-500">Печать PDF-чека и передача ваучера лично.</p>
+                  <h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Чек продажи</h1>
+                  <p class="mt-1 text-sm text-[var(--m-text-muted)]">Подтвердите корзину, выберите способ выдачи и
+                    завершите оформление.</p>
                 </div>
+                <% if (items.length) { %>
+                  <div class="rounded-lg border border-[var(--m-border)] bg-white px-4 py-2.5 text-right">
+                    <p class="text-[11px] font-medium uppercase tracking-wide text-[var(--m-text-subtle)]">Итого</p>
+                    <p id="checkoutSummaryAmount" class="text-lg font-bold text-slate-900 font-numeric">
+                      <%= totalPrice.toLocaleString('ru-RU') %> сум
+                    </p>
+                  </div>
+                  <% } %>
               </div>
-              <span class="absolute inset-0 rounded-lg border-2 border-transparent peer-checked:border-indigo-500 peer-checked:ring-2 peer-checked:ring-indigo-200"></span>
-            </label>
 
-            <label class="relative flex cursor-pointer flex-col gap-3 rounded-lg border-2 border-slate-200 bg-white p-4 transition hover:border-slate-300">
-              <input type="radio" name="saleType" value="ONLINE" class="sr-only peer" />
-              <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-600 peer-checked:bg-green-100 peer-checked:text-green-600">
-                  <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                </span>
-                <div>
-                  <p class="text-sm font-semibold text-slate-900">Онлайн доставка</p>
-                  <p class="text-xs text-slate-500">Отправим ссылку на ваучер по SMS клиенту.</p>
+              <% if (!items.length) { %>
+                <div class="m-card m-fade-in mt-6 px-8 py-16 text-center">
+                  <div
+                    class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[var(--m-warning-bg)] text-[var(--m-warning)]">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                  </div>
+                  <h2 class="mt-5 text-base font-semibold text-slate-900">Корзина пуста</h2>
+                  <p class="mt-1.5 text-sm text-[var(--m-text-muted)]">Добавьте товар, чтобы сформировать чек и
+                    завершить продажу.</p>
+                  <a href="/merchant/sell" class="m-btn m-btn--primary mt-5 inline-flex">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Вернуться к каталогу
+                  </a>
                 </div>
-              </div>
-              <span class="absolute inset-0 rounded-lg border-2 border-transparent peer-checked:border-green-500 peer-checked:ring-2 peer-checked:ring-green-200"></span>
-            </label>
-          </div>
+                <% } else { %>
+                  <form method="POST" action="/merchant/checkout/confirm" class="m-fade-in mt-6 space-y-5"
+                    id="checkoutForm">
+                    <input type="hidden" name="checkoutToken" value="<%= checkoutToken %>" />
 
-          <div id="phoneSection" class="hidden rounded-lg border border-green-200 bg-green-50 px-4 py-4">
-            <label class="block text-sm font-semibold text-green-800">Номер телефона клиента (формат +998XXXXXXXXX)</label>
-            <input type="tel" id="customerPhone" name="customerPhone" placeholder="+998901234567"
-                   class="mt-2 w-full rounded-md border border-green-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-200" />
-          </div>
-        </section>
+                    <section class="m-card p-5">
+                      <h2 class="text-sm font-semibold text-slate-900">Способ выдачи</h2>
+                      <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <label class="m-radio-card">
+                          <input type="radio" name="saleType" value="OFFLINE" />
+                          <div class="flex items-center gap-3">
+                            <span
+                              class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-600">
+                              <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              </svg>
+                            </span>
+                            <div>
+                              <p class="text-sm font-semibold text-slate-900">Офлайн выдача</p>
+                              <p class="text-xs text-[var(--m-text-subtle)]">Печать PDF-чека, ваучер передаётся
+                                лично</p>
+                            </div>
+                          </div>
+                        </label>
 
-        <section class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-slate-200 text-sm">
-              <thead class="bg-slate-50 text-left font-semibold text-slate-500 uppercase tracking-wide text-xs">
-                <tr>
-                  <th class="px-6 py-3">Товар</th>
-                  <th class="px-6 py-3">Цена</th>
-                  <th class="px-6 py-3">Сумма</th>
-                  <th class="px-6 py-3 text-right">Действие</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100 bg-white">
-                <% items.forEach(item => { %>
-                  <tr class="hover:bg-slate-50">
-                    <td class="px-6 py-4">
-                      <p class="font-semibold text-slate-900"><%= item.name %></p>
-                      <p class="text-xs text-slate-400 mt-1">ID: <span class="font-mono">#<%= item.id %></span></p>
-                    </td>
-                    <td class="px-6 py-4 text-slate-600">
-                      <%= item.price.toLocaleString('ru-RU') %> сум
-                    </td>
-                    <td class="px-6 py-4 text-slate-600">
-                      <%= item.price.toLocaleString('ru-RU') %> сум
-                    </td>
-                    <td class="px-6 py-4 font-semibold text-slate-900">
-                      <%= item.price.toLocaleString('ru-RU') %> сум
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                      <a href="/merchant/cart/remove/<%= item.id %>" class="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-200">
-                        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-1 12a2 2 0 01-2 2H8a2 2 0 01-2-2L5 7m5 4v6m4-6v6M4 7h16M9 7l1-3h4l1 3" />
+                        <label class="m-radio-card">
+                          <input type="radio" name="saleType" value="ONLINE" checked />
+                          <div class="flex items-center gap-3">
+                            <span
+                              class="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--m-success-bg)] text-[var(--m-success)]">
+                              <svg class="h-[18px] w-[18px]" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                            </span>
+                            <div>
+                              <p class="text-sm font-semibold text-slate-900">Онлайн доставка</p>
+                              <p class="text-xs text-[var(--m-text-subtle)]">Ссылка на ваучер придёт клиенту по
+                                SMS</p>
+                            </div>
+                          </div>
+                        </label>
+                      </div>
+
+                      <div id="phoneSection"
+                        class="mt-4 rounded-lg border border-[var(--m-border)] bg-white px-4 py-3.5">
+                        <label class="block text-xs font-semibold text-slate-700">Номер телефона клиента</label>
+                        <input type="tel" id="customerPhone" name="customerPhone" value="+998"
+                          inputmode="numeric" autocomplete="tel" maxlength="13"
+                          class="mt-1.5 w-full rounded-md border border-[var(--m-border-strong)] bg-[var(--m-bg)] px-3 py-2 text-sm text-slate-800 shadow-sm outline-none focus:border-[var(--m-primary)] focus:ring-4 focus:ring-[var(--m-primary-bg)]" />
+                      </div>
+                    </section>
+
+                    <section class="m-card overflow-hidden">
+                      <div class="m-table-wrap">
+                        <table class="m-table">
+                          <thead>
+                            <tr>
+                              <th>Товар</th>
+                              <th>Цена</th>
+                              <th class="text-right">Действие</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <% items.forEach(item=> { %>
+                              <tr>
+                                <td data-label="Товар">
+                                  <p class="font-semibold text-slate-900">
+                                    <%= item.name %>
+                                  </p>
+                                  <p class="mt-0.5 text-xs text-[var(--m-text-subtle)] font-numeric">#<%= item.id %></p>
+                                </td>
+                                <td data-label="Цена"><span class="font-semibold text-slate-900 font-numeric">
+                                    <%= item.price.toLocaleString('ru-RU') %> сум
+                                  </span></td>
+                                <td data-label-hide class="md:text-right">
+                                  <a href="/merchant/cart/remove/<%= item.id %>"
+                                    class="m-btn m-btn--danger-ghost !py-1.5 !px-3 text-xs">
+                                    <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor"
+                                      viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 7l-1 12a2 2 0 01-2 2H8a2 2 0 01-2-2L5 7m5 4v6m4-6v6M4 7h16M9 7l1-3h4l1 3" />
+                                    </svg>
+                                    Удалить
+                                  </a>
+                                </td>
+                              </tr>
+                              <% }) %>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div class="flex items-center justify-between border-t border-[var(--m-border)] px-5 py-4">
+                        <span class="text-sm font-semibold text-slate-900">Итого к оплате</span>
+                        <span id="checkoutTotalAmount" class="text-xl font-bold text-slate-900 font-numeric">
+                          <%= totalPrice.toLocaleString('ru-RU') %> сум
+                        </span>
+                      </div>
+                    </section>
+
+                    <section class="m-card p-5">
+                      <label class="flex cursor-pointer items-start gap-3">
+                        <input type="checkbox" id="paymentConfirmed" name="paymentConfirmed" required
+                          class="mt-0.5 h-5 w-5 rounded border-[var(--m-border-strong)] text-[var(--m-success)] focus:ring-[var(--m-success)]" />
+                        <span class="text-sm font-medium text-slate-700">Оплата от клиента получена полностью</span>
+                      </label>
+                    </section>
+
+                    <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                      <a href="/merchant/sell" class="m-btn m-btn--secondary order-2 sm:order-1">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
-                        Удалить
+                        Вернуться к товарам
                       </a>
-                    </td>
-                  </tr>
-                <% }) %>
-              </tbody>
-            </table>
-          </div>
-        </section>
+                      <button type="submit" id="confirmSaleButton" disabled
+                        class="m-btn m-btn--primary order-1 sm:order-2">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Подтвердить продажу
+                      </button>
+                    </div>
+                  </form>
+                  <% } %>
+            </div>
+          </main>
+      </div>
+  </div>
 
-        <section class="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-5">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="text-lg font-semibold text-slate-900">Итого к оплате</div>
-            <div id="checkoutTotalAmount" class="text-2xl font-bold text-slate-900"><%= totalPrice.toLocaleString('ru-RU') %> сум</div>
-          </div>
-        </section>
+  <%- include('../partials/merchant/bottom-nav', { active: 'checkout', cartCount: totalQuantity }) %>
 
-        <section class="flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <a href="/merchant/sell" class="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Вернуться к товарам
-          </a>
-          <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            Подтвердить продажу
-          </button>
-        </section>
-      </form>
-    <% } %>
-  </main>
-
-  <script>
-    const saleTypeRadios = document.querySelectorAll('input[name="saleType"]');
-    const phoneSection = document.getElementById('phoneSection');
-    const phoneInput = document.getElementById('customerPhone');
-
-    function togglePhoneSection() {
-      const selected = document.querySelector('input[name="saleType"]:checked');
-      if (!selected) return;
-      const isOnline = selected.value === 'ONLINE';
-      if (isOnline) {
-        phoneSection.classList.remove('hidden');
-        phoneInput?.setAttribute('required', '');
-      } else {
-        phoneSection.classList.add('hidden');
-        phoneInput?.removeAttribute('required');
-        if (phoneInput) phoneInput.value = '';
-      }
-    }
-
-    saleTypeRadios.forEach(radio => radio.addEventListener('change', togglePhoneSection));
-    togglePhoneSection();
-
-    const checkoutForm = document.querySelector('form');
-    if (checkoutForm) {
-      checkoutForm.addEventListener('submit', (event) => {
-        const selected = document.querySelector('input[name="saleType"]:checked');
-        if (selected && selected.value === 'ONLINE') {
-          const phone = phoneInput.value.trim();
-          if (!/^\+998[0-9]{9}$/.test(phone)) {
-            event.preventDefault();
-            alert('Введите корректный номер телефона в формате +998XXXXXXXXX');
-            phoneInput.focus();
-          }
-        }
-      });
-    }
-
-  </script>
+    <script src="/js/merchant-checkout.js"></script>
 </body>
+
 </html>

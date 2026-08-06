@@ -83,6 +83,10 @@ model Product {
   receiptTemplate    String? // JSON-схема шаблона чека для конкретного товара
   merchantLinks      MerchantProductLink[] // QR Payment Feature
   images             ProductImage[]
+
+  // Получение кода по запросу в PWA (namo wallet), см. ТЗ от 2026-07-29
+  walletOnDemandEnabled Boolean @default(false) // вкл./выкл. вручную админом per-товар; неприменимо для VOUCHER-вендоров
+  redeemInstructions    String? @db.Text // override текста "как использовать код" для этого товара; пусто = наследует Vendor.redeemInstructions
 }
 
 model ProductImage {
@@ -317,7 +321,10 @@ model Vendor {
   receiptTemplate          String?
   balance                  Float             @default(0)
   products                 Product[]
-  defaultCommissionPercent Float             @default(80)
+  defaultCommissionPercent Float             @default(20)
+
+  // Дефолтный текст "как использовать код" для всех товаров вендора (override — на Product.redeemInstructions)
+  redeemInstructions String? @db.Text
 
   kassaId Int?
   kassa   Kassa? @relation(fields: [kassaId], references: [id])

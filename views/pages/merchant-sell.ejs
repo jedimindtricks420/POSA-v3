@@ -2,159 +2,136 @@
 <html lang="ru">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Продажа товаров</title>
-  <link rel="icon" type="image/svg+xml" href="/images/Vector.svg">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="/css/admin.css" />
+  <%- include('../partials/merchant/head', { title: 'Продажа товаров' }) %>
 </head>
 
-<body class="bg-slate-100 min-h-screen text-slate-800">
-  <%- include('../partials/merchant-navbar', { user }) %>
+<body class="text-slate-900 antialiased">
+  <% const cartCount=(cart || []).reduce((sum, item)=> sum + item.quantity, 0); %>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-8">
-      <section
-        class="bg-white shadow-sm ring-1 ring-slate-200 rounded-xl p-6 sm:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Оформление продажи</h1>
-          <p class="mt-2 text-sm sm:text-base text-slate-500">Выберите продукты, добавьте их в чек и завершите
-            оформление в пару шагов.</p>
-        </div>
-        <div class="grid grid-cols-2 gap-3 w-full sm:w-auto">
-          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p class="text-xs uppercase tracking-wide text-slate-400">В корзине</p>
-            <p class="text-xl font-semibold text-slate-900">
-              <%= (cart || []).reduce((sum, item)=> sum + item.quantity, 0) %>
-            </p>
-          </div>
-          <div class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p class="text-xs uppercase tracking-wide text-slate-400">Позиции</p>
-            <p class="text-xl font-semibold text-slate-900">
-              <%= (cart || []).length %>
-            </p>
-          </div>
-        </div>
-      </section>
+    <div class="m-shell">
+      <%- include('../partials/merchant/sidebar', { active: 'sell', user, cartCount }) %>
 
-      <% if (typeof error !=='undefined' ) { %>
-        <div class="bg-red-50 border border-red-200 rounded-xl px-6 py-4 shadow-sm">
-          <div class="flex items-start gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
-              </svg>
-            </div>
-            <div class="space-y-1">
-              <h2 class="text-sm font-semibold text-red-800">Ошибка при добавлении товара</h2>
-              <p class="text-sm text-red-600">
-                <%= error %>
-              </p>
-            </div>
-          </div>
-        </div>
-        <% } %>
+        <div class="lg:pl-[260px] flex flex-col min-h-dvh">
+          <%- include('../partials/merchant/topbar', { active: 'sell', user }) %>
 
-          <section class="space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h2 class="text-lg font-semibold text-slate-900">Активные товары</h2>
-              <div class="flex-1">
-                <label class="sr-only" for="productSearch">Поиск товара</label>
-                <input id="productSearch" type="text" inputmode="search" autocomplete="off"
-                  placeholder="Поиск по ID или названию"
-                  class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" />
-              </div>
-              <a href="/merchant/checkout"
-                class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-indigo-500">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M3 3h2l.4 2M7 13h10l3-7H6.4M7 13L5.4 5M7 13l-2 9m13-9l2 9m-5-4a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                Перейти к чеку
-              </a>
-            </div>
-
-            <% if (!products.length) { %>
-              <div class="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
-                <h3 class="text-lg font-medium text-slate-700">Нет доступных товаров</h3>
-                <p class="mt-2 text-sm">Попросите администратора добавить продукты в каталог.</p>
-              </div>
-              <% } else { %>
-                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3" id="productGrid">
-                  <% products.forEach(product=> { %>
-                    <article data-product-card data-name="<%= (product.name || '').toLowerCase() %>"
-                      data-id="<%= product.id %>"
-                      class="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
-                      <div class="mb-4 mx-auto w-[350px] max-w-full aspect-square overflow-hidden rounded-lg bg-slate-50 ring-1 ring-slate-100">
-                        <img
-                          src="<%= (product.images && product.images[0]) ? product.images[0].url : '/images/product-placeholder.svg' %>"
-                          alt="<%= product.name %>" class="h-full w-full object-cover" />
-                      </div>
-                      <div class="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 class="text-lg font-semibold text-slate-900">
-                            <%= product.name %>
-                          </h3>
-                          <p class="mt-1 text-sm text-slate-500">ID: <span class="font-mono text-xs">#<%= product.id %>
-                                </span></p>
-                        </div>
-                        <span
-                          class="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">В
-                          наличии</span>
-                      </div>
-                      <div class="mt-6 mb-8">
-                        <p class="text-3xl font-bold text-slate-900">
-                          <%= product.price.toLocaleString('ru-RU') %>
-                            <span class="text-sm font-medium text-slate-400 ml-1">сум</span>
-                        </p>
-                      </div>
-                      <form method="POST" action="/merchant/add-to-cart" class="mt-auto">
-                        <input type="hidden" name="productId" value="<%= product.id %>" />
-                        <button type="submit"
-                          class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                          </svg>
-                          Добавить в чек
-                        </button>
-                      </form>
-                    </article>
-                    <% }) %>
+            <main class="m-content flex-1 pb-24 lg:pb-10">
+              <div class="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+                <div class="m-fade-in flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h1 class="text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">Продажа товаров</h1>
+                    <p class="mt-1 text-sm text-[var(--m-text-muted)]">Выберите товар и добавьте его в чек. Одна
+                      продажа — один товар.</p>
+                  </div>
+                  <a href="/merchant/checkout" class="m-btn m-btn--secondary">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.25 3h1.386c.51 0 .955.343 1.087.836l.383 1.437m0 0L7.5 14.25a3 3 0 0 0 3 2.25h6a3 3 0 0 0 3-2.25l1.5-6.75H5.106M6 18.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                    </svg>
+                    Перейти к чеку
+                    <% if (cartCount> 0) { %>
+                      <span
+                        class="rounded-full bg-[var(--m-primary)] text-white text-[11px] font-bold h-[18px] min-w-[18px] px-1 flex items-center justify-center">
+                        <%= cartCount %>
+                      </span>
+                      <% } %>
+                  </a>
                 </div>
-                <p id="productSearchEmpty" class="hidden text-center text-sm text-slate-500">Ничего не найдено</p>
-                <% } %>
-          </section>
-    </main>
-    <script>
-      (function () {
-        const input = document.getElementById('productSearch');
-        const cards = Array.from(document.querySelectorAll('[data-product-card]'));
-        const empty = document.getElementById('productSearchEmpty');
 
-        function norm(v) { return String(v || '').toLowerCase().trim(); }
-        function match(card, q) {
-          if (!q) return true;
-          return card.dataset.name.includes(q) || card.dataset.id.includes(q);
-        }
-        function filter() {
-          const q = norm(input.value);
-          let visible = 0;
-          cards.forEach(c => {
-            const ok = match(c, q);
-            c.style.display = ok ? '' : 'none';
-            if (ok) visible++;
-          });
-          if (empty) empty.classList.toggle('hidden', visible !== 0);
-        }
-        if (input) {
-          input.addEventListener('input', filter);
-          // Autofocus on page open for quick search
-          setTimeout(() => { try { input.focus({ preventScroll: true }); } catch (_) { } }, 0);
-        }
-      })();
-    </script>
+                <% if (typeof error !=='undefined' && error) { %>
+                  <div
+                    class="m-fade-in mt-5 flex items-start gap-2.5 rounded-lg bg-[var(--m-danger-bg)] px-4 py-3 text-sm text-[var(--m-danger)]">
+                    <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor"
+                      viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
+                    </svg>
+                    <span>
+                      <%= error %>
+                    </span>
+                  </div>
+                  <% } %>
+
+                    <div class="m-fade-in relative mt-6 max-w-sm">
+                      <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--m-text-subtle)]"
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                      </svg>
+                      <input id="productSearch" type="text" inputmode="search" autocomplete="off"
+                        placeholder="Поиск по ID или названию"
+                        class="w-full rounded-lg border border-[var(--m-border-strong)] bg-white py-2.5 pl-9 pr-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[var(--m-primary)] focus:ring-4 focus:ring-[var(--m-primary-bg)]" />
+                    </div>
+
+                    <% if (!products.length) { %>
+                      <div class="m-card mt-6 px-8 py-16 text-center text-[var(--m-text-muted)]">
+                        <h3 class="text-base font-semibold text-slate-700">Нет доступных товаров</h3>
+                        <p class="mt-1.5 text-sm">Попросите администратора добавить продукты в каталог.</p>
+                      </div>
+                      <% } else { %>
+                        <div class="m-fade-in mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
+                          id="productGrid">
+                          <% products.forEach(product=> { %>
+                            <% const inStock=(product.activeVoucherCount || 0)> 0; %>
+                              <% const imageUrl=(product.images && product.images[0]) ? product.images[0].url
+                                : '/images/product-placeholder.svg' ; %>
+                                <article data-product-card
+                                  data-name="<%= (product.name || '').toLowerCase() %>"
+                                  data-id="<%= product.id %>"
+                                  class="m-card flex flex-col overflow-hidden transition hover:-translate-y-0.5 hover:shadow-md">
+                                  <div class="relative aspect-square w-full overflow-hidden bg-[var(--m-bg)]">
+                                    <img src="<%= imageUrl %>" alt="<%= product.name %>"
+                                      class="h-full w-full object-cover" />
+                                    <div class="absolute right-2.5 top-2.5">
+                                      <% if (inStock) { %>
+                                        <span class="m-badge m-badge--success shadow-sm">В наличии ·
+                                          <%= product.activeVoucherCount %>
+                                        </span>
+                                        <% } else { %>
+                                          <span class="m-badge m-badge--danger shadow-sm">Нет в наличии</span>
+                                          <% } %>
+                                    </div>
+                                  </div>
+
+                                  <div class="flex flex-1 flex-col p-5">
+                                    <h3 class="text-[15px] font-semibold leading-snug text-slate-900">
+                                      <%= product.name %>
+                                    </h3>
+                                    <p class="mt-1 text-xs text-[var(--m-text-subtle)] font-numeric">Артикул #<%= product.id %></p>
+
+                                    <div class="mt-4 flex-1"></div>
+
+                                    <p class="text-2xl font-bold text-slate-900 font-numeric">
+                                      <%= product.price.toLocaleString('ru-RU') %> <span
+                                        class="text-sm font-medium text-[var(--m-text-subtle)]">сум</span>
+                                    </p>
+
+                                    <form method="POST" action="/merchant/add-to-cart" class="mt-4">
+                                      <input type="hidden" name="productId" value="<%= product.id %>" />
+                                      <button type="submit" <%= inStock ? '' : 'disabled' %>
+                                        class="m-btn w-full py-2.5 <%= inStock ? 'm-btn--primary' : 'bg-slate-100 text-slate-400' %>">
+                                        <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                                          viewBox="0 0 24 24">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
+                                        <%= inStock ? 'Добавить в чек' : 'Нет в наличии' %>
+                                      </button>
+                                    </form>
+                                  </div>
+                                </article>
+                                <% }) %>
+                        </div>
+                        <p id="productSearchEmpty" class="hidden mt-10 text-center text-sm text-[var(--m-text-muted)]">
+                          Ничего не найдено</p>
+                        <% } %>
+              </div>
+            </main>
+        </div>
+    </div>
+
+    <%- include('../partials/merchant/bottom-nav', { active: 'sell', cartCount }) %>
+
+      <script src="/js/merchant-sell.js"></script>
 </body>
 
 </html>

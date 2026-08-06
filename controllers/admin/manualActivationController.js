@@ -1,6 +1,12 @@
 import prisma from '../../prisma/client.js';
 import { sendSMS } from '../../utils/smsService.js';
 
+// SMS-шаблон для товаров с walletOnDemandEnabled: тот же текст, что и в магазинных
+// шаблонах ("Vash vaucher aktivirovan | ..."), но ссылка всегда на сам wallet,
+// без слага конкретного магазина — код теперь получают прямо в приложении.
+const WALLET_ACTIVATION_SMS_TEMPLATE =
+    'Vash vaucher aktivirovan | Sizning vaucheringiz faollashtirildi https://wallet.namo.uz';
+
 // Показать список запросов на активацию
 export const listRequests = async (req, res) => {
     try {
@@ -204,24 +210,17 @@ export const completeRequest = async (req, res) => {
                 }
             });
 
-            // 4. Обновляем транзакцию (если есть)
-            const transaction = await tx.voucherTransaction.findFirst({
-                where: { voucherValue: voucher.value },
-                orderBy: { createdAt: 'desc' }
-            });
-
-            if (transaction && transaction.status !== 'COMPLETED') {
-                await tx.voucherTransaction.update({
-                    where: { id: transaction.id },
-                    data: { status: 'COMPLETED' }
-                });
-            }
-
-            // 5. Удаляем привязку к клиенту
+            // 4. Привязку к клиенту удаляем только для старого флоу (код уходит
+            // клиенту по SMS, дальше ваучер в кошельке не нужен). Для товаров
+            // с walletOnDemandEnabled привязку оставляем — иначе ваучер
+            // пропадёт из wallet.namo.uz/client/dashboard в момент, когда код
+            // только что стал доступен, и клиент физически не сможет его увидеть.
             if (client) {
-                await tx.onlineVoucher.deleteMany({
-                    where: { voucherId: voucher.id }
-                });
+                if (!voucher.product.walletOnDemandEnabled) {
+                    await tx.onlineVoucher.deleteMany({
+                        where: { voucherId: voucher.id }
+                    });
+                }
 
                 // Создаем запись в wallet log
                 await tx.voucherWalletLog.create({
@@ -238,8 +237,13 @@ export const completeRequest = async (req, res) => {
         // 6. Отправляем SMS клиенту
         if (client) {
             const store = voucher.product.store;
-            const smsTemplate = store?.activationSmsTemplate ||
-                `Vash vaucher aktivirovan | Sizning vaucheringiz faollashtirildi https://a.namo.uz/${store?.slug || 'link'}`;
+            // Для товаров с включённым получением кода по запросу в PWA (walletOnDemandEnabled)
+            // ссылка в SMS всегда ведёт в сам wallet, а не на конкретный магазин —
+            // клиент получает код прямо в приложении, поход в магазин ему больше не нужен.
+            const smsTemplate = voucher.product.walletOnDemandEnabled
+                ? WALLET_ACTIVATION_SMS_TEMPLATE
+                : (store?.activationSmsTemplate ||
+                    `Vash vaucher aktivirovan | Sizning vaucheringiz faollashtirildi https://a.namo.uz/${store?.slug || 'link'}`);
 
             const smsResult = await sendSMS(client.phoneNumber, smsTemplate);
 
@@ -283,7 +287,7 @@ export const rejectRequest = async (req, res) => {
         const request = await prisma.manualActivationRequest.findUnique({
             where: { id: requestId },
             include: {
-                voucher: true
+                voucher: { include: { product: true } }
             }
         });
 
@@ -318,10 +322,14 @@ export const rejectRequest = async (req, res) => {
                 data: { status: 'sold' }
             });
 
-            // Удаляем привязку к клиенту
-            await tx.onlineVoucher.deleteMany({
-                where: { voucherId: request.voucherId }
-            });
+            // Привязку к клиенту удаляем только для старого флоу — для
+            // walletOnDemandEnabled товаров ваучер должен остаться в кошельке,
+            // чтобы клиент увидел сообщение об отклонении и мог запросить код заново.
+            if (!request.voucher.product?.walletOnDemandEnabled) {
+                await tx.onlineVoucher.deleteMany({
+                    where: { voucherId: request.voucherId }
+                });
+            }
         });
 
         res.json({

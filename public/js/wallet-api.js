@@ -102,6 +102,14 @@ export async function registerPush(registration) {
   return subscription;
 }
 
+export function requestVoucherCode(id) {
+  return fetchJson(`/api/client/voucher/${id}/request-code`, { method: 'POST' });
+}
+
+export function getVoucherCodeStatus(id) {
+  return fetchJson(`/api/client/voucher/${id}/code-status`);
+}
+
 export function claimVoucher(payload) {
   return fetchJson('/api/client/voucher/claim', {
     method: 'POST',

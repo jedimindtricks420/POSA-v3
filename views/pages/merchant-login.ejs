@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <%- include('../partials/merchant/head', { title: 'Вход для мерчанта' }) %>
+</head>
+
+<body class="text-slate-900 antialiased">
+  <div class="min-h-dvh lg:grid lg:grid-cols-2">
+    <!-- Brand panel — hidden on mobile, shown from lg upward -->
+    <div class="relative hidden lg:flex flex-col justify-between overflow-hidden p-12 text-white"
+      style="background: linear-gradient(155deg, #e08300 0%, #ff9500 55%, #ffb44d 100%)">
+      <div class="absolute inset-0 opacity-20"
+        style="background-image: radial-gradient(circle at 20% 20%, #F1FF6E 1px, transparent 1px); background-size: 26px 26px;">
+      </div>
+      <div class="absolute -right-24 -top-24 h-72 w-72 rounded-full opacity-20"
+        style="background: #C3FF62; filter: blur(10px)"></div>
+
+      <div class="relative flex items-center gap-2.5">
+        <img src="/images/icon-512.png" alt="Namo" class="h-9 w-9 rounded-lg shadow-sm" />
+        <span class="text-lg font-bold tracking-tight">Namo Merchant</span>
+      </div>
+
+      <div class="relative max-w-sm space-y-6">
+        <h1 class="text-3xl font-extrabold leading-tight tracking-tight">Продавайте ваучеры Namo прямо с кассы</h1>
+        <p class="text-sm leading-relaxed text-white/80">Оформляйте офлайн- и онлайн-продажи, печатайте чеки и
+          отслеживайте выручку в одном окне — без лишних кликов.</p>
+        <ul class="space-y-3 text-sm">
+          <li class="flex items-center gap-3"><span
+              class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/15"><svg
+                class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg></span>Мгновенная выдача ваучера клиенту</li>
+          <li class="flex items-center gap-3"><span
+              class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/15"><svg
+                class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg></span>SMS-доставка для онлайн-продаж</li>
+          <li class="flex items-center gap-3"><span
+              class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white/15"><svg
+                class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+              </svg></span>Прозрачная история и остаток к выплате</li>
+        </ul>
+      </div>
+
+      <p class="relative text-xs text-white/60">© 2026 Namo. Все права защищены.</p>
+    </div>
+
+    <!-- Form panel -->
+    <div class="flex min-h-dvh flex-col items-center justify-center px-6 py-12 sm:px-10">
+      <div class="w-full max-w-sm">
+        <div class="mb-8 flex items-center gap-2.5 lg:hidden">
+          <img src="/images/icon-512.png" alt="Namo" class="h-9 w-9 rounded-lg" />
+          <span class="text-lg font-bold tracking-tight text-slate-900">Namo Merchant</span>
+        </div>
+
+        <h2 class="text-2xl font-bold tracking-tight text-slate-900">Вход в панель мерчанта</h2>
+        <p class="mt-1.5 text-sm text-[var(--m-text-muted)]">Введите учётные данные, выданные администратором Namo.</p>
+
+        <% if (error) { %>
+          <div
+            class="mt-6 flex items-start gap-2.5 rounded-lg bg-[var(--m-danger-bg)] px-3.5 py-3 text-sm text-[var(--m-danger)]">
+            <svg class="mt-0.5 h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.314 15.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span>
+              <%= error %>
+            </span>
+          </div>
+          <% } %>
+
+            <!-- Постит на существующий /auth/login — та же bcrypt/rate-limit/remember-me/refresh-token
+                 логика, что и у общей формы входа (views/pages/login.ejs). loginVariant нужен только для
+                 того, чтобы controllers/authController.js#handleLogin при ошибке вернул именно эту страницу,
+                 а не общий login.ejs — см. docs/merchant-redesign-tz.md, п.5.1.3. -->
+            <form method="POST" action="/auth/login" class="mt-6 space-y-4">
+              <input type="hidden" name="loginVariant" value="merchant" />
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-slate-700">Логин</label>
+                <input type="text" name="username" required autocomplete="username"
+                  class="w-full rounded-lg border border-[var(--m-border-strong)] bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[var(--m-primary)] focus:ring-4 focus:ring-[var(--m-primary-bg)]" />
+              </div>
+              <div>
+                <label class="mb-1.5 block text-sm font-medium text-slate-700">Пароль</label>
+                <input type="password" name="password" required autocomplete="current-password"
+                  placeholder="••••••••"
+                  class="w-full rounded-lg border border-[var(--m-border-strong)] bg-white px-3.5 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-[var(--m-primary)] focus:ring-4 focus:ring-[var(--m-primary-bg)]" />
+              </div>
+
+              <label class="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+                <input type="checkbox" name="rememberMe" value="1"
+                  class="h-4 w-4 rounded border-[var(--m-border-strong)] text-[var(--m-primary)] focus:ring-[var(--m-primary)]" />
+                Запомнить меня
+              </label>
+
+              <button type="submit" class="m-btn m-btn--primary w-full py-2.5">
+                Войти
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                </svg>
+              </button>
+            </form>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

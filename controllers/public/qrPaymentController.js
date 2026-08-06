@@ -332,7 +332,10 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
             });
 
             // 7. Комиссии
-            const vendorDebt = product.price * (1 - product.vendorCommissionPercent / 100);
+            // Вендору выплачивается остаток цены за вычетом ОБЕИХ комиссий (платформы и мерчанта),
+            // чтобы доля мерчанта не выплачивалась дважды (мерчант получает её отдельно через merchantPayable).
+            const vendorDebt = product.price
+                * (1 - product.vendorCommissionPercent / 100 - product.merchantCommissionPercent / 100);
             const merchantPayable = product.price * (1 - product.merchantCommissionPercent / 100);
             const kassaDebt = product.price * (product.vendorCommissionPercent / 100);
             const kassaId = kassa?.id || link?.product?.vendor?.kassaId || null;

@@ -6,6 +6,19 @@ const IDLE_TIMEOUT = 6 * 60 * 60 * 1000; // 6 часов
 
 const hasRememberMe = document.cookie.includes('remember_me=1');
 
+// Та же логика редиректа по роли, что и в controllers/authController.js:handleLogin —
+// нельзя слать всех подряд на /admin/dashboard, там не только админы.
+const ROLE_DASHBOARD = {
+  admin: '/admin/dashboard',
+  financial_mgr: '/admin/dashboard',
+  content_mgr: '/admin/dashboard',
+  support_agent: '/admin/dashboard',
+  merchant: '/merchant/dashboard',
+  vendor_user: '/vendor/dashboard',
+  kassa_admin: '/kassa/dashboard',
+  kassa_viewer: '/kassa/dashboard',
+};
+
 async function refreshSession() {
   if (!hasRememberMe) return;
   try {
@@ -16,7 +29,8 @@ async function refreshSession() {
     if (!res.ok) {
       window.location.href = LOGIN_URL;
     } else if (window.location.pathname === '/auth/login') {
-      window.location.href = '/admin/dashboard';
+      const data = await res.json().catch(() => null);
+      window.location.href = ROLE_DASHBOARD[data?.role] || '/admin/dashboard';
     }
   } catch (error) {
     console.warn('Admin refresh failed', error);

@@ -1,0 +1,54 @@
+<%
+  const navItems = [
+    { href: '/merchant/dashboard', label: 'Дашборд', key: 'dashboard', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3.75 12l1.5-1.5L12 3.75l6.75 6.75 1.5 1.5M5.25 9.75V19.5a.75.75 0 0 0 .75.75h3.75v-4.5a1.5 1.5 0 0 1 1.5-1.5h1.5a1.5 1.5 0 0 1 1.5 1.5v4.5H18a.75.75 0 0 0 .75-.75V9.75" />' },
+    { href: '/merchant/sell', label: 'Продажа', key: 'sell', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.25 3h1.386c.51 0 .955.343 1.087.836l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 1.994-4.716 2.598-7.22a.75.75 0 0 0-.722-.927H4.772M7.5 14.25 5.106 5.272M6 18.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />' },
+    { href: '/merchant/sales', label: 'История', key: 'sales', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />' },
+    { href: '/merchant/checkout', label: 'Чек', key: 'checkout', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.25 3h1.386c.51 0 .955.343 1.087.836l.383 1.437m0 0L7.5 14.25a3 3 0 0 0 3 2.25h6a3 3 0 0 0 3-2.25l1.5-6.75H5.106M6 18.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />' },
+  ];
+  const initials = (user?.username || 'M').slice(0, 2).toUpperCase();
+%>
+<aside class="m-sidebar hidden lg:flex fixed inset-y-0 left-0 flex-col z-30">
+  <div class="flex items-center gap-2.5 px-5 h-16 border-b border-[var(--m-border)]">
+    <img src="/images/icon-512.png" alt="Namo" class="h-8 w-8 rounded-lg" />
+    <div class="leading-tight">
+      <p class="text-sm font-bold text-slate-900">Namo Merchant</p>
+      <p class="text-[11px] text-[var(--m-text-subtle)]">POS панель продавца</p>
+    </div>
+  </div>
+
+  <nav class="m-sidebar-scroll flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
+    <% navItems.forEach(function (item) { %>
+      <a href="<%= item.href %>" class="m-navlink <%= active === item.key ? 'm-navlink--active' : '' %>">
+        <svg class="h-[18px] w-[18px] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor"><%- item.icon %></svg>
+        <span class="flex-1"><%= item.label %></span>
+        <% if (item.key === 'checkout' && locals.cartCount > 0) { %>
+          <span class="rounded-full bg-[var(--m-primary)] text-white text-[11px] font-bold h-5 min-w-5 px-1 flex items-center justify-center"><%= cartCount %></span>
+        <% } %>
+      </a>
+    <% }); %>
+  </nav>
+
+  <div class="border-t border-[var(--m-border)] p-3 space-y-1">
+    <div class="flex items-center gap-2.5 rounded-lg px-2 py-2">
+      <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[var(--m-primary-bg)] text-[var(--m-primary-dark)] text-xs font-bold"><%= initials %></div>
+      <div class="min-w-0 leading-tight">
+        <p class="truncate text-sm font-semibold text-slate-800"><%= user.username %></p>
+        <p class="text-[11px] text-[var(--m-text-subtle)]">Merchant</p>
+      </div>
+    </div>
+    <a href="/auth/logout" class="m-navlink w-full text-[var(--m-danger)] hover:bg-[var(--m-danger-bg)] hover:text-[var(--m-danger)]">
+      <svg class="h-[18px] w-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" /></svg>
+      Выйти
+    </a>
+  </div>
+</aside>
+<script>
+  window.__APP_ROLE__ = 'Merchant';
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations?.().then((registrations) => {
+      registrations
+        .filter((registration) => registration?.scope?.startsWith(`${window.location.origin}/`))
+        .forEach((registration) => registration.unregister().catch(() => { }));
+    }).catch(() => { });
+  }
+</script>

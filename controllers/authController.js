@@ -23,7 +23,10 @@ export const handleLogin = async (req, res) => {
   const user = await prisma.user.findUnique({ where: { username } });
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
-    return res.render('pages/login', { error: 'Invalid credentials' });
+    // Мерчант-логин (views/pages/merchant-login.ejs) постит сюда же, но при ошибке должен
+    // остаться на своей странице, а не откатиться на общий дизайн — см. docs/merchant-redesign-tz.md, п.5.1.3.
+    const view = req.body.loginVariant === 'merchant' ? 'pages/merchant-login' : 'pages/login';
+    return res.render(view, { error: 'Invalid credentials' });
   }
 
   req.session.user = {
@@ -143,7 +146,7 @@ export const refreshSession = async (req, res) => {
         setRememberCookies(res, rotated.token);
       }
 
-      res.json({ ok: true });
+      res.json({ ok: true, role: user.role });
     });
   } catch (error) {
     console.error('Refresh session error:', error);

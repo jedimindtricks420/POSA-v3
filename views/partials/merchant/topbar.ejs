@@ -1,0 +1,31 @@
+<%
+  const pageTitles = { dashboard: 'Дашборд', sell: 'Продажа', sales: 'История продаж', checkout: 'Чек' };
+  const initials = (user?.username || 'M').slice(0, 2).toUpperCase();
+%>
+<header class="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-[var(--m-border)] bg-white/90 px-4 backdrop-blur lg:hidden">
+  <div class="flex items-center gap-2">
+    <img src="/images/icon-512.png" alt="Namo" class="h-7 w-7 rounded-md" />
+    <span class="text-sm font-bold text-slate-900"><%= pageTitles[active] || 'Namo Merchant' %></span>
+  </div>
+  <div class="relative">
+    <button type="button" id="merchantUserMenuBtn" class="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--m-primary-bg)] text-[var(--m-primary-dark)] text-xs font-bold">
+      <%= initials %>
+    </button>
+    <div id="merchantUserMenu" class="hidden absolute right-0 mt-2 w-44 rounded-lg border border-[var(--m-border)] bg-white py-1 shadow-lg">
+      <div class="px-3 py-2 border-b border-[var(--m-border)]">
+        <p class="truncate text-sm font-semibold text-slate-800"><%= user.username %></p>
+        <p class="text-[11px] text-[var(--m-text-subtle)]">Merchant</p>
+      </div>
+      <a href="/auth/logout" class="block px-3 py-2 text-sm font-medium text-[var(--m-danger)] hover:bg-[var(--m-danger-bg)]">Выйти</a>
+    </div>
+  </div>
+</header>
+<script>
+  (function () {
+    const btn = document.getElementById('merchantUserMenuBtn');
+    const menu = document.getElementById('merchantUserMenu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); });
+    document.addEventListener('click', () => menu.classList.add('hidden'));
+  })();
+</script>

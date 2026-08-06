@@ -59,3 +59,18 @@ export const uploadProductImage = multer({
     limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
     fileFilter: fileFilter
 });
+
+// Импорт списка ваучеров (.txt/.csv) — только в памяти, на диск не пишем:
+// это не публичный ассет, а разовый файл с кодами (в т.ч. реальными,
+// купленными во внешних сервисах вроде 1PDF), хранить его на сервере не нужно.
+const voucherFileFilter = (req, file, cb) => {
+    const ok = /\.(txt|csv)$/i.test(file.originalname);
+    if (ok) return cb(null, true);
+    cb(new Error('Разрешены только файлы .txt или .csv'));
+};
+
+export const uploadVoucherFile = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB — с запасом на десятки тысяч строк
+    fileFilter: voucherFileFilter
+});

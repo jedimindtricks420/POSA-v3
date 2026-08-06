@@ -1,0 +1,23 @@
+<%
+  const tabItems = [
+    { href: '/merchant/dashboard', label: 'Дашборд', key: 'dashboard', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3.75 12l1.5-1.5L12 3.75l6.75 6.75 1.5 1.5M5.25 9.75V19.5a.75.75 0 0 0 .75.75h3.75v-4.5a1.5 1.5 0 0 1 1.5-1.5h1.5a1.5 1.5 0 0 1 1.5 1.5v4.5H18a.75.75 0 0 0 .75-.75V9.75" />' },
+    { href: '/merchant/sell', label: 'Продажа', key: 'sell', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.25 3h1.386c.51 0 .955.343 1.087.836l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 1.994-4.716 2.598-7.22a.75.75 0 0 0-.722-.927H4.772M7.5 14.25 5.106 5.272M6 18.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />' },
+    { href: '/merchant/sales', label: 'История', key: 'sales', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />' },
+    { href: '/merchant/checkout', label: 'Чек', key: 'checkout', icon: '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.25 3h1.386c.51 0 .955.343 1.087.836l.383 1.437m0 0L7.5 14.25a3 3 0 0 0 3 2.25h6a3 3 0 0 0 3-2.25l1.5-6.75H5.106M6 18.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />' },
+  ];
+%>
+<nav class="fixed inset-x-0 bottom-0 z-30 border-t border-[var(--m-border)] bg-white/95 backdrop-blur pb-[env(safe-area-inset-bottom,0px)] lg:hidden">
+  <div class="flex items-stretch">
+    <% tabItems.forEach(function (item) { %>
+      <a href="<%= item.href %>" class="m-tab <%= active === item.key ? 'm-tab--active' : '' %>">
+        <span class="relative">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><%- item.icon %></svg>
+          <% if (item.key === 'checkout' && locals.cartCount > 0) { %>
+            <span class="absolute -top-1.5 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--m-primary)] px-1 text-[10px] font-bold text-white"><%= cartCount %></span>
+          <% } %>
+        </span>
+        <%= item.label %>
+      </a>
+    <% }); %>
+  </div>
+</nav>

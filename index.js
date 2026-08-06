@@ -1,5 +1,6 @@
 import express from 'express';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -100,7 +101,17 @@ app.use(express.static(path.join(__dirname, 'public'), {
 if (fs.existsSync(zxingStaticPath)) {
   app.use('/vendor/zxing', express.static(zxingStaticPath));
 }
+// Постоянное хранилище сессий в той же Postgres-БД. Раньше был MemoryStore по
+// умолчанию — любой рестарт/деплой backend'а мгновенно обнулял корзины и
+// логины ВСЕХ пользователей одновременно (это и было причиной "мерчант не
+// может продать товар" — сессия/корзина слетала при каждом рестарте контейнера).
+const PgSession = connectPgSimple(session);
 app.use(session({
+  store: new PgSession({
+    conString: process.env.DATABASE_URL,
+    tableName: 'session',
+    createTableIfMissing: true,
+  }),
   secret: process.env.SESSION_SECRET || 'supersecretkey',
   resave: false,
   saveUninitialized: false,

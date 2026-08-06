@@ -15,11 +15,18 @@
     window.__APP_ROLE__ = 'Client';
     window.__APP_BASE_URL__ = <%- JSON.stringify(appBaseUrl || null) %> || window.location.origin;
   </script>
-  <!-- Inter font -->
+  <!-- Manrope font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/client.css" />
   <link rel="stylesheet" href="/css/client-overrides.css" />
+  <!-- Manrope только для клиентского кошелька: client.css/client-overrides.css
+       используются и страницами оплаты (pay-product и т.п.), поэтому шрифт
+       переопределяем точечно тут, а не в tailwind.config.js (font-sans),
+       чтобы не задеть чек-аут. -->
+  <style>
+    body { font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important; }
+  </style>
   <title><%= title || 'Digital Wallet' %></title>
 </head>

@@ -94,6 +94,67 @@
           </div>
         </div>
       </form>
+
+      <div class="relative my-8">
+        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200"></div></div>
+        <div class="relative flex justify-center"><span class="bg-slate-50 px-3 text-sm text-slate-500">или</span></div>
+      </div>
+
+      <form method="POST" action="/admin/vouchers/add" enctype="multipart/form-data"
+        class="bg-white shadow-sm ring-1 ring-slate-200 rounded-lg p-6">
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-lg font-medium text-slate-900">Добавить готовые коды</h3>
+            <p class="mt-1 text-sm text-slate-500">
+              Для кодов, купленных или сгенерированных в стороннем сервисе (например, 1PDF) — вставьте текстом и/или загрузите файлом. Один код — одна строка. Дубликаты будут пропущены автоматически.
+            </p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Продукт</label>
+            <div class="mt-1">
+              <select name="productId" required
+                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                <% products.forEach(product=> { %>
+                  <option value="<%= product.id %>">
+                    <%= product.name %>
+                  </option>
+                  <% }) %>
+              </select>
+            </div>
+          </div>
+
+          <input type="hidden" name="type" value="Vendor">
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Коды (по одному на строку)</label>
+            <div class="mt-1">
+              <textarea name="voucherList" rows="8"
+                class="block w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono"
+                placeholder="ABCD-1234-EFGH&#10;ABCD-5678-IJKL"></textarea>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-slate-700">…и/или файл (.txt / .csv)</label>
+            <div class="mt-1">
+              <input type="file" name="voucherFile" accept=".txt,.csv"
+                class="block w-full text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-indigo-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100" />
+            </div>
+            <p class="mt-2 text-sm text-slate-500">Тоже один код на строку. Можно использовать вместе с текстовым полем — коды объединятся.</p>
+          </div>
+
+          <div class="pt-4">
+            <button type="submit"
+              class="w-full inline-flex justify-center items-center rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Добавить коды
+            </button>
+          </div>
+        </div>
+      </form>
     </div>
 </body>
 

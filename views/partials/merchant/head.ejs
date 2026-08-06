@@ -1,0 +1,23 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ff9500" />
+<title><%= title || 'Namo Merchant' %></title>
+<link rel="icon" type="image/svg+xml" href="/images/Vector.svg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'sans-serif'] },
+        colors: { 'm-primary': '#ff9500', 'm-primary-dark': '#e08300' },
+      },
+    },
+  };
+</script>
+
+<link rel="stylesheet" href="/css/merchant.css" />

@@ -8,8 +8,10 @@ function requestSkipWaiting(registration) {
 
 function listenForControllerChange() {
   let refreshing = false;
+  const hadController = Boolean(navigator.serviceWorker.controller);
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
+    if (!hadController) return; // первая активация SW на этой странице — это не обновление, перезагрузка не нужна
     refreshing = true;
     window.location.reload();
   });

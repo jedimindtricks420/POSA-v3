@@ -10,6 +10,7 @@ router.post('/login', loginLimiter, authController.handleLogin);
 router.post('/refresh', authController.refreshSession);
 
 router.get('/logout', authController.logout);
+router.post('/logout', authController.logout);
 // router.get('/register', authController.showRegisterForm);
 // router.post('/register', authController.handleRegister);
 

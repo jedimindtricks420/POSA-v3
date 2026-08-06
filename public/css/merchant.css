@@ -1,0 +1,289 @@
+/* Merchant dashboard — Stripe-inspired design system.
+   Tailwind (Play CDN, loaded per-page in views/pages/merchant-*.ejs / checkout.ejs)
+   handles layout/spacing/responsive utilities; this file only carries tokens and the
+   handful of components that utility classes can't express cleanly (sidebar chrome,
+   radio-cards, tables). Plain CSS on purpose — unlike admin.css this file is never
+   run through a build step, so no @tailwind/@layer directives here. */
+
+:root {
+  /* Neutral base — F0F0F0 from the Namo brand palette */
+  --m-bg: #f0f0f0;
+  --m-surface: #ffffff;
+  --m-border: #e5e5e5;
+  --m-border-strong: #d4d4d4;
+  --m-text: #1a1f36;
+  --m-text-muted: #6b7280;
+  --m-text-subtle: #8792a2;
+
+  /* Brand — namo logo orange, buttons always render white text on this */
+  --m-primary: #ff9500;
+  --m-primary-dark: #e08300;
+  --m-primary-bg: #fff2df;
+
+  /* Namo lime/mint accents — used sparingly for positive/highlight states */
+  --m-lime: #f1ff6e;
+  --m-mint: #c3ff62;
+  --m-mint-ink: #3f6212;
+
+  --m-success: #3f6212;
+  --m-success-bg: #c3ff62;
+  --m-danger: #dc2626;
+  --m-danger-bg: #fef2f2;
+  --m-warning: #d97706;
+  --m-warning-bg: #fffbeb;
+  --m-sidebar-w: 260px;
+  --m-topbar-h: 60px;
+  --m-bottomnav-h: 64px;
+  --m-shadow-sm: 0 1px 2px rgba(26, 31, 54, 0.05);
+  --m-shadow: 0 2px 8px -2px rgba(26, 31, 54, 0.1), 0 1px 3px -1px rgba(26, 31, 54, 0.06);
+  --m-shadow-lg: 0 12px 32px -8px rgba(26, 31, 54, 0.16);
+}
+
+html {
+  height: 100%;
+  background-color: var(--m-bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: var(--m-text);
+  background-color: var(--m-bg);
+}
+
+.font-numeric {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ==========================================================================
+   Shell layout — fixed sidebar (desktop) + fixed bottom tab bar (mobile)
+   ========================================================================== */
+
+.m-shell {
+  min-height: 100dvh;
+}
+
+.m-sidebar {
+  width: var(--m-sidebar-w);
+  background: var(--m-surface);
+  border-right: 1px solid var(--m-border);
+}
+
+.m-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--m-border-strong) transparent;
+}
+.m-sidebar-scroll::-webkit-scrollbar { width: 6px; }
+.m-sidebar-scroll::-webkit-scrollbar-thumb { background: var(--m-border-strong); border-radius: 999px; }
+
+.m-navlink {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--m-text-muted);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.m-navlink:hover {
+  background: var(--m-bg);
+  color: var(--m-text);
+}
+.m-navlink--active {
+  background: var(--m-primary-bg);
+  color: var(--m-primary-dark);
+  font-weight: 600;
+}
+.m-navlink--active svg { color: var(--m-primary); }
+
+.m-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  flex: 1;
+  padding: 0.4rem 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--m-text-subtle);
+  position: relative;
+}
+.m-tab--active { color: var(--m-primary); }
+
+.m-content {
+  min-height: 100dvh;
+}
+
+/* ==========================================================================
+   Surfaces & primitives
+   ========================================================================== */
+
+.m-card {
+  background: var(--m-surface);
+  border: 1px solid var(--m-border);
+  border-radius: 12px;
+  box-shadow: var(--m-shadow-sm);
+}
+
+.m-stat {
+  background: var(--m-surface);
+  border: 1px solid var(--m-border);
+  border-radius: 12px;
+  padding: 1.1rem 1.25rem;
+}
+
+.m-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.m-badge--dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.m-badge--success { background: var(--m-success-bg); color: var(--m-success); }
+.m-badge--neutral { background: #f1f2f4; color: var(--m-text-muted); }
+.m-badge--danger { background: var(--m-danger-bg); color: var(--m-danger); }
+.m-badge--warning { background: var(--m-warning-bg); color: var(--m-warning); }
+
+.m-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+.m-btn:active { transform: scale(0.98); }
+.m-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.m-btn--primary {
+  background: var(--m-primary);
+  color: #fff;
+}
+.m-btn--primary:hover:not(:disabled) { background: var(--m-primary-dark); }
+
+.m-btn--secondary {
+  background: var(--m-surface);
+  color: var(--m-text);
+  border: 1px solid var(--m-border-strong);
+}
+.m-btn--secondary:hover:not(:disabled) { background: var(--m-bg); border-color: var(--m-primary); color: var(--m-primary-dark); }
+
+.m-btn--danger-ghost {
+  background: var(--m-danger-bg);
+  color: var(--m-danger);
+}
+.m-btn--danger-ghost:hover:not(:disabled) { background: #fee2e2; }
+
+/* ==========================================================================
+   Data table (desktop) / stacked cards (mobile) — same markup, CSS switches
+   the presentation below the `md` breakpoint.
+   ========================================================================== */
+
+.m-table-wrap { overflow-x: auto; }
+.m-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.m-table thead th {
+  text-align: left;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--m-text-subtle);
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--m-border);
+  white-space: nowrap;
+}
+.m-table tbody td {
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid #f1f2f4;
+  vertical-align: middle;
+}
+.m-table tbody tr:last-child td { border-bottom: none; }
+.m-table tbody tr { transition: background-color 0.12s ease; }
+.m-table tbody tr:hover { background: #fafafa; }
+
+@media (max-width: 767px) {
+  .m-table thead { display: none; }
+  .m-table, .m-table tbody, .m-table tr, .m-table td { display: block; width: 100%; }
+  .m-table tbody tr {
+    border: 1px solid var(--m-border);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: var(--m-surface);
+  }
+  .m-table tbody tr:hover { background: var(--m-surface); }
+  .m-table td {
+    padding: 0.3rem 0;
+    border-bottom: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .m-table td[data-label]::before {
+    content: attr(data-label);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--m-text-subtle);
+    flex-shrink: 0;
+  }
+  .m-table td[data-label-hide]::before { content: none; }
+  .m-table td[data-label-hide] { justify-content: flex-end; }
+}
+
+/* ==========================================================================
+   Radio-cards (sale type selector on checkout)
+   ========================================================================== */
+
+.m-radio-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--m-border);
+  padding: 1rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.m-radio-card:hover { border-color: var(--m-border-strong); }
+.m-radio-card input { position: absolute; opacity: 0; pointer-events: none; }
+.m-radio-card:has(input:checked) {
+  border-color: var(--m-primary);
+  box-shadow: 0 0 0 3px var(--m-primary-bg);
+}
+
+/* ==========================================================================
+   Misc
+   ========================================================================== */
+
+.m-fade-in { animation: mFadeIn 0.35s ease both; }
+@keyframes mFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+::selection { background: var(--m-primary-bg); color: var(--m-primary-dark); }
