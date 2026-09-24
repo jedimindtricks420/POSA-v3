@@ -35,8 +35,8 @@ services:
     container_name: activation-db
     restart: always
     environment:
-      POSTGRES_USER: tguser
-      POSTGRES_PASSWORD: REDACTED-ROTATED-2026-09-24
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: activation_system
     ports:
       - "7440:5432"
