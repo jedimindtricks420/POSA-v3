@@ -10,7 +10,7 @@
 <body class="bg-slate-50 min-h-screen">
     <%- include('../partials/admin-navbar', { user }) %>
     
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
+    <div class="max-w-[1700px] mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
         <!-- Заголовок -->
         <div class="md:flex md:items-center md:justify-between mb-6">
             <div class="min-w-0 flex-1">
@@ -84,19 +84,19 @@
                     <table class="min-w-full divide-y divide-slate-200">
                         <thead class="bg-slate-50">
                             <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     ID активации
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Код ваучера
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Продукт
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Цена
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Дата активации
                                 </th>
                             </tr>
@@ -104,23 +104,23 @@
                         <tbody class="bg-white divide-y divide-slate-200">
                             <% client.activations.forEach(activation => { %>
                             <tr class="hover:bg-slate-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                <td class="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-900">
                                     <%= activation.id %>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-mono">
+                                <td class="px-3 py-3 whitespace-nowrap text-sm text-slate-900 font-mono">
                                     <%= activation.voucher.value %>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                <td class="px-3 py-3 whitespace-nowrap text-sm text-slate-900">
                                     <%= activation.voucher.productName %>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                <td class="px-3 py-3 whitespace-nowrap text-sm text-slate-900">
                                     <% if (activation.voucher.product) { %>
                                         <%= activation.voucher.product.price %> сум
                                     <% } else { %>
                                         -
                                     <% } %>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                <td class="px-3 py-3 whitespace-nowrap text-sm text-slate-500">
                                     <%= new Date(activation.activatedAt).toLocaleString('ru-RU') %>
                                 </td>
                             </tr>
@@ -143,16 +143,16 @@
                     <table class="min-w-full divide-y divide-slate-200">
                         <thead class="bg-slate-50">
                             <tr>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     ID
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Код ваучера
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Продукт
                                 </th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                     Дата создания
                                 </th>
                             </tr>
@@ -160,16 +160,16 @@
                         <tbody class="bg-white divide-y divide-slate-200">
                             <% client.onlineVouchers.forEach(onlineVoucher => { %>
                             <tr class="hover:bg-slate-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                                <td class="px-3 py-3 whitespace-nowrap text-sm font-medium text-slate-900">
                                     <%= onlineVoucher.id %>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-mono">
+                                <td class="px-3 py-3 whitespace-nowrap text-sm text-slate-900 font-mono">
                                     <%= onlineVoucher.voucher.value %>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                                <td class="px-3 py-3 whitespace-nowrap text-sm text-slate-900">
                                     <%= onlineVoucher.voucher.productName %>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                <td class="px-3 py-3 whitespace-nowrap text-sm text-slate-500">
                                     <%= new Date(onlineVoucher.assignedAt).toLocaleString('ru-RU') %>
                                 </td>
                             </tr>
