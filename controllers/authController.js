@@ -18,14 +18,24 @@ export const showLoginForm = (req, res) => {
 };
 
 export const handleLogin = async (req, res) => {
-  const { username, password } = req.body;
-  const rememberMe = parseRememberMe(req.body.rememberMe);
+  // req.body может быть undefined: бот присылает POST без тела или с чужим
+  // Content-Type. Без подстраховки это необработанное исключение и 500.
+  const body = req.body || {};
+  const { username, password } = body;
+  const rememberMe = parseRememberMe(body.rememberMe);
+  // Пустые поля отсекаем до обращения к базе: findUnique с username: undefined
+  // бросает исключение Prisma, и запрос без тела превращался в 500.
+  if (!username || !password) {
+    const view = body.loginVariant === 'merchant' ? 'pages/merchant-login' : 'pages/login';
+    return res.status(400).render(view, { error: 'Введите логин и пароль' });
+  }
+
   const user = await prisma.user.findUnique({ where: { username } });
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
     // Мерчант-логин (views/pages/merchant-login.ejs) постит сюда же, но при ошибке должен
     // остаться на своей странице, а не откатиться на общий дизайн — см. docs/merchant-redesign-tz.md, п.5.1.3.
-    const view = req.body.loginVariant === 'merchant' ? 'pages/merchant-login' : 'pages/login';
+    const view = body.loginVariant === 'merchant' ? 'pages/merchant-login' : 'pages/login';
     return res.render(view, { error: 'Invalid credentials' });
   }
 
@@ -89,7 +99,8 @@ export const showRegisterForm = (req, res) => {
 };
 
 export const handleRegister = async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password } = req.body || {};
+  if (!username || !password) return res.status(400).send('username и password обязательны');
   const hashed = await bcrypt.hash(password, 10);
 
   try {

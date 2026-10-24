@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Позиции услуги <%= service.name %> — POSA Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+        <div class="max-w-[1700px] mx-auto px-4 sm:px-6 py-8 pt-20">
+            <a href="/admin/partners" class="text-sm text-slate-500 hover:text-slate-700">&larr; Партнёрские сети</a>
+            <div class="md:flex md:items-baseline md:justify-between mt-2 mb-1">
+                <h2 class="text-2xl font-bold text-slate-900">
+                    <%= service.name %>
+                    <span class="text-base font-normal text-slate-500">· <%= service.partner %> · serviceId <%= service.serviceId %></span>
+                </h2>
+                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+          <%= service.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600' %>">
+                    <%= service.isActive ? 'Включена' : 'Выключена' %>
+                </span>
+            </div>
+            <p class="text-sm text-slate-500 mb-6">Мерчант канала: <strong><%= service.merchant.username %></strong> ·
+                касса: <strong><%= service.kassa ? service.kassa.name : 'не задана' %></strong></p>
+
+            <% if (error) { %>
+                <div class="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
+                    <%= error %>
+                </div>
+                <% } %>
+
+                    <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 overflow-x-auto mb-8">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Код
+                                    </th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Что
+                                        видит клиент</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Товар
+                                    </th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Цена
+                                        товара</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Цена
+                                        канала</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase" whitespace-nowrap">Ост.
+                                    </th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase" whitespace-nowrap">№
+                                    </th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase" whitespace-nowrap">Статус
+                                    </th>
+                                    <th class="px-3 py-3"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                <% items.forEach(it=> { %>
+                                    <tr class="<%= it.priceOk ? '' : 'bg-red-50' %>">
+                                            <td class="px-3 py-3 text-sm font-mono text-slate-900 whitespace-nowrap">
+                                                <%= it.code %>
+                                            </td>
+                                            <td class="px-3 py-3 text-sm">
+                                                <input type="text" name="label" value="<%= it.label %>" form="item-<%= it.id %>"
+                                                    class="w-40 rounded border-slate-300 text-sm">
+                                            </td>
+                                            <td class="px-3 py-3 text-sm text-slate-600">
+                                                <%= it.product.name %>
+                                                    <% if (it.product.status!=='on' ) { %><span
+                                                        class="block text-xs text-red-500">товар выключен</span><% } %>
+                                            </td>
+                                            <td class="px-3 py-3 text-sm text-slate-500">
+                                                <%= it.product.price.toLocaleString('ru-RU') %>
+                                            </td>
+                                            <td class="px-3 py-3 text-sm">
+                                                <input type="number" name="priceOverride" step="<%= priceStep %>"
+                                                    min="<%= priceStep %>" value="<%= it.priceOverride ?? '' %>"
+                                                    placeholder="как у товара" form="item-<%= it.id %>"
+                                                    class="w-28 rounded border-slate-300 text-sm">
+                                                <span class="block text-xs text-slate-400 font-mono"><%= it.amountTiyin.toLocaleString('ru-RU') %> тийин</span>
+                                                <% if (!it.priceOk) { %><span class="block text-xs text-red-600">не кратна <%= priceStep.toLocaleString('ru-RU') %> — не продаётся</span><% } %>
+                                            </td>
+                                            <td class="px-3 py-3 text-sm">
+                                                <span
+                                                    class="<%= it.stock === 0 ? 'text-red-600 font-semibold' : (it.stock < 10 ? 'text-amber-600 font-medium' : 'text-slate-600') %>">
+                                                    <%= it.stock %>
+                                                </span>
+                                            </td>
+                                            <td class="px-3 py-3 text-sm">
+                                                <input type="number" name="sortOrder" value="<%= it.sortOrder %>" form="item-<%= it.id %>"
+                                                    class="w-14 rounded border-slate-300 text-sm">
+                                            </td>
+                                            <td class="px-3 py-3 text-sm">
+                                                <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                        <%= it.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600' %>">
+                                                    <%= it.isActive ? 'Вкл' : 'Выкл' %>
+                                                </span>
+                                            </td>
+                                            <td class="px-3 py-3 text-sm text-right whitespace-nowrap">
+                                                <button type="submit" form="item-<%= it.id %>"
+                                                    class="text-indigo-600 hover:text-indigo-500">Сохранить</button>
+                                                <button type="submit" form="toggle-<%= it.id %>"
+                                                    class="ml-3 text-slate-500 hover:text-slate-800">
+                                                    <%= it.isActive ? 'Выключить' : 'Включить' %>
+                                                </button>
+                                            </td>
+                                    </tr>
+                                    <% }) %>
+                                        <% if (items.length===0) { %>
+                                            <tr>
+                                                <td colspan="9" class="px-6 py-10 text-center text-sm text-slate-400">
+                                                    Позиций нет. Добавьте первую — она появится в списке товаров внутри
+                                                    услуги.</td>
+                                            </tr>
+                                            <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <% items.forEach(it => { %>
+                        <form id="item-<%= it.id %>" method="POST"
+                            action="/admin/partners/<%= service.id %>/items/<%= it.id %>"></form>
+                        <form id="toggle-<%= it.id %>" method="POST"
+                            action="/admin/partners/<%= service.id %>/items/<%= it.id %>/toggle"></form>
+                        <% }) %>
+
+                    <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-6 max-w-3xl">
+                        <h3 class="text-sm font-semibold text-slate-900 mb-4">Добавить позицию</h3>
+                        <form method="POST" action="/admin/partners/<%= service.id %>/items"
+                            class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Товар</label>
+                                <select name="productId" required
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                                    <option value="">— выберите —</option>
+                                    <% products.forEach(p=> { %>
+                                        <option value="<%= p.id %>">
+                                            <%= p.name %> — <%= p.price.toLocaleString('ru-RU') %> сум
+                                        </option>
+                                        <% }) %>
+                                </select>
+                                <% if (products.length===0) { %><p class="mt-1 text-xs text-slate-500">Все активные
+                                    товары уже подключены.</p><% } %>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Код позиции</label>
+                                <input type="text" name="code" required placeholder="office365_family"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm font-mono">
+                                <p class="mt-1 text-xs text-slate-500">Его присылает терминал в поле fields.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Название для клиента</label>
+                                <input type="text" name="label" required placeholder="Office 365 Family"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700">Цена канала, сум</label>
+                                <input type="number" name="priceOverride" step="<%= priceStep %>"
+                                    min="<%= priceStep %>" placeholder="пусто — как у товара"
+                                    class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                                <p class="mt-1 text-xs text-slate-500">Только кратная <%= priceStep.toLocaleString('ru-RU') %>: в терминале не дают сдачи.</p>
+                            </div>
+                            <div class="sm:col-span-2 flex items-center gap-3">
+                                <button type="submit"
+                                    class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Добавить</button>
+                            </div>
+                        </form>
+                    </div>
+        </div>
+</body>
+
+</html>

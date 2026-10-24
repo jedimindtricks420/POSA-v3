@@ -225,6 +225,7 @@ export const handleEditMerchant = async (req, res) => {
 export const showPaymentForm = async (req, res) => {
   const merchantId = Number(req.params.id);
   const merchant = await prisma.merchant.findUnique({ where: { id: merchantId } });
+  if (!merchant) return res.redirect('/admin/merchants');
 
   const { _sum } = await prisma.voucherTransaction.aggregate({
     where: { merchantId, status: 'PENDING' },
@@ -333,6 +334,7 @@ export const showMerchantTransactions = async (req, res) => {
   const merchant = await prisma.merchant.findUnique({
     where: { id: merchantId },
   });
+  if (!merchant) return res.redirect('/admin/merchants');
 
   const transactions = await prisma.voucherTransaction.findMany({
     where: { merchantId },

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Журнал транзакций канала — POSA Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+    <%- include('../partials/admin-navbar', { user }) %>
+
+        <div class="max-w-[1700px] mx-auto px-4 sm:px-6 py-8 pt-20">
+            <a href="/admin/partners" class="text-sm text-slate-500 hover:text-slate-700">&larr; Партнёрские сети</a>
+            <h2 class="text-2xl font-bold text-slate-900 mt-2 mb-1">Журнал транзакций канала</h2>
+            <p class="text-sm text-slate-500 mb-6">Для сверки с реестром партнёра. Показаны последние 200 записей по
+                фильтру.</p>
+
+            <form method="GET" class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-4 mb-6
+                 grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">Услуга</label>
+                    <select name="serviceId" class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                        <option value="">все</option>
+                        <% services.forEach(s=> { %>
+                            <option value="<%= s.id %>" <%=String(filters.serviceId)===String(s.id) ? 'selected' : '' %>
+                                >
+                                <%= s.name %> (<%= s.serviceId %>)
+                            </option>
+                            <% }) %>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">Статус</label>
+                    <select name="state" class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                        <option value="">все</option>
+                        <option value="1" <%=filters.state==='1' ? 'selected' : '' %>>проведена</option>
+                        <option value="2" <%=filters.state==='2' ? 'selected' : '' %>>отменена</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">Телефон</label>
+                    <input type="text" name="phone" value="<%= filters.phone %>" placeholder="+998..."
+                        class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-600">С даты</label>
+                    <input type="date" name="dateFrom" value="<%= filters.dateFrom %>"
+                        class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                </div>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-slate-600">По дату</label>
+                        <input type="date" name="dateTo" value="<%= filters.dateTo %>"
+                            class="mt-1 block w-full rounded-md border-slate-300 text-sm">
+                    </div>
+                    <button type="submit"
+                        class="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">Найти</button>
+                </div>
+            </form>
+
+            <div class="mb-4 flex gap-6 text-sm">
+                <div class="rounded-lg bg-white ring-1 ring-slate-200 px-4 py-3">
+                    <span class="text-slate-500">Транзакций:</span>
+                    <strong class="text-slate-900 ml-1">
+                        <%= totals.count %>
+                    </strong>
+                </div>
+                <div class="rounded-lg bg-white ring-1 ring-slate-200 px-4 py-3">
+                    <span class="text-slate-500">Сумма:</span>
+                    <strong class="text-indigo-600 ml-1">
+                        <%= totals.sums.toLocaleString('ru-RU') %> сум
+                    </strong>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">Наш&nbsp;ID</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase whitespace-nowrap">ID партнёра</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Услуга</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Позиция</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Телефон</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Сумма</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Ваучер</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Продажа</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Статус</th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase">Создана</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200">
+                        <% rows.forEach(r=> { %>
+                            <tr>
+                                <td class="px-3 py-3 text-sm font-mono text-slate-900">
+                                    <%= r.id %>
+                                </td>
+                                <td class="px-3 py-3 text-sm font-mono text-slate-600">
+                                    <%= r.externalTxnId %>
+                                </td>
+                                <td class="px-3 py-3 text-sm text-slate-600">
+                                    <%= r.service.name %>
+                                </td>
+                                <td class="px-3 py-3 text-sm font-mono text-slate-600">
+                                    <%= r.code %>
+                                </td>
+                                <td class="px-3 py-3 text-sm text-slate-600">
+                                    <%= r.phone %>
+                                </td>
+                                <td class="px-3 py-3 text-sm font-medium text-slate-900">
+                                    <%= r.amountSums.toLocaleString('ru-RU') %>
+                                </td>
+                                <td class="px-3 py-3 text-sm font-mono text-slate-600">
+                                    <%= r.voucherValue || '—' %>
+                                </td>
+                                <td class="px-3 py-3 text-sm text-slate-600">
+                                    <%= r.saleId ? '#' + r.saleId : '—' %>
+                                </td>
+                                <td class="px-3 py-3 text-sm">
+                                    <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
+                    <%= r.state === 1 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' %>">
+                                        <%= r.state===1 ? 'проведена' : 'отменена' %>
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3 text-sm text-slate-500 whitespace-nowrap">
+                                    <%= new Date(r.createdAt).toLocaleString('ru-RU') %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                                <% if (rows.length===0) { %>
+                                    <tr>
+                                        <td colspan="10" class="px-6 py-10 text-center text-sm text-slate-400">Записей
+                                            нет</td>
+                                    </tr>
+                                    <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+</body>
+
+</html>

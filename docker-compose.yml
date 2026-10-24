@@ -1,19 +1,36 @@
-version: '3.8'
 services:
   backend:
     build: .
     container_name: activation-system
     restart: always
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     env_file:
       - .env
     depends_on:
       - db
     volumes:
       - .:/app
-      - /app/node_modules
     command: sh -c "npm run build:wallet && npm start"
+
+  # Шлюз партнёрских сетей (Paynet UWS). Тот же код и та же база, но наружу
+  # открыты ТОЛЬКО роуты /api/payments/uws/* — поток из терминалов не делит
+  # процесс с кошельком и перезапускается независимо.
+  uws:
+    build: .
+    container_name: activation-uws
+    restart: always
+    env_file:
+      - .env
+    environment:
+      UWS_PORT: 4010
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    ports:
+      - "127.0.0.1:4010:4010"
+    command: sh -c "node uws-server.js"
 
   studio:
     build: .
@@ -25,7 +42,6 @@ services:
       - db
     volumes:
       - .:/app
-      - /app/node_modules
     ports:
       - "127.0.0.1:5557:5555"
     command: sh -c "npx prisma studio --port 5555 --browser none"
@@ -39,7 +55,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: activation_system
     ports:
-      - "7440:5432"
+      - "127.0.0.1:7440:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

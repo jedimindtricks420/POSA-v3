@@ -224,7 +224,7 @@ export const showRokkyActivations = async (req, res) => {
         where.voucher.productId = Number(productId);
     }
     if (phone) {
-        where.client = { phone: { contains: phone } };
+        where.client = { phoneNumber: { contains: phone } };
     }
 
     const activations = await prisma.voucherActivation.findMany({
@@ -242,7 +242,7 @@ export const showRokkyActivations = async (req, res) => {
             },
             client: true
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { activatedAt: 'desc' },
         take: 100
     });
 

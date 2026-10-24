@@ -277,27 +277,41 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
         }
 
         // Транзакция - как в saleController
+        // Цена этой продажи — фактически списанная сумма. В потоках Click/Payme/Alif
+        // она равна product.price, у партнёрских каналов может быть своя цена
+        // позиции. Считаем от неё, иначе чек и выплаты расходятся с деньгами.
+        const salePrice = Number(attempt?.amount ?? product.price);
+
         const result = await prisma.$transaction(async (tx) => {
             // 1. Найти активный ваучер
             const voucher = await tx.voucher.findFirst({
-                where: { productId: product.id, status: 'active' }
+                where: { productId: product.id, status: 'active' },
+                orderBy: { id: 'asc' }
             });
 
             if (!voucher) {
                 throw new Error('NO_VOUCHERS');
             }
 
-            // 2. Voucher → sold
-            await tx.voucher.update({
-                where: { id: voucher.id },
+            // 2. Voucher → sold. Атомарный claim: перевод происходит только если
+            // ваучер всё ещё 'active'. Между findFirst выше и этим моментом его мог
+            // забрать параллельный запрос — тогда count будет 0 и всю транзакцию
+            // надо откатить, иначе один ваучер продаётся дважды.
+            // Тот же приём уже используется в controllers/merchant/saleController.js.
+            const claim = await tx.voucher.updateMany({
+                where: { id: voucher.id, status: 'active' },
                 data: { status: 'sold' }
             });
+
+            if (claim.count !== 1) {
+                throw new Error('VOUCHER_ALREADY_TAKEN');
+            }
 
             // 3. Создать Sale С ПУТЕМ К ЧЕКУ
             const sale = await tx.sale.create({
                 data: {
                     voucherValue: voucher.value,
-                    price: product.price,
+                    price: salePrice,
                     productId: product.id,
                     productName: product.name,
                     merchantUsername: merchant.username,
@@ -334,10 +348,10 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
             // 7. Комиссии
             // Вендору выплачивается остаток цены за вычетом ОБЕИХ комиссий (платформы и мерчанта),
             // чтобы доля мерчанта не выплачивалась дважды (мерчант получает её отдельно через merchantPayable).
-            const vendorDebt = product.price
+            const vendorDebt = salePrice
                 * (1 - product.vendorCommissionPercent / 100 - product.merchantCommissionPercent / 100);
-            const merchantPayable = product.price * (1 - product.merchantCommissionPercent / 100);
-            const kassaDebt = product.price * (product.vendorCommissionPercent / 100);
+            const merchantPayable = salePrice * (1 - product.merchantCommissionPercent / 100);
+            const kassaDebt = salePrice * (product.vendorCommissionPercent / 100);
             const kassaId = kassa?.id || link?.product?.vendor?.kassaId || null;
 
             // 8. VoucherTransaction
@@ -348,7 +362,7 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
                     vendorId: product.vendorId,
                     productId: product.id,
                     productName: product.name,
-                    price: product.price,
+                    price: salePrice,
                     merchantDebt: merchantPayable,
                     kassaDebt,
                     kassaId,
@@ -373,10 +387,11 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
                 await tx.kassa.update({
                     where: { id: kassaId },
                     data: {
-                        totalReceived: { increment: product.price },
-                        ...(paymentMethod === 'click' ? { totalReceivedClick: { increment: product.price } } : {}),
-                        ...(paymentMethod === 'payme' ? { totalReceivedPayme: { increment: product.price } } : {}),
-                        ...(paymentMethod === 'alif' ? { totalReceivedAlif: { increment: product.price } } : {}),
+                        totalReceived: { increment: salePrice },
+                        ...(paymentMethod === 'click' ? { totalReceivedClick: { increment: salePrice } } : {}),
+                        ...(paymentMethod === 'payme' ? { totalReceivedPayme: { increment: salePrice } } : {}),
+                        ...(paymentMethod === 'alif' ? { totalReceivedAlif: { increment: salePrice } } : {}),
+                        ...(paymentMethod === 'paynet' ? { totalReceivedPaynet: { increment: salePrice } } : {}),
                         balance: { increment: kassaDebt },
                     }
                 });
@@ -418,10 +433,10 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
                 items: [{
                     name: product.name,
                     qty: 1,
-                    price: product.price,
+                    price: salePrice,
                 }],
-                total: product.price,
-                totalFormatted: formatCurrencyUz(product.price),
+                total: salePrice,
+                totalFormatted: formatCurrencyUz(salePrice),
                 voucherFull: result.voucher.value,
                 voucherMasked: result.voucher.value,
                 qrUrl: buildReceiptQrUrl(result.voucher.value, baseUrl),
@@ -439,12 +454,19 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
             select: { legalInfo: true }
         });
 
-        await generatePDFReceipt({
-            absolutePath,
-            merchant: merchantWithLegal,
-            segments,
-            fallbackSchema: schemaForVendor,
-        });
+        // Транзакция выше уже зафиксирована: ваучер продан, Sale создан, балансы
+        // начислены. Если генерация чека упадёт, нельзя сообщать об ошибке платежа —
+        // иначе платёжная система сочтёт продажу неудачной, а ваучер уже израсходован.
+        try {
+            await generatePDFReceipt({
+                absolutePath,
+                merchant: merchantWithLegal,
+                segments,
+                fallbackSchema: schemaForVendor,
+            });
+        } catch (receiptError) {
+            console.error('Receipt generation failed (non-critical):', receiptError);
+        }
 
         // 2. ОТПРАВКА SMS (как при online продаже мерчантом)
         try {
@@ -461,6 +483,11 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
         return { success: true, ...result };
     } catch (error) {
         console.error('Payment processing error:', error);
+
+        if (error.message === 'VOUCHER_ALREADY_TAKEN') {
+            // Ваучер забрал параллельный запрос. Ничего не записано, можно повторить.
+            return { success: false, error: 'Повторите попытку', retryable: true };
+        }
 
         if (error.message === 'NO_VOUCHERS') {
             await prisma.qrPaymentAttempt.update({

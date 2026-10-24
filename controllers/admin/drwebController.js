@@ -242,7 +242,7 @@ export const showDrWebActivations = async (req, res) => {
             },
             client: true
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { activatedAt: 'desc' },
         take: 100
     });
 

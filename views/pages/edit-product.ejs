@@ -12,6 +12,12 @@
 
 <body class="bg-slate-50 min-h-screen">
   <%- include('../partials/admin-navbar', { user }) %>
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="max-w-5xl mx-auto px-4 pt-24">
+                <div class="rounded-md bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200"><%= error %></div>
+            </div>
+        <% } %>
+
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20">
       <div class="md:flex md:items-center md:justify-between mb-6">

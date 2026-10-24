@@ -216,6 +216,7 @@ export const createVendorUser = async (req, res) => {
 export const showVendorPaymentForm = async (req, res) => {
   const vendorId = Number(req.params.id);
   const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+  if (!vendor) return res.redirect('/admin/vendors');
 
   res.render('pages/admin-pay-vendor', {
     vendor,
@@ -231,6 +232,7 @@ export const handleVendorPayment = async (req, res) => {
   const { amount, comment } = req.body;
 
   const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+  if (!vendor) return res.redirect('/admin/vendors');
   if (!vendor) return res.status(404).send('Vendor not found');
 
   const paymentAmount = parseFloat(amount);
@@ -307,6 +309,7 @@ export const showVendorTransactions = async (req, res) => {
   const vendorId = Number(req.params.id);
 
   const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+  if (!vendor) return res.redirect('/admin/vendors');
 
   const transactions = await prisma.vendorPayment.findMany({
     where: { vendorId },

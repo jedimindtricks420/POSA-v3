@@ -55,6 +55,7 @@ model Merchant {
   transactions VoucherTransaction[]  @relation("MerchantToTransactions")
   payments     MerchantPayment[]     @relation("MerchantToPayments")
   productLinks MerchantProductLink[] // QR Payment Feature
+  partnerServices PartnerService[]
 }
 
 enum MerchantStatus {
@@ -82,6 +83,9 @@ model Product {
   manastoreVariantId Int? // product_variant_id из каталога ManaStore
   receiptTemplate    String? // JSON-схема шаблона чека для конкретного товара
   merchantLinks      MerchantProductLink[] // QR Payment Feature
+  kassaId Int?
+  kassa   Kassa? @relation(fields: [kassaId], references: [id])
+  partnerItems PartnerServiceItem[]
   images             ProductImage[]
 
   // Получение кода по запросу в PWA (namo wallet), см. ТЗ от 2026-07-29
@@ -569,7 +573,7 @@ model QrPaymentAttempt {
   amount            Float
   paymentMethod     String?
   status            QrPaymentStatus @default(PENDING)
-  externalPaymentId String?
+  externalPaymentId String? @unique
   createdAt         DateTime        @default(now())
   expiresAt         DateTime
   paidAt            DateTime?
@@ -637,6 +641,7 @@ model Kassa {
   totalReceivedClick Float @default(0)
   totalReceivedPayme Float @default(0)
   totalReceivedAlif  Float @default(0)
+  totalReceivedPaynet Float @default(0)
   totalPaid          Float @default(0)
 
   // Связи
@@ -646,6 +651,8 @@ model Kassa {
   attempts     QrPaymentAttempt[]
   payments     KassaPayment[]
   adjustments  KassaAdjustment[]
+  products        Product[]
+  partnerServices PartnerService[]
 }
 
 model KassaPayment {
@@ -669,4 +676,68 @@ model KassaAdjustment {
   reason    String?
   vendorId  Int?
   createdAt DateTime @default(now())
+}
+
+
+// ========================================
+// Партнёрские сети (Paynet UWS и аналоги)
+// ========================================
+
+model PartnerService {
+  id           Int      @id @default(autoincrement())
+  partner      String   // PAYNET | ...
+  serviceId    Int      // serviceId на стороне партнёра
+  name         String   // витрина: "Microsoft"
+  kassaId      Int?     // контракт/касса, на которую идут деньги этой услуги
+  login        String   @unique // HTTP Basic: логин, который мы выдали партнёру
+  passwordHash String   // bcrypt — пароль мы только проверяем, хранить открытым незачем
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  // Мерчант канала: на него оформляются продажи этой услуги. Без него
+  // продажа могла бы зачислиться случайному мерчанту того же товара.
+  merchantId Int
+
+  kassa        Kassa?               @relation(fields: [kassaId], references: [id])
+  merchant     Merchant             @relation(fields: [merchantId], references: [id])
+  items        PartnerServiceItem[]
+  transactions PartnerTransaction[]
+
+  @@unique([partner, serviceId])
+}
+
+model PartnerServiceItem {
+  id               Int     @id @default(autoincrement())
+  partnerServiceId Int
+  productId        Int
+  code             String  // то, что терминал присылает в fields
+  label            String  // то, что видит клиент: "Office 365 Family"
+  priceOverride    Float?  // цена именно для этого канала, кратна PRICE_STEP; null — цена товара
+  sortOrder        Int     @default(0)
+  isActive         Boolean @default(true)
+
+  service PartnerService @relation(fields: [partnerServiceId], references: [id])
+  product Product        @relation(fields: [productId], references: [id])
+
+  @@unique([partnerServiceId, code])
+}
+
+model PartnerTransaction {
+  id               Int       @id @default(autoincrement()) // он же providerTrnId
+  partner          String
+  externalTxnId    BigInt    // transactionId партнёра, до 15 цифр
+  partnerServiceId Int
+  code             String
+  phone            String
+  amount           BigInt    // тийины, фактически списанные партнёром
+  state            Int       @default(1) // 1 — проведена, 2 — отменена
+  saleId           Int?
+  voucherValue     String?
+  createdAt        DateTime  @default(now())
+  cancelledAt      DateTime?
+
+  service PartnerService @relation(fields: [partnerServiceId], references: [id])
+
+  @@unique([partner, externalTxnId])
+  @@index([createdAt])
 }

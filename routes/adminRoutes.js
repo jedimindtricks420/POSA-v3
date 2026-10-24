@@ -21,6 +21,7 @@ import * as telegramBotController from '../controllers/admin/telegramBotControll
 import * as manualActivationController from '../controllers/admin/manualActivationController.js';
 import * as qrLinkController from '../controllers/admin/qrLinkController.js';
 import * as kassaController from '../controllers/admin/kassaController.js';
+import * as partnerController from '../controllers/admin/partnerController.js';
 import { ensureAdmin, ensureAuthenticated, allowFinance, allowContent, allowSupport, allowFinanceOrContent, allowOfficeDashboard } from '../middleware/auth.js';
 import { upload, uploadProductImage, uploadVoucherFile } from '../middleware/uploadMiddleware.js';
 import { generationLimiter } from '../middleware/rateLimit.js';
@@ -117,6 +118,23 @@ router.get('/add-user', ensureAdmin, userController.showCreateUserForm);
 router.post('/add-user', ensureAdmin, userController.handleCreateUser);
 router.get('/users', ensureAdmin, userController.showUsersList);
 router.get('/users/:id/delete', ensureAdmin, userController.deleteUser);
+
+// ========================================
+// Партнёрские сети (Paynet UWS и аналоги)
+// ========================================
+router.get('/partners', allowFinanceOrContent, partnerController.showServices);
+router.get('/partners/add', ensureAdmin, partnerController.showCreateForm);
+router.post('/partners/add', ensureAdmin, partnerController.handleCreate);
+router.get('/partners/:id/edit', ensureAdmin, partnerController.showEditForm);
+router.post('/partners/:id/edit', ensureAdmin, partnerController.handleUpdate);
+router.post('/partners/:id/toggle', ensureAdmin, partnerController.handleToggleService);
+
+router.get('/partners/:id/items', allowFinanceOrContent, partnerController.showItems);
+router.post('/partners/:id/items', allowContent, partnerController.handleAddItem);
+router.post('/partners/:id/items/:itemId', allowContent, partnerController.handleUpdateItem);
+router.post('/partners/:id/items/:itemId/toggle', allowContent, partnerController.handleToggleItem);
+
+router.get('/partner-journal', allowFinanceOrContent, partnerController.showJournal);
 router.get('/users/:id/password', ensureAdmin, passwordController.showChangePasswordForm);
 router.post('/users/:id/password', ensureAdmin, passwordController.changeUserPassword);
 

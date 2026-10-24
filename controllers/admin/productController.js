@@ -1,4 +1,5 @@
 import prisma from '../../prisma/client.js';
+import { priceError, PRICE_STEP } from '../../utils/priceFormat.js';
 import {
   parseReceiptSchema,
   renderReceiptPreview,
@@ -53,6 +54,16 @@ export const showAddProductForm = async (req, res) => {
 export const handleAddProduct = async (req, res) => {
   const { name, price, status, vendorId, merchantCommissionPercent, vendorCommissionPercent, rokkySku, drwebSku, manastoreVariantId } = req.body;
 
+  // Цена только кратная PRICE_STEP: терминалы партнёрских сетей не дают сдачи.
+  const badPrice = priceError(price);
+  if (badPrice) {
+    return res.render('pages/admin-add-product', {
+      error: badPrice,
+      priceStep: PRICE_STEP,
+      vendors: await prisma.vendor.findMany({ orderBy: { name: 'asc' } }),
+    });
+  }
+
   try {
     await prisma.product.create({
       data: {
@@ -70,6 +81,7 @@ export const handleAddProduct = async (req, res) => {
 
     res.redirect('/admin/products');
   } catch (error) {
+    console.error('[admin] create product failed:', error);
     res.render('pages/admin-add-product', {
       error: 'Ошибка при создании товара',
       vendors: await prisma.vendor.findMany({ orderBy: { name: 'asc' } }),
@@ -99,6 +111,8 @@ export const showEditProductForm = async (req, res) => {
     product,
     vendor: product.vendor,
     user: req.session.user,
+    error: req.query.error || null,
+    priceStep: PRICE_STEP,
     templateSchema: JSON.stringify(schema),
     hasCustomTemplate: !!product.receiptTemplate,
     hasCustomInstructions: !!product.redeemInstructions,
@@ -128,6 +142,15 @@ export const handleEditProduct = async (req, res) => {
   }
 
   const parsedPrice = price !== undefined && price !== '' ? parseFloat(price) : existing.price;
+
+  // Правило «цена кратна PRICE_STEP» применяем только к новой цене. Товары,
+  // заведённые до правила, можно редактировать дальше — иначе у них нельзя
+  // было бы поправить даже название.
+  const priceChanged = Number(parsedPrice) !== Number(existing.price);
+  const badPrice = priceChanged ? priceError(parsedPrice) : null;
+  if (badPrice) {
+    return res.redirect(`/admin/edit-product/${id}?error=${encodeURIComponent(badPrice)}`);
+  }
   const parsedMerchantCommission = merchantCommissionPercent !== undefined && merchantCommissionPercent !== ''
     ? parseFloat(merchantCommissionPercent)
     : existing.merchantCommissionPercent;
