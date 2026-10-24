@@ -227,7 +227,7 @@ async function issueVoucher({ svc, item, phone, channelPrice }) {
   });
   if (!link) throw new PaynetError(PAYNET_ERRORS.SERVICE_UNAVAILABLE, 'товар не подключён к каналу');
 
-  const kassaId = catalog.resolveKassaId(svc, link.product);
+  const kassaId = catalog.resolveKassaId(svc);
   const attempt = await prisma.qrPaymentAttempt.create({
     data: {
       linkId: link.id,

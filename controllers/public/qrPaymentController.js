@@ -352,7 +352,13 @@ export async function processPaymentInternal(attemptId, link, kassa = null) {
                 * (1 - product.vendorCommissionPercent / 100 - product.merchantCommissionPercent / 100);
             const merchantPayable = salePrice * (1 - product.merchantCommissionPercent / 100);
             const kassaDebt = salePrice * (product.vendorCommissionPercent / 100);
-            const kassaId = kassa?.id || link?.product?.vendor?.kassaId || null;
+            // Касса берётся из того, что передал вызывающий, либо из самой попытки.
+            // Неявного отката на кассу вендора здесь НЕТ: в партнёрских каналах
+            // клиент платит наличными в терминале, а партнёр рассчитывается
+            // банковским переводом позже — ни одна наша касса в этом не участвует,
+            // и записывать туда «получено» нельзя. Для Click/Payme/Alif поведение
+            // не меняется: они передают кассу явно, а QR-поток кладёт её id в попытку.
+            const kassaId = kassa?.id ?? attempt?.kassaId ?? null;
 
             // 8. VoucherTransaction
             await tx.voucherTransaction.create({

@@ -54,7 +54,18 @@ export async function resolveItem(partnerServiceId, code) {
 export const stockOf = (productId) =>
   prisma.voucher.count({ where: { productId, status: 'active' } });
 
-// Касса канала: приоритет у услуги (контракта), затем товар, затем вендор.
-export function resolveKassaId(service, product) {
-  return service.kassaId ?? product.kassaId ?? product.vendor?.kassaId ?? null;
+// Касса канала — ТОЛЬКО та, что явно указана на услуге. Отката на кассу
+// товара или вендора здесь нет, и это намеренно.
+//
+// Для Click/Payme/Alif касса — счёт эквайринга, через который деньги
+// физически проходят. В партнёрских сетях клиент платит наличными в
+// терминале, а партнёр рассчитывается позже банковским переводом: никакая
+// наша касса в этом не участвует. Неявно подставлять кассу вендора значит
+// записывать «получено кассой» то, что ещё не получено.
+//
+// Если касса на услуге указана, она используется как метка принадлежности
+// для сверки поступившего перевода — но это осознанный выбор оператора,
+// а не умолчание.
+export function resolveKassaId(service) {
+  return service.kassaId ?? null;
 }

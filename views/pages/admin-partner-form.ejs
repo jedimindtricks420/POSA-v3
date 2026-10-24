@@ -94,7 +94,7 @@
                                 <label class="block text-sm font-medium text-slate-700">Касса</label>
                                 <select name="kassaId"
                                     class="mt-1 block w-full rounded-md border-slate-300 shadow-sm text-sm">
-                                    <option value="">— не задана —</option>
+                                    <option value="">— не вести учёт по кассе —</option>
                                     <% kassas.forEach(k=> { %>
                                         <option value="<%= k.id %>" <%=service && Number(service.kassaId)===k.id
                                             ? 'selected' : '' %>>
@@ -102,8 +102,11 @@
                                         </option>
                                         <% }) %>
                                 </select>
-                                <p class="mt-1 text-xs text-slate-500">Контракт, по которому партнёр перечисляет деньги.
-                                </p>
+                                <p class="mt-1 text-xs text-slate-500">Необязательно. Партнёр рассчитывается
+                                    банковским переводом, через кассу эти деньги не проходят — поле нужно только
+                                    как метка принадлежности, чтобы сверять поступивший перевод. Оставьте пустым,
+                                    если ведёте этот учёт вне системы: тогда ни один баланс кассы не затрагивается,
+                                    а доля платформы всё равно фиксируется в каждой транзакции.</p>
                             </div>
 
                             <div class="border-t border-slate-200 pt-5">

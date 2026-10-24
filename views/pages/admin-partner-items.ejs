@@ -25,7 +25,7 @@
                 </span>
             </div>
             <p class="text-sm text-slate-500 mb-6">Мерчант канала: <strong><%= service.merchant.username %></strong> ·
-                касса: <strong><%= service.kassa ? service.kassa.name : 'не задана' %></strong></p>
+                касса: <strong><%= service.kassa ? service.kassa.name : 'учёт по кассе не ведётся' %></strong></p>
 
             <% if (error) { %>
                 <div class="mb-6 rounded-md bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
