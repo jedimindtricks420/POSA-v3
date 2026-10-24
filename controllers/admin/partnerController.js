@@ -257,7 +257,7 @@ export const showJournal = async (req, res) => {
   const { serviceId, state, phone, dateFrom, dateTo } = req.query;
   const where = {};
   if (serviceId) where.partnerServiceId = Number(serviceId);
-  if (state) where.state = Number(state);
+  if (state !== undefined && state !== '') where.state = Number(state);
   if (phone) where.phone = { contains: String(phone).replace(/\D/g, '') ? String(phone).trim() : '' };
   if (dateFrom || dateTo) {
     where.createdAt = {};
@@ -273,14 +273,25 @@ export const showJournal = async (req, res) => {
       take: 200,
     }),
     prisma.partnerService.findMany({ orderBy: { name: 'asc' } }),
-    prisma.partnerTransaction.aggregate({ where, _count: true, _sum: { amount: true } }),
+    prisma.partnerTransaction.aggregate({ where, _count: true }),
   ]);
+
+  // Сверять с реестром партнёра можно только проведённые: незавершённые
+  // заявки выдачи не дали и в GetStatement не попадают.
+  const done = await prisma.partnerTransaction.aggregate({
+    where: { ...where, state: 1 }, _sum: { amount: true },
+  });
+  const pending = await prisma.partnerTransaction.count({ where: { ...where, state: 0 } });
 
   res.render('pages/admin-partner-journal', {
     rows: rows.map(txnView),
     services,
     filters: { serviceId: serviceId || '', state: state || '', phone: phone || '', dateFrom: dateFrom || '', dateTo: dateTo || '' },
-    totals: { count: totals._count, sums: Number(totals._sum.amount || 0) / 100 },
+    totals: {
+      count: totals._count,
+      doneSums: Number(done._sum.amount || 0) / 100,
+      pending,
+    },
     user: req.session.user,
   });
 };

@@ -183,7 +183,7 @@ async function performTransaction(partner, svc, params) {
     claim = await prisma.partnerTransaction.create({
       data: {
         partner, externalTxnId, partnerServiceId: svc.id, code,
-        phone, amount: BigInt(expected), state: 1,
+        phone, amount: BigInt(expected), state: 0, // 0 — заявка в работе
       },
     });
   } catch (e) {
@@ -191,23 +191,36 @@ async function performTransaction(partner, svc, params) {
     throw e;
   }
 
+  let issued;
   try {
-    const sale = await issueVoucher({ svc, item, phone, channelPrice });
-    await prisma.partnerTransaction.update({
-      where: { id: claim.id },
-      data: { saleId: sale.saleId, voucherValue: sale.voucherValue },
-    });
-    return {
-      providerTrnId: claim.id,
-      timestamp: formatPaynet(claim.createdAt),
-      fields: { name: item.label, price: channelPrice, amount: expected },
-    };
+    issued = await issueVoucher({ svc, item, phone, channelPrice });
   } catch (e) {
-    // Выдача не состоялась — снимаем заявку, чтобы партнёр мог повторить
-    // этот же transactionId, и сообщаем ошибку (деньги не списываются).
+    // Выдача не состоялась: ваучер не тронут, снимаем заявку и сообщаем
+    // ошибку — партнёр не спишет деньги.
     await prisma.partnerTransaction.delete({ where: { id: claim.id } }).catch(() => {});
     throw e;
   }
+
+  // Отсюда и ниже ваучер УЖЕ у клиента. Удалять заявку нельзя ни при каких
+  // обстоятельствах, иначе продажа исчезнет из журнала и из выписки, а
+  // партнёр сочтёт платёж неуспешным — ваучер уйдёт бесплатно.
+  try {
+    await prisma.partnerTransaction.update({
+      where: { id: claim.id },
+      data: { state: 1, saleId: issued.saleId, voucherValue: issued.voucherValue },
+    });
+  } catch (e) {
+    console.error('[UWS] ваучер выдан, но журнал канала не обновлён — требуется ручная сверка',
+      { providerTrnId: claim.id, externalTxnId: String(externalTxnId), saleId: issued.saleId,
+        voucher: issued.voucherValue, error: e?.message });
+    // Намеренно не бросаем: деньги должны быть списаны, товар уже выдан.
+  }
+
+  return {
+    providerTrnId: claim.id,
+    timestamp: formatPaynet(claim.createdAt),
+    fields: { name: item.label, price: channelPrice, amount: expected },
+  };
 }
 
 // Выдача идёт через существующий конвейер POSA — тот же, что у Click/Payme/Alif.
@@ -264,6 +277,15 @@ async function checkTransaction(partner, svc, params) {
   assertService(svc, params);
   const t = await findTxn(partner, params.transactionId);
   if (!t) throw new PaynetError(PAYNET_ERRORS.TXN_NOT_FOUND);
+
+  // state 0 — заявка осталась незавершённой (процесс прервался между
+  // резервированием и выдачей). Ваучер не выдан, поэтому отвечаем «не
+  // найдена»: иначе партнёр спишет деньги за товар, которого клиент не получил.
+  if (t.state === 0) {
+    console.warn('[UWS] CheckTransaction по незавершённой заявке', { providerTrnId: t.id });
+    throw new PaynetError(PAYNET_ERRORS.TXN_NOT_FOUND);
+  }
+
   return {
     providerTrnId: t.id,
     timestamp: formatPaynet(t.state === 2 ? (t.cancelledAt ?? t.createdAt) : t.createdAt),
@@ -275,7 +297,7 @@ async function checkTransaction(partner, svc, params) {
 async function cancelTransaction(partner, svc, params) {
   assertService(svc, params);
   const t = await findTxn(partner, params.transactionId);
-  if (!t) throw new PaynetError(PAYNET_ERRORS.TXN_NOT_FOUND);
+  if (!t || t.state === 0) throw new PaynetError(PAYNET_ERRORS.TXN_NOT_FOUND);
   if (t.state === 2) throw new PaynetError(PAYNET_ERRORS.TXN_CANCELLED);
 
   const cancelledAt = new Date();

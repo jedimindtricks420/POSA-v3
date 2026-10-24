@@ -38,6 +38,7 @@
                         <option value="">все</option>
                         <option value="1" <%=filters.state==='1' ? 'selected' : '' %>>проведена</option>
                         <option value="2" <%=filters.state==='2' ? 'selected' : '' %>>отменена</option>
+                        <option value="0" <%=filters.state==='0' ? 'selected' : '' %>>не завершена</option>
                     </select>
                 </div>
                 <div>
@@ -69,11 +70,19 @@
                     </strong>
                 </div>
                 <div class="rounded-lg bg-white ring-1 ring-slate-200 px-4 py-3">
-                    <span class="text-slate-500">Сумма:</span>
+                    <span class="text-slate-500">Сумма проведённых:</span>
                     <strong class="text-indigo-600 ml-1">
-                        <%= totals.sums.toLocaleString('ru-RU') %> сум
+                        <%= totals.doneSums.toLocaleString('ru-RU') %> сум
                     </strong>
+                    <span class="text-slate-400 text-xs ml-1">— её и сверяем с реестром</span>
                 </div>
+                <% if (totals.pending) { %>
+                    <div class="rounded-lg bg-amber-50 ring-1 ring-amber-200 px-4 py-3">
+                        <span class="text-amber-700">Не завершено:</span>
+                        <strong class="text-amber-800 ml-1"><%= totals.pending %></strong>
+                        <span class="text-amber-600 text-xs ml-1">— выдача не состоялась, в выписку не попадают</span>
+                    </div>
+                <% } %>
             </div>
 
             <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 overflow-x-auto">
@@ -121,8 +130,8 @@
                                 </td>
                                 <td class="px-3 py-3 text-sm">
                                     <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium
-                    <%= r.state === 1 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' %>">
-                                        <%= r.state===1 ? 'проведена' : 'отменена' %>
+                    <%= r.state === 1 ? 'bg-emerald-100 text-emerald-700' : (r.state === 2 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700') %>">
+                                        <%= r.state===1 ? 'проведена' : (r.state===2 ? 'отменена' : 'не завершена') %>
                                     </span>
                                 </td>
                                 <td class="px-3 py-3 text-sm text-slate-500 whitespace-nowrap">

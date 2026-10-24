@@ -23,12 +23,38 @@
                         <%= kassa.balance.toLocaleString('ru-RU') %> сум
                     </div>
                 </div>
+<%
+    // Приход разложен по способам оплаты. Click, Payme и Alif — эквайринг:
+    // деньги физически прошли через кассу. Партнёрские сети — нет: клиент
+    // платит в терминале наличными, партнёр рассчитывается переводом позже,
+    // поэтому эта часть показана отдельно и как ожидаемая, а не полученная.
+    const acq = (kassa.totalReceivedClick || 0) + (kassa.totalReceivedPayme || 0) + (kassa.totalReceivedAlif || 0);
+    const viaPartners = kassa.totalReceivedPaynet || 0;
+    const fmt = (v) => (v || 0).toLocaleString('ru-RU');
+%>
                 <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-5">
                     <div class="text-sm font-medium text-slate-500">Оборот через кассу</div>
                     <div class="mt-1 text-2xl font-bold text-emerald-600">
-                        <%= kassa.totalReceived.toLocaleString('ru-RU') %> сум
+                        <%= fmt(acq) %> сум
+                    </div>
+                    <div class="mt-2 text-xs text-slate-500 leading-5">
+                        Click <%= fmt(kassa.totalReceivedClick) %> ·
+                        Payme <%= fmt(kassa.totalReceivedPayme) %> ·
+                        Alif <%= fmt(kassa.totalReceivedAlif) %>
                     </div>
                 </div>
+                <% if (viaPartners) { %>
+                <div class="bg-amber-50 rounded-lg shadow-sm ring-1 ring-amber-200 p-5">
+                    <div class="text-sm font-medium text-amber-700">Продано через партнёрские сети</div>
+                    <div class="mt-1 text-2xl font-bold text-amber-700">
+                        <%= fmt(viaPartners) %> сум
+                    </div>
+                    <div class="mt-2 text-xs text-amber-600 leading-5">
+                        Через кассу не проходило: партнёр рассчитывается банковским
+                        переводом. Сверять с его реестром.
+                    </div>
+                </div>
+                <% } %>
                 <div class="bg-white rounded-lg shadow-sm ring-1 ring-slate-200 p-5">
                     <div class="text-sm font-medium text-slate-500">Всего выплачено</div>
                     <div class="mt-1 text-2xl font-bold text-amber-600">
