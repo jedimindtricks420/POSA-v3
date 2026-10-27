@@ -24,8 +24,10 @@ export async function listItems(service) {
     return {
       code: it.code,
       label: it.label,
-      price,                              // сумы, цена канала
-      amount: toTiyin(price),             // тийины, столько спишет терминал
+      // Paynet просил отдавать amount в GetInformation в СУМАХ (2026-10-27).
+      // Тийины остаются там, где их требует спецификация: params.amount
+      // в PerformTransaction и amount в выписке GetStatement.
+      amount: price,
       available: await stockOf(it.productId),
     };
   }));

@@ -148,8 +148,7 @@ async function getInformation(svc, params) {
     timestamp: formatPaynet(),
     fields: {
       name: item.label,
-      price,                        // сумы, цена канала
-      amount: catalog.toTiyin(price), // тийины, столько должен списать терминал
+      amount: price,  // СУМЫ — по требованию Paynet от 2026-10-27
       available,
     },
   };
@@ -219,7 +218,7 @@ async function performTransaction(partner, svc, params) {
   return {
     providerTrnId: claim.id,
     timestamp: formatPaynet(claim.createdAt),
-    fields: { name: item.label, price: channelPrice, amount: expected },
+    fields: { name: item.label, amount: channelPrice }, // сумы, как и в GetInformation
   };
 }
 
